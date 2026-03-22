@@ -1,16 +1,86 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { format } from 'date-fns';
+import { useCashupStore } from '@/store/cashupStore';
+import { CashierDailyForm } from '@/components/cashier/CashierDailyForm';
+import { ManagerDailyForm } from '@/components/manager/ManagerDailyForm';
+import { ManagerMonthlyForm } from '@/components/manager/ManagerMonthlyForm';
+import { Dashboard } from '@/components/dashboard/Dashboard';
+import { Reports } from '@/components/reports/Reports';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck } from 'lucide-react';
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+export default function Index() {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-card shadow-sm">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-primary rounded-lg p-2">
+              <ClipboardList className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-foreground">BP Zoolake Cashup System</h1>
+              <p className="text-xs text-muted-foreground">Daily Cashup & Reconciliation</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="text-sm border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid grid-cols-5 w-full mb-4">
+            <TabsTrigger value="dashboard" className="flex items-center gap-1.5 text-xs">
+              <LayoutDashboard className="h-3.5 w-3.5" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="cashier" className="flex items-center gap-1.5 text-xs">
+              <ClipboardList className="h-3.5 w-3.5" />
+              Cashier Daily
+            </TabsTrigger>
+            <TabsTrigger value="manager-daily" className="flex items-center gap-1.5 text-xs">
+              <Briefcase className="h-3.5 w-3.5" />
+              Manager Daily
+            </TabsTrigger>
+            <TabsTrigger value="manager-monthly" className="flex items-center gap-1.5 text-xs">
+              <CalendarCheck className="h-3.5 w-3.5" />
+              Manager Monthly
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-1.5 text-xs">
+              <BarChart3 className="h-3.5 w-3.5" />
+              Reports
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="dashboard">
+            <Dashboard selectedDate={selectedDate} />
+          </TabsContent>
+          <TabsContent value="cashier">
+            <CashierDailyForm selectedDate={selectedDate} />
+          </TabsContent>
+          <TabsContent value="manager-daily">
+            <ManagerDailyForm selectedDate={selectedDate} />
+          </TabsContent>
+          <TabsContent value="manager-monthly">
+            <ManagerMonthlyForm selectedDate={selectedDate} />
+          </TabsContent>
+          <TabsContent value="reports">
+            <Reports />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
-};
-
-const Index = PlaceholderIndex;
-
-export default Index;
+}

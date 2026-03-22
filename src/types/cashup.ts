@@ -1,0 +1,135 @@
+export interface PayoutLine {
+  id: string;
+  vendor: string;
+  amount: number;
+  isLotto?: boolean;
+}
+
+export interface ReceiptLine {
+  id: string;
+  type: string;
+  seqNo: string;
+  amount: number;
+}
+
+export interface OtherAdjustment {
+  id: string;
+  explanation: string;
+  amount: number;
+}
+
+export interface SpeedpointEntry {
+  terminal: string;
+  batchNo: string;
+  shopAmount: number;
+  optAmount: number;
+}
+
+export interface AccountEntry {
+  id: string;
+  name: string;
+  amount: number;
+}
+
+export interface CashierShift {
+  // Section 1 - Income
+  income: number;
+  returns: number;
+  // Section 2 - Payouts
+  payouts: PayoutLine[];
+  lottoPayouts: number;
+  // Section 3 - Receipts
+  receipts: ReceiptLine[];
+  // MOP Cash (shop only)
+  cashConnectTotal: number;
+  cashDepositedBanking: number;
+  easyPay: number;
+  coins: number;
+  // MOP Speedpoints
+  speedpoints: SpeedpointEntry[];
+  // MOP Account
+  accounts: AccountEntry[];
+  // Other adjustments
+  otherAdjustments: OtherAdjustment[];
+  returns_mop: number;
+  attendantShortOver: number;
+}
+
+export interface DailyCashup {
+  id: string;
+  date: string;
+  month: string;
+  enteredBy: string;
+  shopShiftNumber: number;
+  optShiftNumber: number;
+  cashierName: string;
+  shop: CashierShift;
+  opt: Omit<CashierShift, 'cashConnectTotal' | 'cashDepositedBanking' | 'easyPay' | 'coins' | 'receipts' | 'otherAdjustments' | 'accounts' | 'payouts' | 'lottoPayouts' | 'returns_mop' | 'attendantShortOver'> & {
+    income: number;
+    returns: number;
+    speedpoints: SpeedpointEntry[];
+    accounts: AccountEntry[];
+  };
+  locked: boolean;
+}
+
+export interface InvoiceLine {
+  id: string;
+  supplier: string;
+  category: string;
+  branchDocNum: string;
+  inclusive: number;
+  vat: number;
+}
+
+export interface ManagerDailyEntry {
+  id: string;
+  date: string;
+  cashupId: string;
+  enteredBy: string;
+  explanations: string;
+  // Payout invoices
+  payoutInvoices: InvoiceLine[];
+  // EFT invoices
+  eftInvoices: InvoiceLine[];
+  // Cash reconciliation
+  coinsOpeningBalance: number;
+  easypayOpeningBalance: number;
+  cashConnectOpeningBalance: number;
+  dailyCoins: number;
+  cashDepositedEasypay: number;
+  cashDepositedCashConnect: number;
+  ccBagClosureCoins: number;
+  ccBagClosureEasypay: number;
+  ccBagClosureCashConnect: number;
+  transferFromCoin: number;
+  // Branch day end
+  branchDayEndTotal: number;
+  branchDayEndVat: number;
+  bankCharges: number;
+  banking: number;
+  locked: boolean;
+}
+
+export interface MonthlyBranchFigures {
+  id: string;
+  month: string;
+  enteredBy: string;
+  // Branch report figures
+  branchNetSales: number;
+  branchTotalPayouts: number;
+  branchTotalReceipts: number;
+  branchTotalInvoicesCapital: number;
+  branchTotalInvoicesVat: number;
+  // Misc
+  notes: string;
+}
+
+export type DashboardStatus = 'green' | 'red' | 'pending';
+
+export interface DailyDashboardMetric {
+  label: string;
+  spreadsheetValue: number;
+  branchValue: number;
+  status: DashboardStatus;
+}
