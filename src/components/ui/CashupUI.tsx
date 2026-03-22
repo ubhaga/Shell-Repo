@@ -1,0 +1,85 @@
+import { cn } from '@/lib/utils';
+
+interface CurrencyInputProps {
+  value: number;
+  onChange: (val: number) => void;
+  className?: string;
+  placeholder?: string;
+  allowNegative?: boolean;
+}
+
+export function CurrencyInput({ value, onChange, className, placeholder = '0.00', allowNegative }: CurrencyInputProps) {
+  return (
+    <input
+      type="number"
+      step="0.01"
+      value={value === 0 ? '' : value}
+      placeholder={placeholder}
+      onChange={(e) => {
+        const v = parseFloat(e.target.value);
+        onChange(isNaN(v) ? 0 : v);
+      }}
+      className={cn('input-cell', className)}
+    />
+  );
+}
+
+interface CurrencyDisplayProps {
+  value: number;
+  className?: string;
+  highlight?: boolean;
+}
+
+export function CurrencyDisplay({ value, className, highlight }: CurrencyDisplayProps) {
+  const formatted = new Intl.NumberFormat('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+  const isNeg = value < 0;
+  return (
+    <span className={cn('font-mono text-sm tabular-nums', isNeg && 'text-destructive', highlight && 'font-bold', className)}>
+      {isNeg ? `(${formatted.replace('-', '')})` : formatted}
+    </span>
+  );
+}
+
+interface SectionProps {
+  title: string;
+  children: React.ReactNode;
+  color?: 'blue' | 'red' | 'green' | 'purple' | 'orange' | 'default';
+}
+
+const colorMap = {
+  blue: 'bg-blue-600 text-white',
+  red: 'bg-red-600 text-white',
+  green: 'bg-green-700 text-white',
+  purple: 'bg-purple-700 text-white',
+  orange: 'bg-orange-600 text-white',
+  default: 'bg-primary text-primary-foreground',
+};
+
+export function Section({ title, children, color = 'default' }: SectionProps) {
+  return (
+    <div className="mb-3">
+      <div className={cn('px-3 py-2 rounded-t-md font-semibold text-sm', colorMap[color])}>{title}</div>
+      <div className="border border-t-0 rounded-b-md">{children}</div>
+    </div>
+  );
+}
+
+interface DataRowProps {
+  label: string;
+  children: React.ReactNode;
+  total?: boolean;
+  className?: string;
+}
+
+export function DataRow({ label, children, total, className }: DataRowProps) {
+  return (
+    <div className={cn(
+      'flex items-center justify-between px-3 py-1.5 border-b last:border-b-0 text-sm',
+      total && 'bg-secondary font-semibold',
+      className,
+    )}>
+      <span className="text-muted-foreground shrink-0 mr-2">{label}</span>
+      <div className="flex items-center gap-2">{children}</div>
+    </div>
+  );
+}
