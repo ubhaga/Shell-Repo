@@ -179,6 +179,15 @@ export function CashierDailyForm({ selectedDate }: Props) {
 
   return (
     <div className="space-y-3">
+      {isLocked && (
+        <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/40 rounded-lg text-destructive">
+          <Lock className="h-5 w-5 shrink-0" />
+          <div>
+            <p className="font-semibold text-sm">Period Locked — Read Only</p>
+            <p className="text-xs opacity-80">Dates before 1 January 2026 are locked. No data can be posted or modified.</p>
+          </div>
+        </div>
+      )}
       {/* Header info */}
       <div className="bg-card border rounded-lg p-3 grid grid-cols-2 md:grid-cols-5 gap-3">
         <div>
