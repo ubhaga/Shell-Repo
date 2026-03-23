@@ -469,6 +469,18 @@ export function CashierDailyForm({ selectedDate }: Props) {
           Shop: Total Takings − MOP Cash − Speedpoints − Accounts − Other &nbsp;|&nbsp; OPT: Net Sales − Speedpoints
         </div>
       </div>
+
+      {/* ─── SAVE BUTTON ─── */}
+      <div className="flex flex-col items-center gap-2 pt-2 pb-4">
+        <Button onClick={handleSave} size="lg" className="px-12">
+          <Save className="h-4 w-4 mr-2" /> Save Cashup
+        </Button>
+        {savedAt && (
+          <p className="text-xs text-muted-foreground">
+            Originally saved: <span className="font-semibold text-foreground">{savedAt}</span>
+          </p>
+        )}
+      </div>
     </div>
   );
 }
