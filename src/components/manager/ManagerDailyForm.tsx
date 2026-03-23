@@ -124,9 +124,13 @@ export function ManagerDailyForm({ selectedDate }: Props) {
 
   const openingIsReadOnly = !isFirstJan2025 && !!prevEntry;
 
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+
   const handleSave = () => {
     if (existing) updateManagerEntry(existing.id, form);
     else addManagerEntry(form);
+    const now = format(new Date(), 'dd MMM yyyy HH:mm:ss');
+    setSavedAt(prev => prev ?? now);
     toast({ title: 'Manager entry saved', description: `Saved for ${format(new Date(selectedDate), 'dd MMM yyyy')}` });
   };
 
