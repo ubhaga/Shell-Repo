@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useCashupStore } from '@/store/cashupStore';
-import { SUPPLIERS, CATEGORIES, MANAGER_NAMES } from '@/data/masterData';
+import { CATEGORIES } from '@/data/masterData';
+import { useMasterDataStore } from '@/store/masterDataStore';
 import type { ManagerDailyEntry, InvoiceLine } from '@/types/cashup';
 import { Section, DataRow, CurrencyInput, CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ interface Props { selectedDate: string; }
 
 export function ManagerDailyForm({ selectedDate }: Props) {
   const { getManagerEntryByDate, addManagerEntry, updateManagerEntry, getCashupByDate, managerEntries } = useCashupStore();
+  const { payoutSuppliers: SUPPLIERS, eftSuppliers, managerNames: MANAGER_NAMES } = useMasterDataStore();
   const existing = getManagerEntryByDate(selectedDate);
   const cashup = getCashupByDate(selectedDate);
 
@@ -129,7 +131,9 @@ export function ManagerDailyForm({ selectedDate }: Props) {
     toast({ title: 'Manager entry saved', description: `Saved for ${format(new Date(selectedDate), 'dd MMM yyyy')}` });
   };
 
-  const InvoiceTable = ({ lines, type }: { lines: InvoiceLine[], type: 'payout' | 'eft' }) => (
+  const InvoiceTable = ({ lines, type }: { lines: InvoiceLine[], type: 'payout' | 'eft' }) => {
+    const supplierList = type === 'eft' ? eftSuppliers : SUPPLIERS;
+    return (
     <>
       <div className="px-3 py-1 border-b grid grid-cols-12 gap-1 text-xs text-muted-foreground font-semibold bg-muted/30">
         <span className="col-span-3">Supplier</span>
@@ -145,7 +149,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
             <select value={l.supplier} onChange={e => updateInvoice(l.id, { supplier: e.target.value }, type)}
               className="input-cell w-full text-left text-xs py-0.5">
               <option value="">Select...</option>
-              {SUPPLIERS.map(s => <option key={s}>{s}</option>)}
+              {supplierList.map(s => <option key={s}>{s}</option>)}
             </select>
           </div>
           <div className="col-span-3">
@@ -180,7 +184,8 @@ export function ManagerDailyForm({ selectedDate }: Props) {
         </div>
       </div>
     </>
-  );
+    );
+  };
 
   return (
     <div className="space-y-3">

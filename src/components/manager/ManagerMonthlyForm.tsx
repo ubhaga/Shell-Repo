@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useCashupStore } from '@/store/cashupStore';
-import { MANAGER_NAMES } from '@/data/masterData';
+import { useMasterDataStore } from '@/store/masterDataStore';
 import type { MonthlyBranchFigures } from '@/types/cashup';
 import { Section, DataRow, CurrencyInput, CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ interface Props { selectedDate: string; }
 export function ManagerMonthlyForm({ selectedDate }: Props) {
   const month = selectedDate.slice(0, 7);
   const { getMonthlyFiguresByMonth, addMonthlyFigures, updateMonthlyFigures, cashups, managerEntries } = useCashupStore();
+  const { managerNames: MANAGER_NAMES } = useMasterDataStore();
   const existing = getMonthlyFiguresByMonth(month);
 
   const [form, setForm] = useState<Omit<MonthlyBranchFigures, 'id'>>({

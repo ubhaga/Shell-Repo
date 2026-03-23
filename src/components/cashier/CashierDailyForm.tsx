@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useCashupStore } from '@/store/cashupStore';
-import { SUPPLIERS, CASHIER_NAMES, ACCOUNTS, RECEIPT_TYPES } from '@/data/masterData';
+import { RECEIPT_TYPES } from '@/data/masterData';
+import { useMasterDataStore } from '@/store/masterDataStore';
 import type { DailyCashup, PayoutLine, ReceiptLine, SpeedpointEntry, AccountEntry, OtherAdjustment } from '@/types/cashup';
 import { Section, DataRow, CurrencyInput, CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,8 @@ function ColHeader({ left, right }: { left: string; right: string }) {
 
 export function CashierDailyForm({ selectedDate }: Props) {
   const { getCashupByDate, addCashup, updateCashup } = useCashupStore();
+  const { payoutSuppliers, accounts: ACCOUNTS, cashierNames: CASHIER_NAMES } = useMasterDataStore();
+  const SUPPLIERS = payoutSuppliers;
   const existing = getCashupByDate(selectedDate);
 
   const [form, setForm] = useState<Omit<DailyCashup, 'id'>>(() => ({
