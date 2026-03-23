@@ -192,9 +192,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
             className="input-cell w-full mt-0.5" />
         </div>
         <div className="flex items-end">
-          <Button onClick={handleSave} className="w-full" size="sm">
-            <Save className="h-3.5 w-3.5 mr-1" /> Save Cashup
-          </Button>
+          <span className="text-xs text-muted-foreground italic">Use the Save button below ↓</span>
         </div>
       </div>
 
