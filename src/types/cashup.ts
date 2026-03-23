@@ -70,6 +70,7 @@ export interface DailyCashup {
     speedpoints: SpeedpointEntry[];
     accounts: AccountEntry[];
   };
+  notes: string;
   locked: boolean;
 }
 
