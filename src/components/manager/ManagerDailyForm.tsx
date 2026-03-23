@@ -211,7 +211,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const bankingCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) - bankChargesCalc) * 100) / 100;
 
 
-  const openingIsReadOnly = !isFirstJan2025 && !!prevEntry;
+  const openingIsReadOnly = !isFirstJan2026 && !!prevEntry;
 
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
