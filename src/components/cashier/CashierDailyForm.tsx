@@ -455,8 +455,12 @@ export function CashierDailyForm({ selectedDate }: Props) {
             <ShortOverBadge diff={optDifference} />
           </div>
         </div>
+        <div className="px-4 py-3 flex items-center justify-between border-t bg-secondary">
+          <span className="text-sm font-bold">COMBINED SHORT / (OVER)</span>
+          <ShortOverBadge diff={shopDifference + optDifference} />
+        </div>
         <div className="px-4 py-2 text-xs text-muted-foreground bg-muted/30 border-t">
-          Shop: Total Takings − MOP Cash − Speedpoints − Accounts − Other &nbsp;|&nbsp; OPT: Net Sales − Speedpoints − Accounts
+          Shop: Total Takings − MOP Cash − Speedpoints − Accounts − Other &nbsp;|&nbsp; OPT: Net Sales − Speedpoints
         </div>
       </div>
     </div>
