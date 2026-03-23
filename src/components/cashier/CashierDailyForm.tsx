@@ -5,20 +5,14 @@ import { SUPPLIERS, CASHIER_NAMES, ACCOUNTS, RECEIPT_TYPES } from '@/data/master
 import type { DailyCashup, PayoutLine, ReceiptLine, SpeedpointEntry, AccountEntry, OtherAdjustment } from '@/types/cashup';
 import { Section, DataRow, CurrencyInput, CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Save, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Save, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
 const blankShopShift = (): DailyCashup['shop'] => ({
   income: 0, returns: 0,
   payouts: [], lottoPayouts: 0,
-  receipts: [
-    { id: uuidv4(), type: 'Blue Label', seqNo: '', amount: 0 },
-    { id: uuidv4(), type: 'Easypay', seqNo: '', amount: 0 },
-    { id: uuidv4(), type: 'Lotto Receipts', seqNo: '', amount: 0 },
-    { id: uuidv4(), type: 'Debtors Received on Account ROA', seqNo: '', amount: 0 },
-    { id: uuidv4(), type: 'Other', seqNo: '', amount: 0 },
-  ],
+  receipts: RECEIPT_TYPES.map(type => ({ id: uuidv4(), type, seqNo: '', amount: 0 })),
   cashConnectTotal: 0, cashDepositedBanking: 0, easyPay: 0, coins: 0,
   speedpoints: [
     { terminal: 'Term 247608', batchNo: '', shopAmount: 0, optAmount: 0 },
@@ -33,7 +27,7 @@ const blankShopShift = (): DailyCashup['shop'] => ({
 const blankOptShift = (): DailyCashup['opt'] => ({
   income: 0, returns: 0,
   speedpoints: [
-    { terminal: 'Term 247608 (OPT)', batchNo: '', shopAmount: 0, optAmount: 0 },
+    { terminal: 'Term 247608', batchNo: '', shopAmount: 0, optAmount: 0 },
     { terminal: 'Forecourt 2', batchNo: '', shopAmount: 0, optAmount: 0 },
     { terminal: 'V Plus', batchNo: '', shopAmount: 0, optAmount: 0 },
   ],
@@ -41,6 +35,16 @@ const blankOptShift = (): DailyCashup['opt'] => ({
 });
 
 interface Props { selectedDate: string; }
+
+// Header row for two-column sections
+function ColHeader({ left, right }: { left: string; right: string }) {
+  return (
+    <div className="grid grid-cols-2 border-b">
+      <div className="px-3 py-1.5 text-xs font-bold text-white bg-primary/80 border-r">{left}</div>
+      <div className="px-3 py-1.5 text-xs font-bold text-white bg-primary/60">{right}</div>
+    </div>
+  );
+}
 
 export function CashierDailyForm({ selectedDate }: Props) {
   const { getCashupByDate, addCashup, updateCashup } = useCashupStore();
@@ -60,7 +64,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
 
   useEffect(() => {
     if (existing) setForm({ ...existing });
-    else setForm(f => ({ ...f, date: selectedDate, month: selectedDate.slice(0, 7) }));
+    else setForm(f => ({ ...f, date: selectedDate, month: selectedDate.slice(0, 7), shop: blankShopShift(), opt: blankOptShift() }));
   }, [selectedDate, existing?.id]);
 
   const setShop = (patch: Partial<typeof form.shop>) =>
@@ -69,28 +73,37 @@ export function CashierDailyForm({ selectedDate }: Props) {
     setForm(f => ({ ...f, opt: { ...f.opt, ...patch } }));
 
   // ---- CALCULATIONS ----
-  const shopPayoutsExclLotto = form.shop.payouts.reduce((s, p) => s + p.amount, 0);
+  const shopPayoutsTotal = form.shop.payouts.reduce((s, p) => s + p.amount, 0);
   const shopNetSales = form.shop.income - form.shop.returns;
   const shopTotalReceipts = form.shop.receipts.reduce((s, r) => s + r.amount, 0);
-  const shopTotalTakings = shopNetSales - shopPayoutsExclLotto - form.shop.lottoPayouts + shopTotalReceipts;
-
-  const shopSpeedpointTotal = form.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0);
-  const shopAccountTotal = form.shop.accounts.reduce((s, a) => s + a.amount, 0);
-  const shopOtherTotal = form.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0);
-  const shopMopCash = form.shop.cashConnectTotal;
-  const shopActualTakings = shopMopCash + shopSpeedpointTotal + shopAccountTotal + shopOtherTotal + form.shop.returns_mop + form.shop.attendantShortOver;
-  const shopDifference = shopTotalTakings - shopActualTakings;
+  const shopTotalTakings = shopNetSales - shopPayoutsTotal - form.shop.lottoPayouts + shopTotalReceipts;
 
   const optNetSales = form.opt.income - form.opt.returns;
+  // OPT Total Takings = Net Sales only (no payouts/receipts for OPT)
+  const optTotalTakings = optNetSales;
+
+  const combinedTotalTakings = shopTotalTakings + optTotalTakings;
+
+  const shopSpeedpointTotal = form.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0);
   const optSpeedpointTotal = form.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0);
+
+  const shopAccountTotal = form.shop.accounts.reduce((s, a) => s + a.amount, 0);
   const optAccountTotal = form.opt.accounts.reduce((s, a) => s + a.amount, 0);
-  const optActualTakings = optSpeedpointTotal + optAccountTotal;
-  const optDifference = optNetSales - optActualTakings;
+
+  const shopOtherTotal = form.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0);
+
+  // MOP Cash total
+  const shopMopCash = form.shop.cashConnectTotal;
+
+  // Shop balance = Shop Takings - MOP Cash - Shop Speedpoints - Shop Accounts - Other adjustments
+  const shopDifference = shopTotalTakings - shopMopCash - shopSpeedpointTotal - shopAccountTotal - shopOtherTotal - form.shop.returns_mop - form.shop.attendantShortOver;
+  // OPT balance = OPT Takings - OPT Speedpoints - OPT Accounts
+  const optDifference = optTotalTakings - optSpeedpointTotal - optAccountTotal;
 
   const handleSave = () => {
     if (existing) updateCashup(existing.id, form);
     else addCashup(form);
-    toast({ title: 'Cashup saved', description: `Saved cashup for ${format(new Date(selectedDate), 'dd MMM yyyy')}` });
+    toast({ title: 'Cashup saved', description: `Saved for ${format(new Date(selectedDate), 'dd MMM yyyy')}` });
   };
 
   const addPayout = () => setShop({ payouts: [...form.shop.payouts, { id: uuidv4(), vendor: '', amount: 0 }] });
@@ -101,16 +114,15 @@ export function CashierDailyForm({ selectedDate }: Props) {
   const updateReceipt = (id: string, patch: Partial<ReceiptLine>) =>
     setShop({ receipts: form.shop.receipts.map(r => r.id === id ? { ...r, ...patch } : r) });
 
-  const updateSpeedpoint = (idx: number, patch: Partial<SpeedpointEntry>, shift: 'shop' | 'opt') => {
-    if (shift === 'shop') {
-      const sp = [...form.shop.speedpoints];
-      sp[idx] = { ...sp[idx], ...patch };
-      setShop({ speedpoints: sp });
-    } else {
-      const sp = [...form.opt.speedpoints];
-      sp[idx] = { ...sp[idx], ...patch };
-      setOpt({ speedpoints: sp });
-    }
+  const updateShopSpeedpoint = (idx: number, patch: Partial<SpeedpointEntry>) => {
+    const sp = [...form.shop.speedpoints];
+    sp[idx] = { ...sp[idx], ...patch };
+    setShop({ speedpoints: sp });
+  };
+  const updateOptSpeedpoint = (idx: number, patch: Partial<SpeedpointEntry>) => {
+    const sp = [...form.opt.speedpoints];
+    sp[idx] = { ...sp[idx], ...patch };
+    setOpt({ speedpoints: sp });
   };
 
   const addAccount = (shift: 'shop' | 'opt') => {
@@ -131,6 +143,17 @@ export function CashierDailyForm({ selectedDate }: Props) {
   const removeOther = (id: string) => setShop({ otherAdjustments: form.shop.otherAdjustments.filter(o => o.id !== id) });
   const updateOther = (id: string, patch: Partial<OtherAdjustment>) =>
     setShop({ otherAdjustments: form.shop.otherAdjustments.map(o => o.id === id ? { ...o, ...patch } : o) });
+
+  const ShortOverBadge = ({ diff }: { diff: number }) => {
+    const balanced = Math.abs(diff) < 0.01;
+    return (
+      <div className={`flex items-center gap-2 rounded px-3 py-1 text-sm font-bold ${balanced ? 'bg-green-100 text-green-800 border border-green-400' : 'bg-red-100 text-red-800 border border-red-400'}`}>
+        {balanced ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+        <CurrencyDisplay value={diff} className="font-bold" />
+        <span className="text-xs">{balanced ? 'BALANCED' : 'SHORT/OVER'}</span>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-3">
@@ -166,265 +189,298 @@ export function CashierDailyForm({ selectedDate }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* SHOP TILL */}
-        <div>
-          <h2 className="text-base font-bold mb-2 text-primary flex items-center gap-2">
-            🛒 Shop Till
-            <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded">Shift {form.shopShiftNumber}</span>
-          </h2>
+      {/* Shift headers */}
+      <div className="grid grid-cols-2 gap-0 rounded-lg overflow-hidden border">
+        <div className="bg-primary text-primary-foreground px-4 py-2 font-bold text-sm text-center">
+          🛒 SHOP TILL — Shift {form.shopShiftNumber}
+        </div>
+        <div className="bg-primary/80 text-primary-foreground px-4 py-2 font-bold text-sm text-center border-l border-primary-foreground/20">
+          ⛽ OPT — Shift {form.optShiftNumber}
+        </div>
+      </div>
 
-          {/* 1. Income */}
-          <Section title="1. Income" color="blue">
-            <DataRow label="Income (Gross Sales)">
+      {/* ─── SECTION 1: INCOME ─── */}
+      <div className="border rounded-lg overflow-hidden">
+        <div className="bg-blue-600 text-white px-3 py-2 font-semibold text-sm">1. Income</div>
+        <ColHeader left="Shop Till" right="OPT" />
+        <div className="grid grid-cols-2 divide-x">
+          {/* Shop income */}
+          <div>
+            <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
+              <span className="text-muted-foreground">Income (Gross Sales)</span>
               <CurrencyInput value={form.shop.income} onChange={v => setShop({ income: v })} />
-            </DataRow>
-            <DataRow label="Returns">
+            </div>
+            <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
+              <span className="text-muted-foreground">Returns</span>
               <CurrencyInput value={form.shop.returns} onChange={v => setShop({ returns: v })} />
-            </DataRow>
-            <DataRow label="Net Sales" total>
+            </div>
+            <div className="flex items-center justify-between px-3 py-1.5 bg-secondary text-sm font-semibold">
+              <span>Net Sales</span>
               <CurrencyDisplay value={shopNetSales} highlight />
-            </DataRow>
-          </Section>
-
-          {/* 2. Payouts */}
-          <Section title="2. Cash Payouts" color="red">
-            <div className="px-3 py-1.5 text-xs text-muted-foreground grid grid-cols-3 gap-2 font-semibold border-b">
-              <span>Vendor</span><span className="text-right">Amount (Incl.)</span><span></span>
             </div>
-            {form.shop.payouts.map(p => (
-              <div key={p.id} className="flex items-center gap-2 px-3 py-1 border-b last:border-b-0">
-                <select value={p.vendor} onChange={e => updatePayout(p.id, { vendor: e.target.value })}
-                  className="input-cell flex-1 w-auto text-left">
-                  <option value="">Select vendor...</option>
-                  {SUPPLIERS.map(s => <option key={s}>{s}</option>)}
-                </select>
-                <CurrencyInput value={p.amount} onChange={v => updatePayout(p.id, { amount: v })} />
-                <button onClick={() => removePayout(p.id)} className="text-destructive hover:text-destructive/70 p-1">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-            <div className="px-3 py-1.5 flex gap-2">
-              <Button variant="outline" size="sm" onClick={addPayout} className="text-xs h-7">
-                <Plus className="h-3 w-3 mr-1" />Add Payout
-              </Button>
+          </div>
+          {/* OPT income */}
+          <div>
+            <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
+              <span className="text-muted-foreground">Income (Gross Sales)</span>
+              <CurrencyInput value={form.opt.income} onChange={v => setOpt({ income: v })} />
             </div>
-            <DataRow label="Payouts Excl. Lotto" total>
-              <CurrencyDisplay value={shopPayoutsExclLotto} />
-            </DataRow>
-            <DataRow label="Lotto Payouts Only">
-              <CurrencyInput value={form.shop.lottoPayouts} onChange={v => setShop({ lottoPayouts: v })} />
-            </DataRow>
-          </Section>
-
-          {/* 3. Receipts */}
-          <Section title="3. Receipts" color="green">
-            <div className="px-3 py-1.5 text-xs text-muted-foreground grid grid-cols-3 gap-2 font-semibold border-b">
-              <span>Type</span><span>Seq No.</span><span className="text-right">Amount</span>
+            <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
+              <span className="text-muted-foreground">Returns</span>
+              <CurrencyInput value={form.opt.returns} onChange={v => setOpt({ returns: v })} />
             </div>
-            {form.shop.receipts.map(r => (
-              <div key={r.id} className="flex items-center gap-2 px-3 py-1 border-b last:border-b-0">
-                <span className="text-sm text-muted-foreground flex-1">{r.type}</span>
-                <input value={r.seqNo} onChange={e => updateReceipt(r.id, { seqNo: e.target.value })}
-                  className="input-cell w-20" placeholder="Seq#" />
-                <CurrencyInput value={r.amount} onChange={v => updateReceipt(r.id, { amount: v })} />
-              </div>
-            ))}
-            <DataRow label="Total Receipts" total>
-              <CurrencyDisplay value={shopTotalReceipts} highlight />
-            </DataRow>
-          </Section>
-
-          {/* 4. Total Takings */}
-          <Section title="4. Total Takings (1 - 2 + 3)" color="orange">
-            <DataRow label="TOTAL TAKINGS" total>
-              <CurrencyDisplay value={shopTotalTakings} highlight className="text-base" />
-            </DataRow>
-          </Section>
-
-          {/* 5. MOP Cash */}
-          <Section title="5. MOP Cash" color="blue">
-            <DataRow label="Cash Connect Total">
-              <CurrencyInput value={form.shop.cashConnectTotal} onChange={v => setShop({ cashConnectTotal: v })} />
-            </DataRow>
-            <DataRow label="Cash Deposited for Banking">
-              <CurrencyInput value={form.shop.cashDepositedBanking} onChange={v => setShop({ cashDepositedBanking: v })} />
-            </DataRow>
-            <DataRow label="EasyPay">
-              <CurrencyInput value={form.shop.easyPay} onChange={v => setShop({ easyPay: v })} />
-            </DataRow>
-            <DataRow label="Coins">
-              <CurrencyInput value={form.shop.coins} onChange={v => setShop({ coins: v })} />
-            </DataRow>
-          </Section>
-
-          {/* 6. MOP Speedpoints */}
-          <Section title="6. MOP Speedpoints" color="purple">
-            <div className="px-3 py-1.5 text-xs text-muted-foreground grid grid-cols-3 gap-2 font-semibold border-b">
-              <span>Terminal</span><span>Batch No.</span><span className="text-right">Amount</span>
+            <div className="flex items-center justify-between px-3 py-1.5 bg-secondary text-sm font-semibold">
+              <span>Net Sales</span>
+              <CurrencyDisplay value={optNetSales} highlight />
             </div>
-            {form.shop.speedpoints.map((sp, i) => (
-              <div key={sp.terminal} className="flex items-center gap-2 px-3 py-1 border-b last:border-b-0">
-                <span className="text-sm flex-1">{sp.terminal}</span>
-                <input value={sp.batchNo} onChange={e => updateSpeedpoint(i, { batchNo: e.target.value }, 'shop')}
-                  className="input-cell w-20" placeholder="Batch#" />
-                <CurrencyInput value={sp.shopAmount} onChange={v => updateSpeedpoint(i, { shopAmount: v }, 'shop')} />
-              </div>
-            ))}
-            <DataRow label="Total Speedpoints" total>
-              <CurrencyDisplay value={shopSpeedpointTotal} highlight />
-            </DataRow>
-          </Section>
-
-          {/* 7. MOP Account */}
-          <Section title="7. MOP Account (Debtors)" color="blue">
-            {form.shop.accounts.map(a => (
-              <div key={a.id} className="flex items-center gap-2 px-3 py-1 border-b last:border-b-0">
-                <select value={a.name} onChange={e => updateAccount(a.id, { name: e.target.value }, 'shop')}
-                  className="input-cell flex-1 w-auto text-left">
-                  <option value="">Select account...</option>
-                  {ACCOUNTS.map(ac => <option key={ac}>{ac}</option>)}
-                </select>
-                <CurrencyInput value={a.amount} onChange={v => updateAccount(a.id, { amount: v }, 'shop')} />
-                <button onClick={() => removeAccount(a.id, 'shop')} className="text-destructive p-1">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-            <div className="px-3 py-1.5">
-              <Button variant="outline" size="sm" onClick={() => addAccount('shop')} className="text-xs h-7">
-                <Plus className="h-3 w-3 mr-1" />Add Account
-              </Button>
-            </div>
-            <DataRow label="Total Accounts" total><CurrencyDisplay value={shopAccountTotal} /></DataRow>
-          </Section>
-
-          {/* 8. Other */}
-          <Section title="8. Other Adjustments" color="default">
-            {form.shop.otherAdjustments.map(o => (
-              <div key={o.id} className="flex items-center gap-2 px-3 py-1 border-b last:border-b-0">
-                <input value={o.explanation} onChange={e => updateOther(o.id, { explanation: e.target.value })}
-                  className="input-cell flex-1 w-auto text-left" placeholder="Explanation" />
-                <CurrencyInput value={o.amount} onChange={v => updateOther(o.id, { amount: v })} />
-                <button onClick={() => removeOther(o.id)} className="text-destructive p-1">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-            <DataRow label="Returns (refund next day)">
-              <CurrencyInput value={form.shop.returns_mop} onChange={v => setShop({ returns_mop: v })} />
-            </DataRow>
-            <DataRow label="Attendant Short/(Over)">
-              <CurrencyInput value={form.shop.attendantShortOver} onChange={v => setShop({ attendantShortOver: v })} allowNegative />
-            </DataRow>
-            <div className="px-3 py-1.5">
-              <Button variant="outline" size="sm" onClick={addOther} className="text-xs h-7">
-                <Plus className="h-3 w-3 mr-1" />Add Adjustment
-              </Button>
-            </div>
-          </Section>
-
-          {/* Balance */}
-          <div className={`rounded-lg p-3 border-2 ${Math.abs(shopDifference) < 0.01 ? 'border-green-500 bg-green-50' : 'border-destructive bg-destructive/5'}`}>
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-sm">Shop Till Balance (Short/Over)</span>
-              <div className="flex items-center gap-2">
-                <CurrencyDisplay value={shopDifference} className="text-base font-bold" />
-                {Math.abs(shopDifference) < 0.01 && <CheckCircle className="h-4 w-4 text-green-600" />}
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">= Total Takings − MOP Cash − Speedpoints − Accounts − Other</p>
           </div>
         </div>
+      </div>
 
-        {/* OPT */}
-        <div>
-          <h2 className="text-base font-bold mb-2 text-primary flex items-center gap-2">
-            ⛽ OPT
-            <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded">Shift {form.optShiftNumber}</span>
-          </h2>
+      {/* ─── SECTION 2: PAYOUTS (Shop only) ─── */}
+      <div className="border rounded-lg overflow-hidden">
+        <div className="bg-red-600 text-white px-3 py-2 font-semibold text-sm">2. Cash Payouts — Shop Till Only</div>
+        <div className="px-3 py-1 text-xs text-muted-foreground grid grid-cols-3 gap-2 font-semibold border-b bg-muted/30">
+          <span>Vendor</span><span className="text-right col-span-1">Amount (Incl.)</span><span></span>
+        </div>
+        {form.shop.payouts.map(p => (
+          <div key={p.id} className="flex items-center gap-2 px-3 py-1 border-b">
+            <select value={p.vendor} onChange={e => updatePayout(p.id, { vendor: e.target.value })}
+              className="input-cell flex-1 text-left text-sm">
+              <option value="">Select vendor...</option>
+              {SUPPLIERS.map(s => <option key={s}>{s}</option>)}
+            </select>
+            <CurrencyInput value={p.amount} onChange={v => updatePayout(p.id, { amount: v })} />
+            <button onClick={() => removePayout(p.id)} className="text-destructive hover:text-destructive/70 p-1">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+        <div className="px-3 py-1.5 flex items-center justify-between border-b">
+          <Button variant="outline" size="sm" onClick={addPayout} className="text-xs h-7">
+            <Plus className="h-3 w-3 mr-1" />Add Payout
+          </Button>
+          <div className="flex gap-4 text-sm font-semibold pr-8">
+            <span className="text-muted-foreground">Payouts (excl. Lotto):</span>
+            <CurrencyDisplay value={shopPayoutsTotal} />
+          </div>
+        </div>
+        <div className="flex items-center justify-between px-3 py-1.5 text-sm">
+          <span className="text-muted-foreground">Lotto Payouts Only</span>
+          <CurrencyInput value={form.shop.lottoPayouts} onChange={v => setShop({ lottoPayouts: v })} />
+        </div>
+      </div>
 
-          <Section title="1. Income" color="blue">
-            <DataRow label="Income (Gross Sales)">
-              <CurrencyInput value={form.opt.income} onChange={v => setOpt({ income: v })} />
-            </DataRow>
-            <DataRow label="Returns">
-              <CurrencyInput value={form.opt.returns} onChange={v => setOpt({ returns: v })} />
-            </DataRow>
-            <DataRow label="Net Sales" total>
-              <CurrencyDisplay value={optNetSales} highlight />
-            </DataRow>
-          </Section>
-
-          <Section title="6. MOP Speedpoints" color="purple">
-            <div className="px-3 py-1.5 text-xs text-muted-foreground grid grid-cols-3 gap-2 font-semibold border-b">
-              <span>Terminal</span><span>Batch No.</span><span className="text-right">Amount</span>
+      {/* ─── SECTION 3: RECEIPTS (Shop only) ─── */}
+      <div className="border rounded-lg overflow-hidden">
+        <div className="bg-green-700 text-white px-3 py-2 font-semibold text-sm">3. Receipts — Shop Till Only</div>
+        <div className="px-3 py-1 text-xs text-muted-foreground grid grid-cols-12 gap-2 font-semibold border-b bg-muted/30">
+          <span className="col-span-7">Type</span><span className="col-span-2">Seq No.</span><span className="col-span-3 text-right">Amount</span>
+        </div>
+        {form.shop.receipts.map(r => (
+          <div key={r.id} className="grid grid-cols-12 items-center gap-2 px-3 py-1 border-b last:border-b-0">
+            <span className="text-sm text-muted-foreground col-span-7">{r.type}</span>
+            <input value={r.seqNo} onChange={e => updateReceipt(r.id, { seqNo: e.target.value })}
+              className="input-cell col-span-2" placeholder="Seq#" />
+            <div className="col-span-3 flex justify-end">
+              <CurrencyInput value={r.amount} onChange={v => updateReceipt(r.id, { amount: v })} />
             </div>
-            {form.opt.speedpoints.map((sp, i) => (
-              <div key={sp.terminal} className="flex items-center gap-2 px-3 py-1 border-b last:border-b-0">
-                <span className="text-sm flex-1">{sp.terminal}</span>
-                <input value={sp.batchNo} onChange={e => updateSpeedpoint(i, { batchNo: e.target.value }, 'opt')}
-                  className="input-cell w-20" placeholder="Batch#" />
-                <CurrencyInput value={sp.optAmount} onChange={v => updateSpeedpoint(i, { optAmount: v }, 'opt')} />
-              </div>
-            ))}
-            <DataRow label="Total Speedpoints" total>
-              <CurrencyDisplay value={optSpeedpointTotal} highlight />
-            </DataRow>
-          </Section>
+          </div>
+        ))}
+        <div className="flex items-center justify-between px-3 py-1.5 bg-secondary font-semibold text-sm">
+          <span>Total Receipts</span>
+          <CurrencyDisplay value={shopTotalReceipts} highlight />
+        </div>
+      </div>
 
-          <Section title="7. MOP Account (Debtors)" color="blue">
-            {form.opt.accounts.map(a => (
-              <div key={a.id} className="flex items-center gap-2 px-3 py-1 border-b last:border-b-0">
-                <select value={a.name} onChange={e => updateAccount(a.id, { name: e.target.value }, 'opt')}
-                  className="input-cell flex-1 w-auto text-left">
+      {/* ─── SECTION 4: TOTAL TAKINGS (Both shifts) ─── */}
+      <div className="border-2 border-orange-500 rounded-lg overflow-hidden">
+        <div className="bg-orange-600 text-white px-3 py-2 font-semibold text-sm">4. Total Takings (Section 1 − 2 + 3)</div>
+        <ColHeader left="Shop Till" right="OPT" />
+        <div className="grid grid-cols-2 divide-x">
+          <div className="flex items-center justify-between px-3 py-2 font-bold text-sm">
+            <span>Shop Takings</span>
+            <CurrencyDisplay value={shopTotalTakings} highlight className="text-base" />
+          </div>
+          <div className="flex items-center justify-between px-3 py-2 font-bold text-sm">
+            <span>OPT Takings</span>
+            <CurrencyDisplay value={optTotalTakings} highlight className="text-base" />
+          </div>
+        </div>
+        <div className="flex items-center justify-between px-3 py-2 bg-orange-50 border-t font-bold text-sm">
+          <span>COMBINED TOTAL TAKINGS</span>
+          <CurrencyDisplay value={combinedTotalTakings} highlight className="text-base text-orange-700" />
+        </div>
+      </div>
+
+      {/* ─── SECTION 5: MOP CASH (Shop only) ─── */}
+      <div className="border rounded-lg overflow-hidden">
+        <div className="bg-blue-600 text-white px-3 py-2 font-semibold text-sm">5. MOP Cash — Shop Till Only</div>
+        <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
+          <span className="text-muted-foreground">Cash Connect Total</span>
+          <CurrencyInput value={form.shop.cashConnectTotal} onChange={v => setShop({ cashConnectTotal: v })} />
+        </div>
+        <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
+          <span className="text-muted-foreground">Cash Deposited for Banking</span>
+          <CurrencyInput value={form.shop.cashDepositedBanking} onChange={v => setShop({ cashDepositedBanking: v })} />
+        </div>
+        <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
+          <span className="text-muted-foreground">EasyPay</span>
+          <CurrencyInput value={form.shop.easyPay} onChange={v => setShop({ easyPay: v })} />
+        </div>
+        <div className="flex items-center justify-between px-3 py-1.5 text-sm">
+          <span className="text-muted-foreground">Coins</span>
+          <CurrencyInput value={form.shop.coins} onChange={v => setShop({ coins: v })} />
+        </div>
+      </div>
+
+      {/* ─── SECTION 6: MOP SPEEDPOINTS (Both shifts, side by side) ─── */}
+      <div className="border rounded-lg overflow-hidden">
+        <div className="bg-purple-700 text-white px-3 py-2 font-semibold text-sm">6. MOP Speedpoints</div>
+        <div className="grid grid-cols-2 border-b divide-x">
+          <div className="px-3 py-1 grid grid-cols-8 gap-1 text-xs font-semibold text-muted-foreground bg-muted/30">
+            <span className="col-span-4">Terminal (Shop)</span><span className="col-span-2">Batch#</span><span className="col-span-2 text-right">Amount</span>
+          </div>
+          <div className="px-3 py-1 grid grid-cols-8 gap-1 text-xs font-semibold text-muted-foreground bg-muted/30">
+            <span className="col-span-4">Terminal (OPT)</span><span className="col-span-2">Batch#</span><span className="col-span-2 text-right">Amount</span>
+          </div>
+        </div>
+        {/* Render rows for both — zip them together */}
+        {Array.from({ length: Math.max(form.shop.speedpoints.length, form.opt.speedpoints.length) }).map((_, i) => {
+          const s = form.shop.speedpoints[i];
+          const o = form.opt.speedpoints[i];
+          return (
+            <div key={i} className="grid grid-cols-2 divide-x border-b last:border-b-0">
+              {s ? (
+                <div className="px-3 py-1 grid grid-cols-8 gap-1 items-center">
+                  <span className="text-sm col-span-4">{s.terminal}</span>
+                  <input value={s.batchNo} onChange={e => updateShopSpeedpoint(i, { batchNo: e.target.value })}
+                    className="input-cell col-span-2 text-xs py-0.5" placeholder="Batch#" />
+                  <div className="col-span-2">
+                    <CurrencyInput value={s.shopAmount} onChange={v => updateShopSpeedpoint(i, { shopAmount: v })} className="w-full" />
+                  </div>
+                </div>
+              ) : <div />}
+              {o ? (
+                <div className="px-3 py-1 grid grid-cols-8 gap-1 items-center">
+                  <span className="text-sm col-span-4">{o.terminal}</span>
+                  <input value={o.batchNo} onChange={e => updateOptSpeedpoint(i, { batchNo: e.target.value })}
+                    className="input-cell col-span-2 text-xs py-0.5" placeholder="Batch#" />
+                  <div className="col-span-2">
+                    <CurrencyInput value={o.optAmount} onChange={v => updateOptSpeedpoint(i, { optAmount: v })} className="w-full" />
+                  </div>
+                </div>
+              ) : <div />}
+            </div>
+          );
+        })}
+        <div className="grid grid-cols-2 divide-x bg-secondary font-semibold text-sm">
+          <div className="flex items-center justify-between px-3 py-1.5">
+            <span>Shop Speedpoints Total</span>
+            <CurrencyDisplay value={shopSpeedpointTotal} highlight />
+          </div>
+          <div className="flex items-center justify-between px-3 py-1.5">
+            <span>OPT Speedpoints Total</span>
+            <CurrencyDisplay value={optSpeedpointTotal} highlight />
+          </div>
+        </div>
+      </div>
+
+      {/* ─── SECTION 7: MOP ACCOUNT (Both shifts, side by side) ─── */}
+      <div className="border rounded-lg overflow-hidden">
+        <div className="bg-blue-600 text-white px-3 py-2 font-semibold text-sm">7. MOP Account (Debtors)</div>
+        <ColHeader left="Shop Till" right="OPT" />
+        <div className="grid grid-cols-2 divide-x">
+          {/* Shop accounts */}
+          <div>
+            {form.shop.accounts.map(a => (
+              <div key={a.id} className="flex items-center gap-1 px-2 py-1 border-b">
+                <select value={a.name} onChange={e => updateAccount(a.id, { name: e.target.value }, 'shop')}
+                  className="input-cell flex-1 text-left text-xs">
                   <option value="">Select account...</option>
                   {ACCOUNTS.map(ac => <option key={ac}>{ac}</option>)}
                 </select>
-                <CurrencyInput value={a.amount} onChange={v => updateAccount(a.id, { amount: v }, 'opt')} />
-                <button onClick={() => removeAccount(a.id, 'opt')} className="text-destructive p-1">
+                <CurrencyInput value={a.amount} onChange={v => updateAccount(a.id, { amount: v }, 'shop')} className="w-24" />
+                <button onClick={() => removeAccount(a.id, 'shop')} className="text-destructive p-0.5">
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
             ))}
-            <div className="px-3 py-1.5">
-              <Button variant="outline" size="sm" onClick={() => addAccount('opt')} className="text-xs h-7">
-                <Plus className="h-3 w-3 mr-1" />Add Account
+            <div className="px-2 py-1.5 flex items-center justify-between border-b">
+              <Button variant="outline" size="sm" onClick={() => addAccount('shop')} className="text-xs h-7">
+                <Plus className="h-3 w-3 mr-1" />Add
               </Button>
-            </div>
-            <DataRow label="Total Accounts" total><CurrencyDisplay value={optAccountTotal} /></DataRow>
-          </Section>
-
-          {/* OPT Balance */}
-          <div className={`rounded-lg p-3 border-2 ${Math.abs(optDifference) < 0.01 ? 'border-green-500 bg-green-50' : 'border-destructive bg-destructive/5'}`}>
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-sm">OPT Balance (Short/Over)</span>
-              <div className="flex items-center gap-2">
-                <CurrencyDisplay value={optDifference} className="text-base font-bold" />
-                {Math.abs(optDifference) < 0.01 && <CheckCircle className="h-4 w-4 text-green-600" />}
-              </div>
+              <span className="text-xs text-muted-foreground font-semibold pr-1">Total: <CurrencyDisplay value={shopAccountTotal} /></span>
             </div>
           </div>
-
-          {/* Combined totals */}
-          <div className="mt-4 bg-card border rounded-lg p-3">
-            <h3 className="font-bold text-sm mb-2">Combined Daily Totals</h3>
-            <div className="grid grid-cols-3 text-sm gap-2">
-              <div className="text-center p-2 bg-muted rounded">
-                <div className="text-xs text-muted-foreground">Net Sales</div>
-                <CurrencyDisplay value={shopNetSales + optNetSales} highlight />
+          {/* OPT accounts */}
+          <div>
+            {form.opt.accounts.map(a => (
+              <div key={a.id} className="flex items-center gap-1 px-2 py-1 border-b">
+                <select value={a.name} onChange={e => updateAccount(a.id, { name: e.target.value }, 'opt')}
+                  className="input-cell flex-1 text-left text-xs">
+                  <option value="">Select account...</option>
+                  {ACCOUNTS.map(ac => <option key={ac}>{ac}</option>)}
+                </select>
+                <CurrencyInput value={a.amount} onChange={v => updateAccount(a.id, { amount: v }, 'opt')} className="w-24" />
+                <button onClick={() => removeAccount(a.id, 'opt')} className="text-destructive p-0.5">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
-              <div className="text-center p-2 bg-muted rounded">
-                <div className="text-xs text-muted-foreground">Total Speedpoints</div>
-                <CurrencyDisplay value={shopSpeedpointTotal + optSpeedpointTotal} highlight />
-              </div>
-              <div className="text-center p-2 bg-muted rounded">
-                <div className="text-xs text-muted-foreground">Total Takings</div>
-                <CurrencyDisplay value={shopTotalTakings + optNetSales} highlight />
-              </div>
+            ))}
+            <div className="px-2 py-1.5 flex items-center justify-between border-b">
+              <Button variant="outline" size="sm" onClick={() => addAccount('opt')} className="text-xs h-7">
+                <Plus className="h-3 w-3 mr-1" />Add
+              </Button>
+              <span className="text-xs text-muted-foreground font-semibold pr-1">Total: <CurrencyDisplay value={optAccountTotal} /></span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ─── SECTION 8: OTHER ADJUSTMENTS (Shop only) ─── */}
+      <div className="border rounded-lg overflow-hidden">
+        <div className="bg-primary text-primary-foreground px-3 py-2 font-semibold text-sm">8. Other Adjustments — Shop Till Only</div>
+        {form.shop.otherAdjustments.map(o => (
+          <div key={o.id} className="flex items-center gap-2 px-3 py-1 border-b">
+            <input value={o.explanation} onChange={e => updateOther(o.id, { explanation: e.target.value })}
+              className="input-cell flex-1 text-left" placeholder="Explanation" />
+            <CurrencyInput value={o.amount} onChange={v => updateOther(o.id, { amount: v })} allowNegative />
+            <button onClick={() => removeOther(o.id)} className="text-destructive p-1">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+        <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
+          <span className="text-muted-foreground">Returns (refund next day)</span>
+          <CurrencyInput value={form.shop.returns_mop} onChange={v => setShop({ returns_mop: v })} allowNegative />
+        </div>
+        <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
+          <span className="text-muted-foreground">Attendant Short/(Over)</span>
+          <CurrencyInput value={form.shop.attendantShortOver} onChange={v => setShop({ attendantShortOver: v })} allowNegative />
+        </div>
+        <div className="px-3 py-1.5">
+          <Button variant="outline" size="sm" onClick={addOther} className="text-xs h-7">
+            <Plus className="h-3 w-3 mr-1" />Add Adjustment
+          </Button>
+        </div>
+      </div>
+
+      {/* ─── CASHIER BALANCE (Short/Over) ─── */}
+      <div className="border-2 rounded-lg overflow-hidden">
+        <div className="bg-muted px-3 py-2 font-semibold text-sm border-b">Cashier Balance — Short / (Over)</div>
+        <div className="grid grid-cols-2 divide-x">
+          <div className="px-4 py-3 flex items-center justify-between">
+            <span className="text-sm font-semibold">Shop Till</span>
+            <ShortOverBadge diff={shopDifference} />
+          </div>
+          <div className="px-4 py-3 flex items-center justify-between">
+            <span className="text-sm font-semibold">OPT</span>
+            <ShortOverBadge diff={optDifference} />
+          </div>
+        </div>
+        <div className="px-4 py-2 text-xs text-muted-foreground bg-muted/30 border-t">
+          Shop: Total Takings − MOP Cash − Speedpoints − Accounts − Other &nbsp;|&nbsp; OPT: Net Sales − Speedpoints − Accounts
         </div>
       </div>
     </div>

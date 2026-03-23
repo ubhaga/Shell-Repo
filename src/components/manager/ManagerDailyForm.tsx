@@ -5,9 +5,9 @@ import { SUPPLIERS, CATEGORIES, MANAGER_NAMES } from '@/data/masterData';
 import type { ManagerDailyEntry, InvoiceLine } from '@/types/cashup';
 import { Section, DataRow, CurrencyInput, CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Save, AlertCircle, CheckCircle, Lock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 
 const blankEntry = (date: string): Omit<ManagerDailyEntry, 'id'> => ({
   date, cashupId: '', enteredBy: '', explanations: '',
@@ -15,7 +15,7 @@ const blankEntry = (date: string): Omit<ManagerDailyEntry, 'id'> => ({
   coinsOpeningBalance: 0, easypayOpeningBalance: 0, cashConnectOpeningBalance: 0,
   dailyCoins: 0, cashDepositedEasypay: 0, cashDepositedCashConnect: 0,
   ccBagClosureCoins: 0, ccBagClosureEasypay: 0, ccBagClosureCashConnect: 0,
-  transferFromCoin: 0,
+  transferFromCoins: 0,
   branchDayEndTotal: 0, branchDayEndVat: 0,
   bankCharges: 0, banking: 0, locked: false,
 });
@@ -23,16 +23,39 @@ const blankEntry = (date: string): Omit<ManagerDailyEntry, 'id'> => ({
 interface Props { selectedDate: string; }
 
 export function ManagerDailyForm({ selectedDate }: Props) {
-  const { getManagerEntryByDate, addManagerEntry, updateManagerEntry, getCashupByDate } = useCashupStore();
+  const { getManagerEntryByDate, addManagerEntry, updateManagerEntry, getCashupByDate, managerEntries } = useCashupStore();
   const existing = getManagerEntryByDate(selectedDate);
   const cashup = getCashupByDate(selectedDate);
+
+  // Get previous day's closing balances (auto-populate opening)
+  const prevDate = format(subDays(new Date(selectedDate), 1), 'yyyy-MM-dd');
+  const prevEntry = getManagerEntryByDate(prevDate);
+  const isFirstJan2025 = selectedDate === '2025-01-01';
 
   const [form, setForm] = useState<Omit<ManagerDailyEntry, 'id'>>(() => blankEntry(selectedDate));
 
   useEffect(() => {
-    if (existing) setForm({ ...existing });
-    else setForm(blankEntry(selectedDate));
-  }, [selectedDate, existing?.id]);
+    if (existing) {
+      setForm({ ...existing });
+    } else {
+      const base = blankEntry(selectedDate);
+      // Auto-populate opening balances from previous day closing (unless it's the first day)
+      if (prevEntry && !isFirstJan2025) {
+        const prevCoinsClosing = prevEntry.coinsOpeningBalance + prevEntry.dailyCoins
+          - Math.abs(prevEntry.ccBagClosureCoins)
+          + prevEntry.transferFromCoins; // transfer OUT of coins
+        const prevEasypayClosing = prevEntry.easypayOpeningBalance + prevEntry.cashDepositedEasypay
+          - Math.abs(prevEntry.ccBagClosureEasypay);
+        const prevCCClosing = prevEntry.cashConnectOpeningBalance + prevEntry.cashDepositedCashConnect
+          - Math.abs(prevEntry.ccBagClosureCashConnect)
+          - prevEntry.transferFromCoins; // transfer INTO cash connect
+        base.coinsOpeningBalance = prevCoinsClosing;
+        base.easypayOpeningBalance = prevEasypayClosing;
+        base.cashConnectOpeningBalance = prevCCClosing;
+      }
+      setForm(base);
+    }
+  }, [selectedDate, existing?.id, prevEntry?.id]);
 
   // Auto-populate payout invoices from cashup
   useEffect(() => {
@@ -64,7 +87,6 @@ export function ManagerDailyForm({ selectedDate }: Props) {
     const update = (lines: InvoiceLine[]) => lines.map(l => {
       if (l.id !== id) return l;
       const updated = { ...l, ...patch };
-      // Auto-calc VAT when inclusive changes
       if ('inclusive' in patch && !('vat' in patch)) {
         updated.vat = parseFloat((updated.inclusive * 15 / 115).toFixed(2));
       }
@@ -86,9 +108,20 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const vatMatch = Math.abs(totalAllVat - form.branchDayEndVat) < 1.00;
 
   // Cash reconciliation
-  const coinsClosing = form.coinsOpeningBalance + form.dailyCoins - form.ccBagClosureCoins;
-  const easypayClosing = form.easypayOpeningBalance + form.cashDepositedEasypay - form.ccBagClosureEasypay;
-  const ccClosing = form.cashConnectOpeningBalance + form.cashDepositedCashConnect - form.ccBagClosureCashConnect;
+  // Opening = previous day closing (read-only except 1 Jan)
+  // Row 2: CC Bag Closure — all values negative (user enters positive, we store/display as negative)
+  // Row 3: Transfer from Coins — coins NEGATIVE (cash leaves coins), cash connect POSITIVE (cash arrives in CC)
+  // Closing = Opening + Daily + CCBagClosure + Transfer
+  const coinsClosing = form.coinsOpeningBalance + form.dailyCoins
+    - Math.abs(form.ccBagClosureCoins)
+    - Math.abs(form.transferFromCoins); // coins go out (negative)
+  const easypayClosing = form.easypayOpeningBalance + form.cashDepositedEasypay
+    - Math.abs(form.ccBagClosureEasypay);
+  const ccClosing = form.cashConnectOpeningBalance + form.cashDepositedCashConnect
+    - Math.abs(form.ccBagClosureCashConnect)
+    + Math.abs(form.transferFromCoins); // cash arrives from coins (positive)
+
+  const openingIsReadOnly = !isFirstJan2025 && !!prevEntry;
 
   const handleSave = () => {
     if (existing) updateManagerEntry(existing.id, form);
@@ -230,17 +263,41 @@ export function ManagerDailyForm({ selectedDate }: Props) {
         <div>
           {/* Cash Reconciliation */}
           <Section title="Cash Reconciliation" color="orange">
+            {/* Column headers */}
             <div className="px-3 py-1 border-b grid grid-cols-4 gap-2 text-xs font-semibold text-muted-foreground bg-muted/30">
-              <span></span><span className="text-right">Coins</span><span className="text-right">EasyPay</span><span className="text-right">Cash Connect</span>
+              <span></span>
+              <span className="text-right">Coins</span>
+              <span className="text-right">EasyPay</span>
+              <span className="text-right">Cash Connect</span>
             </div>
+
+            {/* Row 1: Opening Balance (read-only if prev day exists, except 1 Jan) */}
             <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm">
-              <span className="text-muted-foreground">Opening Balance</span>
-              <CurrencyInput value={form.coinsOpeningBalance} onChange={v => setForm(f => ({ ...f, coinsOpeningBalance: v }))} />
-              <CurrencyInput value={form.easypayOpeningBalance} onChange={v => setForm(f => ({ ...f, easypayOpeningBalance: v }))} />
-              <CurrencyInput value={form.cashConnectOpeningBalance} onChange={v => setForm(f => ({ ...f, cashConnectOpeningBalance: v }))} />
+              <div className="flex items-center gap-1">
+                <span className="text-muted-foreground text-xs">Opening Balance</span>
+                {openingIsReadOnly && <Lock className="h-3 w-3 text-muted-foreground" />}
+              </div>
+              {openingIsReadOnly ? (
+                <>
+                  <div className="text-right"><CurrencyDisplay value={form.coinsOpeningBalance} /></div>
+                  <div className="text-right"><CurrencyDisplay value={form.easypayOpeningBalance} /></div>
+                  <div className="text-right"><CurrencyDisplay value={form.cashConnectOpeningBalance} /></div>
+                </>
+              ) : (
+                <>
+                  <CurrencyInput value={form.coinsOpeningBalance} onChange={v => setForm(f => ({ ...f, coinsOpeningBalance: v }))} />
+                  <CurrencyInput value={form.easypayOpeningBalance} onChange={v => setForm(f => ({ ...f, easypayOpeningBalance: v }))} />
+                  <CurrencyInput value={form.cashConnectOpeningBalance} onChange={v => setForm(f => ({ ...f, cashConnectOpeningBalance: v }))} />
+                </>
+              )}
             </div>
-            <div className="px-3 py-1 border-b grid grid-cols-4 gap-2 text-xs font-semibold text-muted-foreground bg-muted/10 pt-2">
-              <span>Daily Cashup</span><span className="text-right">Daily Coins</span><span className="text-right">Cash for Easypay</span><span className="text-right">Cash for CC</span>
+
+            {/* Daily Cashup sub-header */}
+            <div className="px-3 py-1 border-b grid grid-cols-4 gap-2 text-xs font-semibold text-muted-foreground bg-muted/10">
+              <span>Daily Cashup</span>
+              <span className="text-right">Daily Coins</span>
+              <span className="text-right">Cash for Easypay</span>
+              <span className="text-right">Cash for CC</span>
             </div>
             <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm">
               <span className="text-muted-foreground text-xs">Deposited</span>
@@ -248,12 +305,58 @@ export function ManagerDailyForm({ selectedDate }: Props) {
               <CurrencyInput value={form.cashDepositedEasypay} onChange={v => setForm(f => ({ ...f, cashDepositedEasypay: v }))} />
               <CurrencyInput value={form.cashDepositedCashConnect} onChange={v => setForm(f => ({ ...f, cashDepositedCashConnect: v }))} />
             </div>
-            <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm">
-              <span className="text-muted-foreground text-xs">CC Bag Closure (-ve)</span>
-              <CurrencyInput value={form.ccBagClosureCoins} onChange={v => setForm(f => ({ ...f, ccBagClosureCoins: v }))} />
-              <CurrencyInput value={form.ccBagClosureEasypay} onChange={v => setForm(f => ({ ...f, ccBagClosureEasypay: v }))} />
-              <CurrencyInput value={form.ccBagClosureCashConnect} onChange={v => setForm(f => ({ ...f, ccBagClosureCashConnect: v }))} />
+
+            {/* Row 2: CC Bag Closure — all negative */}
+            <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm bg-red-50/50">
+              <span className="text-muted-foreground text-xs">CC Bag Closure <span className="text-destructive font-bold">(-ve)</span></span>
+              <div>
+                <CurrencyInput
+                  value={form.ccBagClosureCoins}
+                  onChange={v => setForm(f => ({ ...f, ccBagClosureCoins: Math.abs(v) }))}
+                  placeholder="0.00"
+                />
+                <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureCoins)} /></div>
+              </div>
+              <div>
+                <CurrencyInput
+                  value={form.ccBagClosureEasypay}
+                  onChange={v => setForm(f => ({ ...f, ccBagClosureEasypay: Math.abs(v) }))}
+                  placeholder="0.00"
+                />
+                <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureEasypay)} /></div>
+              </div>
+              <div>
+                <CurrencyInput
+                  value={form.ccBagClosureCashConnect}
+                  onChange={v => setForm(f => ({ ...f, ccBagClosureCashConnect: Math.abs(v) }))}
+                  placeholder="0.00"
+                />
+                <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureCashConnect)} /></div>
+              </div>
             </div>
+
+            {/* Row 3: Transfer from Coins */}
+            <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm bg-blue-50/30">
+              <span className="text-muted-foreground text-xs">Transfer from Coins</span>
+              {/* Coins column: editable, must be negative */}
+              <div>
+                <CurrencyInput
+                  value={form.transferFromCoins}
+                  onChange={v => setForm(f => ({ ...f, transferFromCoins: Math.abs(v) }))}
+                  placeholder="0.00"
+                />
+                <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.transferFromCoins)} /></div>
+              </div>
+              {/* EasyPay column: not applicable */}
+              <div className="text-center text-xs text-muted-foreground">—</div>
+              {/* Cash Connect column: same amount but positive (auto) */}
+              <div className="text-right">
+                <CurrencyDisplay value={Math.abs(form.transferFromCoins)} className="font-semibold text-green-700" />
+                <div className="text-xs text-muted-foreground">auto (+ve)</div>
+              </div>
+            </div>
+
+            {/* Closing Balance */}
             <div className="px-3 py-1.5 grid grid-cols-4 gap-2 items-center text-sm bg-secondary font-semibold rounded-b-md">
               <span>Closing Balance</span>
               <CurrencyDisplay value={coinsClosing} highlight />
