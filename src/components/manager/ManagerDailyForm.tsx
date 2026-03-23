@@ -111,16 +111,27 @@ export function ManagerDailyForm({ selectedDate }: Props) {
       setForm({ ...existing });
     } else {
       const base = blankEntry(selectedDate);
-      // Auto-populate opening balances from previous day closing (unless it's the first day)
-      if (prevEntry && !isFirstJan2025) {
+
+      if (isFirstJan2025) {
+        // Seed Jan 1 opening balances from original spreadsheet
+        base.coinsOpeningBalance = 4483.15;
+        base.easypayOpeningBalance = 3500;
+        base.cashConnectOpeningBalance = 2000;
+        // CC Bag Closure (EasyPay + CashConnect only — Coins column is blank)
+        base.ccBagClosureEasypay = 5500;
+        base.ccBagClosureCashConnect = 10000;
+        // Transfer from Coins
+        base.transferFromCoins = 2000;
+      } else if (prevEntry) {
+        // Auto-populate opening balances from previous day closing
         const prevCoinsClosing = prevEntry.coinsOpeningBalance + prevEntry.dailyCoins
           - Math.abs(prevEntry.ccBagClosureCoins)
-          + prevEntry.transferFromCoins; // transfer OUT of coins
+          + prevEntry.transferFromCoins;
         const prevEasypayClosing = prevEntry.easypayOpeningBalance + prevEntry.cashDepositedEasypay
           - Math.abs(prevEntry.ccBagClosureEasypay);
         const prevCCClosing = prevEntry.cashConnectOpeningBalance + prevEntry.cashDepositedCashConnect
           - Math.abs(prevEntry.ccBagClosureCashConnect)
-          - prevEntry.transferFromCoins; // transfer INTO cash connect
+          - prevEntry.transferFromCoins;
         base.coinsOpeningBalance = prevCoinsClosing;
         base.easypayOpeningBalance = prevEasypayClosing;
         base.cashConnectOpeningBalance = prevCCClosing;
@@ -128,6 +139,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
       setForm(base);
     }
   }, [selectedDate, existing?.id, prevEntry?.id]);
+
 
   // Auto-populate payout invoices from cashup
   useEffect(() => {
