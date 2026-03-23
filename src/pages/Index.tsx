@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { useCashupStore } from '@/store/cashupStore';
 import { CashierDailyForm } from '@/components/cashier/CashierDailyForm';
 import { ManagerDailyForm } from '@/components/manager/ManagerDailyForm';
 import { ManagerMonthlyForm } from '@/components/manager/ManagerMonthlyForm';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { Reports } from '@/components/reports/Reports';
-import { Button } from '@/components/ui/button';
+import { MasterDataSettings } from '@/components/settings/MasterDataSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings } from 'lucide-react';
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -41,7 +40,7 @@ export default function Index() {
 
       <div className="container mx-auto px-4 py-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-5 w-full mb-4">
+          <TabsList className="grid grid-cols-6 w-full mb-4">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5 text-xs">
               <LayoutDashboard className="h-3.5 w-3.5" />
               Dashboard
@@ -62,6 +61,10 @@ export default function Index() {
               <BarChart3 className="h-3.5 w-3.5" />
               Reports
             </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-1.5 text-xs">
+              <Settings className="h-3.5 w-3.5" />
+              Settings
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard">
@@ -78,6 +81,9 @@ export default function Index() {
           </TabsContent>
           <TabsContent value="reports">
             <Reports />
+          </TabsContent>
+          <TabsContent value="settings">
+            <MasterDataSettings />
           </TabsContent>
         </Tabs>
       </div>
