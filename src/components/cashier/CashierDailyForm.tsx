@@ -6,7 +6,7 @@ import { useMasterDataStore } from '@/store/masterDataStore';
 import type { DailyCashup, PayoutLine, ReceiptLine, SpeedpointEntry, AccountEntry, OtherAdjustment } from '@/types/cashup';
 import { Section, DataRow, CurrencyInput, CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Save, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Save, CheckCircle, AlertCircle, Lock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
