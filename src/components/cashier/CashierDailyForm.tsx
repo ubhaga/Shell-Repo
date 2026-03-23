@@ -64,6 +64,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
     cashierName: '',
     shop: blankShopShift(),
     opt: blankOptShift(),
+    notes: '',
     locked: false,
   }));
 
@@ -489,6 +490,21 @@ export function CashierDailyForm({ selectedDate }: Props) {
         </div>
         <div className="px-4 py-2 text-xs text-muted-foreground bg-muted/30 border-t">
           Shop: Total Takings − MOP Cash − Speedpoints − Accounts − Other &nbsp;|&nbsp; OPT: Net Sales − Speedpoints
+        </div>
+      </div>
+
+      {/* ─── EXPLANATIONS / NOTES ─── */}
+      <div className="border rounded-lg overflow-hidden">
+        <div className="bg-muted px-3 py-2 font-semibold text-sm border-b">Explanations / Notes</div>
+        <div className="p-3">
+          <textarea
+            value={form.notes}
+            onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+            disabled={isLocked}
+            rows={3}
+            className="input-cell w-full resize-y text-sm"
+            placeholder="Enter any notes or explanations..."
+          />
         </div>
       </div>
 
