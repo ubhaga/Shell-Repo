@@ -30,6 +30,7 @@ const blankOptShift = (): DailyCashup['opt'] => ({
     { terminal: 'Term 247608', batchNo: '', shopAmount: 0, optAmount: 0 },
     { terminal: 'Forecourt 2', batchNo: '', shopAmount: 0, optAmount: 0 },
     { terminal: 'V Plus', batchNo: '', shopAmount: 0, optAmount: 0 },
+    { terminal: 'Scan to pay', batchNo: '', shopAmount: 0, optAmount: 0 },
   ],
   accounts: [],
 });
@@ -386,55 +387,30 @@ export function CashierDailyForm({ selectedDate }: Props) {
         </div>
       </div>
 
-      {/* ─── SECTION 7: MOP ACCOUNT (Both shifts, side by side) ─── */}
+      {/* ─── SECTION 7: MOP ACCOUNT (Shop only) ─── */}
       <div className="border rounded-lg overflow-hidden">
-        <div className="bg-blue-600 text-white px-3 py-2 font-semibold text-sm">7. MOP Account (Debtors)</div>
-        <ColHeader left="Shop Till" right="OPT" />
-        <div className="grid grid-cols-2 divide-x">
-          {/* Shop accounts */}
-          <div>
-            {form.shop.accounts.map(a => (
-              <div key={a.id} className="flex items-center gap-1 px-2 py-1 border-b">
-                <select value={a.name} onChange={e => updateAccount(a.id, { name: e.target.value }, 'shop')}
-                  className="input-cell flex-1 text-left text-xs">
-                  <option value="">Select account...</option>
-                  {ACCOUNTS.map(ac => <option key={ac}>{ac}</option>)}
-                </select>
-                <CurrencyInput value={a.amount} onChange={v => updateAccount(a.id, { amount: v }, 'shop')} className="w-24" />
-                <button onClick={() => removeAccount(a.id, 'shop')} className="text-destructive p-0.5">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-            <div className="px-2 py-1.5 flex items-center justify-between border-b">
-              <Button variant="outline" size="sm" onClick={() => addAccount('shop')} className="text-xs h-7">
-                <Plus className="h-3 w-3 mr-1" />Add
-              </Button>
-              <span className="text-xs text-muted-foreground font-semibold pr-1">Total: <CurrencyDisplay value={shopAccountTotal} /></span>
-            </div>
+        <div className="bg-blue-600 text-white px-3 py-2 font-semibold text-sm">7. MOP Account (Debtors) — Shop Till Only</div>
+        <div className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted/30 border-b grid grid-cols-12 gap-2">
+          <span className="col-span-8">Account</span><span className="col-span-3 text-right">Amount</span><span />
+        </div>
+        {form.shop.accounts.map(a => (
+          <div key={a.id} className="flex items-center gap-1 px-2 py-1 border-b">
+            <select value={a.name} onChange={e => updateAccount(a.id, { name: e.target.value }, 'shop')}
+              className="input-cell flex-1 text-left text-xs">
+              <option value="">Select account...</option>
+              {ACCOUNTS.map(ac => <option key={ac}>{ac}</option>)}
+            </select>
+            <CurrencyInput value={a.amount} onChange={v => updateAccount(a.id, { amount: v }, 'shop')} className="w-28" />
+            <button onClick={() => removeAccount(a.id, 'shop')} className="text-destructive p-0.5">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
           </div>
-          {/* OPT accounts */}
-          <div>
-            {form.opt.accounts.map(a => (
-              <div key={a.id} className="flex items-center gap-1 px-2 py-1 border-b">
-                <select value={a.name} onChange={e => updateAccount(a.id, { name: e.target.value }, 'opt')}
-                  className="input-cell flex-1 text-left text-xs">
-                  <option value="">Select account...</option>
-                  {ACCOUNTS.map(ac => <option key={ac}>{ac}</option>)}
-                </select>
-                <CurrencyInput value={a.amount} onChange={v => updateAccount(a.id, { amount: v }, 'opt')} className="w-24" />
-                <button onClick={() => removeAccount(a.id, 'opt')} className="text-destructive p-0.5">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-            <div className="px-2 py-1.5 flex items-center justify-between border-b">
-              <Button variant="outline" size="sm" onClick={() => addAccount('opt')} className="text-xs h-7">
-                <Plus className="h-3 w-3 mr-1" />Add
-              </Button>
-              <span className="text-xs text-muted-foreground font-semibold pr-1">Total: <CurrencyDisplay value={optAccountTotal} /></span>
-            </div>
-          </div>
+        ))}
+        <div className="px-2 py-1.5 flex items-center justify-between">
+          <Button variant="outline" size="sm" onClick={() => addAccount('shop')} className="text-xs h-7">
+            <Plus className="h-3 w-3 mr-1" />Add Account
+          </Button>
+          <span className="text-sm font-semibold pr-1 text-muted-foreground">Total: <CurrencyDisplay value={shopAccountTotal} /></span>
         </div>
       </div>
 
@@ -479,8 +455,12 @@ export function CashierDailyForm({ selectedDate }: Props) {
             <ShortOverBadge diff={optDifference} />
           </div>
         </div>
+        <div className="px-4 py-3 flex items-center justify-between border-t bg-secondary">
+          <span className="text-sm font-bold">COMBINED SHORT / (OVER)</span>
+          <ShortOverBadge diff={shopDifference + optDifference} />
+        </div>
         <div className="px-4 py-2 text-xs text-muted-foreground bg-muted/30 border-t">
-          Shop: Total Takings − MOP Cash − Speedpoints − Accounts − Other &nbsp;|&nbsp; OPT: Net Sales − Speedpoints − Accounts
+          Shop: Total Takings − MOP Cash − Speedpoints − Accounts − Other &nbsp;|&nbsp; OPT: Net Sales − Speedpoints
         </div>
       </div>
     </div>
