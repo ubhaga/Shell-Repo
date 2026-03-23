@@ -493,6 +493,21 @@ export function CashierDailyForm({ selectedDate }: Props) {
         </div>
       </div>
 
+      {/* ─── EXPLANATIONS / NOTES ─── */}
+      <div className="border rounded-lg overflow-hidden">
+        <div className="bg-muted px-3 py-2 font-semibold text-sm border-b">Explanations / Notes</div>
+        <div className="p-3">
+          <textarea
+            value={form.notes}
+            onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+            disabled={isLocked}
+            rows={3}
+            className="input-cell w-full resize-y text-sm"
+            placeholder="Enter any notes or explanations..."
+          />
+        </div>
+      </div>
+
       {/* ─── SAVE BUTTON ─── */}
       <div className="flex flex-col items-center gap-2 pt-2 pb-4">
         <Button onClick={handleSave} size="lg" className="px-12" disabled={isLocked}>
