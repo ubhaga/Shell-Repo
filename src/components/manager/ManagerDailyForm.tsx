@@ -457,18 +457,25 @@ export function ManagerDailyForm({ selectedDate }: Props) {
       </Section>
 
       {/* 2.1 Banking — full width, below 2 */}
-      <Section title="2.1 Banking" color="blue">
-        <DataRow label="Bank Charges">
-          <div className="input-cell text-right bg-muted/30 text-sm px-2 py-1 rounded min-w-[120px]">
-            <CurrencyDisplay value={parseFloat(((form.ccBagClosureCashConnect / 100) * 0.3297 * 1.15).toFixed(2))} />
-          </div>
-        </DataRow>
-        <DataRow label="Banking (net deposited)">
-          <div className="input-cell text-right bg-muted/30 text-sm px-2 py-1 rounded min-w-[120px]">
-            <CurrencyDisplay value={parseFloat((form.ccBagClosureCashConnect - ((form.ccBagClosureCashConnect / 100) * 0.3297 * 1.15)).toFixed(2))} />
-          </div>
-        </DataRow>
-      </Section>
+      {(() => {
+        const ccBag = Math.abs(form.ccBagClosureCashConnect);
+        const bankCharges = Math.round((ccBag / 100 * 0.3297 * 1.15) * 100) / 100;
+        const banking = Math.round((ccBag - bankCharges) * 100) / 100;
+        return (
+          <Section title="2.1 Banking" color="blue">
+            <DataRow label="Bank Charges">
+              <div className="input-cell text-right bg-muted/30 text-sm px-2 py-1 rounded min-w-[120px]">
+                <CurrencyDisplay value={bankCharges} />
+              </div>
+            </DataRow>
+            <DataRow label="Banking (net deposited)">
+              <div className="input-cell text-right bg-muted/30 text-sm px-2 py-1 rounded min-w-[120px]">
+                <CurrencyDisplay value={banking} />
+              </div>
+            </DataRow>
+          </Section>
+        );
+      })()}
 
       {/* Save button at bottom */}
       <div className="flex flex-col items-center gap-2 pt-2 pb-4">
