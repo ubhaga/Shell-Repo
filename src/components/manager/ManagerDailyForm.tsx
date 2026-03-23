@@ -359,6 +359,15 @@ export function ManagerDailyForm({ selectedDate }: Props) {
               VAT: {vatMatch ? 'MATCH' : `Diff ${new Intl.NumberFormat('en-ZA', { minimumFractionDigits: 2 }).format(Math.abs(totalAllVat - form.branchDayEndVat))}`}
             </div>
           </div>
+          <div className="border-t mt-1 pt-2 pb-2 px-3">
+            <label className="text-xs text-muted-foreground font-medium">Explanations / Notes</label>
+            <input
+              value={form.invoiceNotes}
+              onChange={e => setForm(f => ({ ...f, invoiceNotes: e.target.value }))}
+              className="input-cell w-full mt-0.5 text-left text-sm"
+              placeholder="Any notes for section 1.3..."
+            />
+          </div>
         </div>
       </Section>
 
