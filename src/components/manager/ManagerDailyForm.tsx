@@ -460,12 +460,12 @@ export function ManagerDailyForm({ selectedDate }: Props) {
       <Section title="2.1 Banking" color="blue">
         <DataRow label="Bank Charges">
           <div className="input-cell text-right bg-muted/30 text-sm px-2 py-1 rounded min-w-[120px]">
-            <CurrencyDisplay value={parseFloat((form.ccBagClosureCashConnect / 100 * 3297 * 1.15).toFixed(2))} />
+            <CurrencyDisplay value={parseFloat(((form.ccBagClosureCashConnect / 100) * 0.3297 * 1.15).toFixed(2))} />
           </div>
         </DataRow>
         <DataRow label="Banking (net deposited)">
           <div className="input-cell text-right bg-muted/30 text-sm px-2 py-1 rounded min-w-[120px]">
-            <CurrencyDisplay value={parseFloat((form.ccBagClosureCashConnect - (form.ccBagClosureCashConnect / 100 * 3297 * 1.15)).toFixed(2))} />
+            <CurrencyDisplay value={parseFloat((form.ccBagClosureCashConnect - ((form.ccBagClosureCashConnect / 100) * 0.3297 * 1.15)).toFixed(2))} />
           </div>
         </DataRow>
       </Section>
