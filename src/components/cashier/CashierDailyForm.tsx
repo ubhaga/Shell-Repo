@@ -66,9 +66,12 @@ export function CashierDailyForm({ selectedDate }: Props) {
     locked: false,
   }));
 
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+
   useEffect(() => {
     if (existing) setForm({ ...existing });
     else setForm(f => ({ ...f, date: selectedDate, month: selectedDate.slice(0, 7), shop: blankShopShift(), opt: blankOptShift() }));
+    setSavedAt(null);
   }, [selectedDate, existing?.id]);
 
   const setShop = (patch: Partial<typeof form.shop>) =>
