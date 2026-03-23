@@ -30,6 +30,7 @@ const blankOptShift = (): DailyCashup['opt'] => ({
     { terminal: 'Term 247608', batchNo: '', shopAmount: 0, optAmount: 0 },
     { terminal: 'Forecourt 2', batchNo: '', shopAmount: 0, optAmount: 0 },
     { terminal: 'V Plus', batchNo: '', shopAmount: 0, optAmount: 0 },
+    { terminal: 'Scan to pay', batchNo: '', shopAmount: 0, optAmount: 0 },
   ],
   accounts: [],
 });
