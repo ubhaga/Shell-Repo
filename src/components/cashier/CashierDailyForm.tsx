@@ -64,6 +64,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
     cashierName: '',
     shop: blankShopShift(),
     opt: blankOptShift(),
+    notes: '',
     locked: false,
   }));
 
