@@ -317,10 +317,6 @@ export function CashierDailyForm({ selectedDate }: Props) {
       <div className="border rounded-lg overflow-hidden">
         <div className="bg-blue-600 text-white px-3 py-2 font-semibold text-sm">5. MOP Cash — Shop Till Only</div>
         <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
-          <span className="text-muted-foreground">Cash Connect Total</span>
-          <CurrencyInput value={form.shop.cashConnectTotal} onChange={v => setShop({ cashConnectTotal: v })} />
-        </div>
-        <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
           <span className="text-muted-foreground">Cash Deposited for Banking</span>
           <CurrencyInput value={form.shop.cashDepositedBanking} onChange={v => setShop({ cashDepositedBanking: v })} />
         </div>
@@ -328,9 +324,13 @@ export function CashierDailyForm({ selectedDate }: Props) {
           <span className="text-muted-foreground">EasyPay</span>
           <CurrencyInput value={form.shop.easyPay} onChange={v => setShop({ easyPay: v })} />
         </div>
-        <div className="flex items-center justify-between px-3 py-1.5 text-sm">
+        <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
           <span className="text-muted-foreground">Coins</span>
           <CurrencyInput value={form.shop.coins} onChange={v => setShop({ coins: v })} />
+        </div>
+        <div className="flex items-center justify-between px-3 py-1.5 bg-secondary font-semibold text-sm">
+          <span>Cash Connect Total (Sum)</span>
+          <CurrencyDisplay value={cashConnectTotal} highlight />
         </div>
       </div>
 
