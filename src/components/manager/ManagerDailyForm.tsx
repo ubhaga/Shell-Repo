@@ -112,7 +112,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
     } else {
       const base = blankEntry(selectedDate);
 
-      if (isFirstJan2025) {
+      if (isFirstJan2026) {
         // Seed Jan 1 opening balances from original spreadsheet
         base.coinsOpeningBalance = 4483.15;
         base.easypayOpeningBalance = 3500;
