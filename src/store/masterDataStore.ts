@@ -5,6 +5,7 @@ import {
   ACCOUNTS as DEFAULT_ACCOUNTS,
   CASHIER_NAMES as DEFAULT_CASHIER_NAMES,
   MANAGER_NAMES as DEFAULT_MANAGER_NAMES,
+  CATEGORIES as DEFAULT_CATEGORIES,
 } from '@/data/masterData';
 
 // EFT suppliers default list (same base suppliers as payout)
@@ -16,6 +17,7 @@ interface MasterDataStore {
   accounts: string[];
   cashierNames: string[];
   managerNames: string[];
+  categories: string[];
 
   // Payout suppliers
   addPayoutSupplier: (name: string) => void;
@@ -41,6 +43,11 @@ interface MasterDataStore {
   addManagerName: (name: string) => void;
   updateManagerName: (old: string, next: string) => void;
   deleteManagerName: (name: string) => void;
+
+  // Categories
+  addCategory: (name: string) => void;
+  updateCategory: (old: string, next: string) => void;
+  deleteCategory: (name: string) => void;
 }
 
 const replace = (list: string[], old: string, next: string) =>
@@ -54,6 +61,7 @@ export const useMasterDataStore = create<MasterDataStore>()(
       accounts: [...DEFAULT_ACCOUNTS],
       cashierNames: [...DEFAULT_CASHIER_NAMES],
       managerNames: [...DEFAULT_MANAGER_NAMES],
+      categories: [...DEFAULT_CATEGORIES].sort(),
 
       addPayoutSupplier: (name) => set(s => ({ payoutSuppliers: [...s.payoutSuppliers, name].sort() })),
       updatePayoutSupplier: (old, next) => set(s => ({ payoutSuppliers: replace(s.payoutSuppliers, old, next).sort() })),
@@ -74,7 +82,11 @@ export const useMasterDataStore = create<MasterDataStore>()(
       addManagerName: (name) => set(s => ({ managerNames: [...s.managerNames, name] })),
       updateManagerName: (old, next) => set(s => ({ managerNames: replace(s.managerNames, old, next) })),
       deleteManagerName: (name) => set(s => ({ managerNames: s.managerNames.filter(i => i !== name) })),
+
+      addCategory: (name) => set(s => ({ categories: [...s.categories, name].sort() })),
+      updateCategory: (old, next) => set(s => ({ categories: replace(s.categories, old, next).sort() })),
+      deleteCategory: (name) => set(s => ({ categories: s.categories.filter(i => i !== name) })),
     }),
-    { name: 'master-data-store', version: 1 }
+    { name: 'master-data-store', version: 2 }
   )
 );
