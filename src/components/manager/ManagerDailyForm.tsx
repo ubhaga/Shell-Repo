@@ -88,6 +88,7 @@ const blankEntry = (date: string): Omit<ManagerDailyEntry, 'id'> => ({
   ccBagClosureCoins: 0, ccBagClosureEasypay: 0, ccBagClosureCashConnect: 0,
   transferFromCoins: 0,
   branchDayEndTotal: 0, branchDayEndVat: 0,
+  invoiceNotes: '', cashReconcNotes: '',
   bankCharges: 0, banking: 0, locked: false,
 });
 
