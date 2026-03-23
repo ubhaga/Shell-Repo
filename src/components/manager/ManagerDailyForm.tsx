@@ -233,6 +233,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
     const shopTotalReceipts = cashup.shop.receipts.reduce((s, r) => s + r.amount, 0);
     const shopTotalTakings = shopNetSales - shopPayoutsTotal - cashup.shop.lottoPayouts + shopTotalReceipts;
 
+    // Must match CashierDailyForm exactly: cashConnectTotal = cashDepositedBanking + easyPay + coins
     const cashConnectTotal = cashup.shop.cashDepositedBanking + cashup.shop.easyPay + cashup.shop.coins;
     const shopSpeedpointTotal = cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0);
     const shopAccountTotal = cashup.shop.accounts.reduce((s, a) => s + a.amount, 0);
