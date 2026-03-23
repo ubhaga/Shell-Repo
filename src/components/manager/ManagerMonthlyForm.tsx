@@ -13,6 +13,7 @@ interface Props { selectedDate: string; }
 export function ManagerMonthlyForm({ selectedDate }: Props) {
   const month = selectedDate.slice(0, 7);
   const { getMonthlyFiguresByMonth, addMonthlyFigures, updateMonthlyFigures, cashups, managerEntries } = useCashupStore();
+  const { managerNames: MANAGER_NAMES } = useMasterDataStore();
   const existing = getMonthlyFiguresByMonth(month);
 
   const [form, setForm] = useState<Omit<MonthlyBranchFigures, 'id'>>({
