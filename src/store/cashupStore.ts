@@ -61,6 +61,25 @@ export const useCashupStore = create<CashupStore>()(
         set((s) => ({ monthlyFigures: s.monthlyFigures.map((f) => (f.id === id ? { ...f, ...figures } : f)) })),
       getMonthlyFiguresByMonth: (month) => get().monthlyFigures.find((f) => f.month === month),
     }),
-    { name: 'cashup-store' }
+    {
+      name: 'cashup-store',
+      version: 2,
+      migrate: (persisted: unknown, version: number) => {
+        if (version < 2) {
+          // Rename transferFromCoin -> transferFromCoins in all manager entries
+          const state = persisted as { managerEntries?: Array<Record<string, unknown>> };
+          if (state?.managerEntries) {
+            state.managerEntries = state.managerEntries.map(e => {
+              if ('transferFromCoin' in e) {
+                const { transferFromCoin, ...rest } = e;
+                return { ...rest, transferFromCoins: transferFromCoin ?? 0 };
+              }
+              return e;
+            });
+          }
+        }
+        return persisted;
+      },
+    }
   )
 );
