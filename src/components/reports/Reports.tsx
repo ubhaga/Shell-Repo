@@ -14,7 +14,7 @@ export function Reports() {
   const monthCashups = cashups.filter(c => c.month === filterMonth);
   const monthManagers = managerEntries.filter(e => e.date.startsWith(filterMonth));
 
-  // Payout detail report
+  // Payout report
   const payoutReport = monthCashups.flatMap(c =>
     c.shop.payouts.map(p => ({
       date: c.date,
@@ -28,10 +28,57 @@ export function Reports() {
     vendor: 'Lotto',
     amount: c.shop.lottoPayouts,
   })).filter(r => r.amount > 0));
-
   const payoutTotal = payoutReport.reduce((s, r) => s + r.amount, 0);
 
-  // Invoice detail report
+  // Receipts report
+  const receiptsReport = monthCashups.flatMap(c =>
+    c.shop.receipts.map(r => ({
+      date: c.date,
+      cashier: c.cashierName,
+      type: r.type,
+      seqNo: r.seqNo,
+      amount: r.amount,
+    }))
+  );
+  const receiptsTotal = receiptsReport.reduce((s, r) => s + r.amount, 0);
+
+  // Speedpoints report
+  const speedpointsReport = monthCashups.flatMap(c =>
+    c.shop.speedpoints.map(sp => ({
+      date: c.date,
+      cashier: c.cashierName,
+      terminal: sp.terminal,
+      batchNo: sp.batchNo,
+      shopAmount: sp.shopAmount,
+      optAmount: sp.optAmount,
+      total: sp.shopAmount + sp.optAmount,
+    }))
+  );
+  const spShopTotal = speedpointsReport.reduce((s, r) => s + r.shopAmount, 0);
+  const spOptTotal = speedpointsReport.reduce((s, r) => s + r.optAmount, 0);
+  const spGrandTotal = speedpointsReport.reduce((s, r) => s + r.total, 0);
+
+  // Accounts report — shop + OPT combined per day
+  const accountsReport = monthCashups.flatMap(c => {
+    const shopRows = c.shop.accounts.map(a => ({
+      date: c.date,
+      cashier: c.cashierName,
+      shift: 'Shop' as const,
+      name: a.name,
+      amount: a.amount,
+    }));
+    const optRows = c.opt.accounts.map(a => ({
+      date: c.date,
+      cashier: c.cashierName,
+      shift: 'OPT' as const,
+      name: a.name,
+      amount: a.amount,
+    }));
+    return [...shopRows, ...optRows];
+  });
+  const accountsTotal = accountsReport.reduce((s, r) => s + r.amount, 0);
+
+  // Invoice report
   const invoiceReport = monthManagers.flatMap(e => [
     ...e.payoutInvoices.map(i => ({ date: e.date, type: 'Payout', supplier: i.supplier, category: i.category, docNum: i.branchDocNum, inclusive: i.inclusive, vat: i.vat })),
     ...e.eftInvoices.map(i => ({ date: e.date, type: 'EFT', supplier: i.supplier, category: i.category, docNum: i.branchDocNum, inclusive: i.inclusive, vat: i.vat })),
@@ -39,20 +86,22 @@ export function Reports() {
   const invoiceTotal = invoiceReport.reduce((s, r) => s + r.inclusive, 0);
   const invoiceVatTotal = invoiceReport.reduce((s, r) => s + r.vat, 0);
 
-  // MOP report
+  // MOP report — Cash (CC) uses cashConnectTotal from section 5 MOP Cash
   const mopReport = monthCashups.map(c => {
     const shopSP = c.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0);
     const optSP = c.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0);
     const shopAcc = c.shop.accounts.reduce((s, a) => s + a.amount, 0);
     const optAcc = c.opt.accounts.reduce((s, a) => s + a.amount, 0);
+    // cashConnectTotal = cashDepositedBanking + easyPay + coins (the auto-calculated total in section 5)
+    const cash = c.shop.cashConnectTotal;
     return {
       date: c.date,
-      cash: c.shop.cashConnectTotal,
+      cash,
       shopSpeedpoint: shopSP,
       optSpeedpoint: optSP,
       totalSpeedpoint: shopSP + optSP,
       accounts: shopAcc + optAcc,
-      total: c.shop.cashConnectTotal + shopSP + optSP + shopAcc + optAcc,
+      total: cash + shopSP + optSP + shopAcc + optAcc,
     };
   });
 
@@ -71,6 +120,8 @@ export function Reports() {
     try { return format(new Date(d), 'dd MMM yyyy'); } catch { return d; }
   };
 
+  const monthLabel = format(new Date(filterMonth + '-01'), 'MMMM yyyy');
+
   return (
     <div className="space-y-4">
       {/* Filter */}
@@ -84,17 +135,20 @@ export function Reports() {
       </div>
 
       <Tabs defaultValue="payouts">
-        <TabsList className="grid grid-cols-3 w-full">
-          <TabsTrigger value="payouts">Payouts Report</TabsTrigger>
-          <TabsTrigger value="invoices">Invoices Report</TabsTrigger>
-          <TabsTrigger value="mop">MOP Report</TabsTrigger>
+        <TabsList className="grid grid-cols-6 w-full">
+          <TabsTrigger value="payouts">Payouts</TabsTrigger>
+          <TabsTrigger value="receipts">Receipts</TabsTrigger>
+          <TabsTrigger value="speedpoints">Speedpoints</TabsTrigger>
+          <TabsTrigger value="accounts">Accounts</TabsTrigger>
+          <TabsTrigger value="invoices">Invoices</TabsTrigger>
+          <TabsTrigger value="mop">MOP</TabsTrigger>
         </TabsList>
 
         {/* Payouts */}
         <TabsContent value="payouts">
           <div className="bg-card border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
-              <h3 className="font-semibold text-sm">Detailed Payouts — {format(new Date(filterMonth + '-01'), 'MMMM yyyy')}</h3>
+              <h3 className="font-semibold text-sm">Detailed Payouts — {monthLabel}</h3>
               <Button size="sm" variant="outline" onClick={() => exportCSV(payoutReport, `payouts-${filterMonth}.csv`)}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
@@ -129,20 +183,200 @@ export function Reports() {
                 )}
               </TableBody>
             </Table>
-
-            {/* Summary by vendor */}
             {payoutReport.length > 0 && (
               <div className="border-t p-4">
                 <h4 className="text-sm font-semibold mb-2">Summary by Vendor</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {Object.entries(
-                    payoutReport.reduce((acc, r) => {
-                      acc[r.vendor] = (acc[r.vendor] || 0) + r.amount;
-                      return acc;
-                    }, {} as Record<string, number>)
+                    payoutReport.reduce((acc, r) => { acc[r.vendor] = (acc[r.vendor] || 0) + r.amount; return acc; }, {} as Record<string, number>)
                   ).sort((a, b) => b[1] - a[1]).map(([vendor, total]) => (
                     <div key={vendor} className="flex justify-between text-sm bg-muted/30 rounded px-2 py-1">
                       <span className="text-muted-foreground truncate mr-2">{vendor}</span>
+                      <CurrencyDisplay value={total} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Receipts */}
+        <TabsContent value="receipts">
+          <div className="bg-card border rounded-lg overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
+              <h3 className="font-semibold text-sm">Detailed Receipts — {monthLabel}</h3>
+              <Button size="sm" variant="outline" onClick={() => exportCSV(receiptsReport, `receipts-${filterMonth}.csv`)}>
+                <Download className="h-3.5 w-3.5 mr-1" />Export CSV
+              </Button>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Cashier</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Seq No.</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {receiptsReport.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No receipt data for this month</TableCell></TableRow>
+                ) : (
+                  <>
+                    {receiptsReport.map((r, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="text-sm">{formatDate(r.date)}</TableCell>
+                        <TableCell className="text-sm">{r.cashier}</TableCell>
+                        <TableCell className="text-sm">{r.type}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{r.seqNo}</TableCell>
+                        <TableCell className="text-right"><CurrencyDisplay value={r.amount} /></TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="bg-secondary font-semibold">
+                      <TableCell colSpan={4}>TOTAL</TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={receiptsTotal} highlight /></TableCell>
+                    </TableRow>
+                  </>
+                )}
+              </TableBody>
+            </Table>
+            {receiptsReport.length > 0 && (
+              <div className="border-t p-4">
+                <h4 className="text-sm font-semibold mb-2">Summary by Type</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {Object.entries(
+                    receiptsReport.reduce((acc, r) => { acc[r.type] = (acc[r.type] || 0) + r.amount; return acc; }, {} as Record<string, number>)
+                  ).sort((a, b) => b[1] - a[1]).map(([type, total]) => (
+                    <div key={type} className="flex justify-between text-sm bg-muted/30 rounded px-2 py-1">
+                      <span className="text-muted-foreground truncate mr-2">{type}</span>
+                      <CurrencyDisplay value={total} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Speedpoints */}
+        <TabsContent value="speedpoints">
+          <div className="bg-card border rounded-lg overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
+              <h3 className="font-semibold text-sm">Speedpoint Report — {monthLabel}</h3>
+              <Button size="sm" variant="outline" onClick={() => exportCSV(speedpointsReport, `speedpoints-${filterMonth}.csv`)}>
+                <Download className="h-3.5 w-3.5 mr-1" />Export CSV
+              </Button>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Cashier</TableHead>
+                  <TableHead>Terminal</TableHead>
+                  <TableHead>Batch No.</TableHead>
+                  <TableHead className="text-right">Shop Amount</TableHead>
+                  <TableHead className="text-right">OPT Amount</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {speedpointsReport.length === 0 ? (
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No speedpoint data for this month</TableCell></TableRow>
+                ) : (
+                  <>
+                    {speedpointsReport.map((r, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="text-sm">{formatDate(r.date)}</TableCell>
+                        <TableCell className="text-sm">{r.cashier}</TableCell>
+                        <TableCell className="text-sm">{r.terminal}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{r.batchNo}</TableCell>
+                        <TableCell className="text-right"><CurrencyDisplay value={r.shopAmount} /></TableCell>
+                        <TableCell className="text-right"><CurrencyDisplay value={r.optAmount} /></TableCell>
+                        <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.total} /></TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="bg-secondary font-semibold">
+                      <TableCell colSpan={4}>TOTAL</TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={spShopTotal} highlight /></TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={spOptTotal} highlight /></TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={spGrandTotal} highlight /></TableCell>
+                    </TableRow>
+                  </>
+                )}
+              </TableBody>
+            </Table>
+            {speedpointsReport.length > 0 && (
+              <div className="border-t p-4">
+                <h4 className="text-sm font-semibold mb-2">Summary by Terminal</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {Object.entries(
+                    speedpointsReport.reduce((acc, r) => { acc[r.terminal] = (acc[r.terminal] || 0) + r.total; return acc; }, {} as Record<string, number>)
+                  ).sort((a, b) => b[1] - a[1]).map(([terminal, total]) => (
+                    <div key={terminal} className="flex justify-between text-sm bg-muted/30 rounded px-2 py-1">
+                      <span className="text-muted-foreground truncate mr-2">{terminal}</span>
+                      <CurrencyDisplay value={total} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Accounts */}
+        <TabsContent value="accounts">
+          <div className="bg-card border rounded-lg overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
+              <h3 className="font-semibold text-sm">Accounts Report — {monthLabel}</h3>
+              <Button size="sm" variant="outline" onClick={() => exportCSV(accountsReport, `accounts-${filterMonth}.csv`)}>
+                <Download className="h-3.5 w-3.5 mr-1" />Export CSV
+              </Button>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Cashier</TableHead>
+                  <TableHead>Shift</TableHead>
+                  <TableHead>Account Name</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {accountsReport.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No accounts data for this month</TableCell></TableRow>
+                ) : (
+                  <>
+                    {accountsReport.map((r, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="text-sm">{formatDate(r.date)}</TableCell>
+                        <TableCell className="text-sm">{r.cashier}</TableCell>
+                        <TableCell>
+                          <span className={`text-xs rounded px-1.5 py-0.5 ${r.shift === 'Shop' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>{r.shift}</span>
+                        </TableCell>
+                        <TableCell className="text-sm">{r.name}</TableCell>
+                        <TableCell className="text-right"><CurrencyDisplay value={r.amount} /></TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="bg-secondary font-semibold">
+                      <TableCell colSpan={4}>TOTAL</TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={accountsTotal} highlight /></TableCell>
+                    </TableRow>
+                  </>
+                )}
+              </TableBody>
+            </Table>
+            {accountsReport.length > 0 && (
+              <div className="border-t p-4">
+                <h4 className="text-sm font-semibold mb-2">Summary by Account</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {Object.entries(
+                    accountsReport.reduce((acc, r) => { acc[r.name] = (acc[r.name] || 0) + r.amount; return acc; }, {} as Record<string, number>)
+                  ).sort((a, b) => b[1] - a[1]).map(([name, total]) => (
+                    <div key={name} className="flex justify-between text-sm bg-muted/30 rounded px-2 py-1">
+                      <span className="text-muted-foreground truncate mr-2">{name}</span>
                       <CurrencyDisplay value={total} />
                     </div>
                   ))}
@@ -156,7 +390,7 @@ export function Reports() {
         <TabsContent value="invoices">
           <div className="bg-card border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
-              <h3 className="font-semibold text-sm">Detailed Invoices — {format(new Date(filterMonth + '-01'), 'MMMM yyyy')}</h3>
+              <h3 className="font-semibold text-sm">Detailed Invoices — {monthLabel}</h3>
               <Button size="sm" variant="outline" onClick={() => exportCSV(invoiceReport, `invoices-${filterMonth}.csv`)}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
@@ -205,7 +439,7 @@ export function Reports() {
         <TabsContent value="mop">
           <div className="bg-card border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
-              <h3 className="font-semibold text-sm">Method of Payment Report — {format(new Date(filterMonth + '-01'), 'MMMM yyyy')}</h3>
+              <h3 className="font-semibold text-sm">Method of Payment Report — {monthLabel}</h3>
               <Button size="sm" variant="outline" onClick={() => exportCSV(mopReport, `mop-${filterMonth}.csv`)}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
