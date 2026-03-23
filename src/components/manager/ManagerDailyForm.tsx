@@ -248,150 +248,133 @@ export function ManagerDailyForm({ selectedDate }: Props) {
         </Section>
       )}
 
+      {/* 1.1 and 1.2 side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div>
-          {/* 1.1 Payout Invoices */}
-          <Section title="1.1 Payout Invoices (to enter on branch system)" color="red">
-            <InvoiceTable lines={form.payoutInvoices} type="payout" />
-          </Section>
-
-          {/* 1.2 EFT / Non-Cash Invoices */}
-          <Section title="1.2 EFT / Non-Cash Invoices" color="blue">
-            <InvoiceTable lines={form.eftInvoices} type="eft" />
-          </Section>
-
-          {/* 1.3 Invoice Reconciliation vs Branch Day End */}
-          <Section title="1.3 Invoice Reconciliation vs Branch Day End" color="green">
-            <DataRow label="Total Payout Invoices">
-              <CurrencyDisplay value={payoutInvoiceTotal} />
-            </DataRow>
-            <DataRow label="Total EFT Invoices">
-              <CurrencyDisplay value={eftInvoiceTotal} />
-            </DataRow>
-            <DataRow label="TOTAL ALL INVOICES" total>
-              <CurrencyDisplay value={totalAllInvoices} highlight />
-            </DataRow>
-            <DataRow label="Total VAT" total>
-              <CurrencyDisplay value={totalAllVat} />
-            </DataRow>
-            <div className="border-t mt-1 pt-1">
-              <DataRow label="Branch Day End Total (enter)">
-                <CurrencyInput value={form.branchDayEndTotal} onChange={v => setForm(f => ({ ...f, branchDayEndTotal: v }))} />
-              </DataRow>
-              <DataRow label="Branch Day End VAT (enter)">
-                <CurrencyInput value={form.branchDayEndVat} onChange={v => setForm(f => ({ ...f, branchDayEndVat: v }))} />
-              </DataRow>
-              <div className="px-3 py-2 flex gap-3 text-sm">
-                <div className={`flex items-center gap-1.5 rounded px-2 py-1 ${invMatch ? 'status-green' : 'status-red'}`}>
-                  {invMatch ? <CheckCircle className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
-                  Total: {invMatch ? 'MATCH' : `Diff ${new Intl.NumberFormat('en-ZA', { minimumFractionDigits: 2 }).format(Math.abs(totalAllInvoices - form.branchDayEndTotal))}`}
-                </div>
-                <div className={`flex items-center gap-1.5 rounded px-2 py-1 ${vatMatch ? 'status-green' : 'status-red'}`}>
-                  {vatMatch ? <CheckCircle className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
-                  VAT: {vatMatch ? 'MATCH' : `Diff ${new Intl.NumberFormat('en-ZA', { minimumFractionDigits: 2 }).format(Math.abs(totalAllVat - form.branchDayEndVat))}`}
-                </div>
-              </div>
-            </div>
-          </Section>
-        </div>
-
-        <div>
-          {/* 2. Cash Reconciliation */}
-          <Section title="2. Cash Reconciliation" color="orange">
-            {/* Column headers */}
-            <div className="px-3 py-1 border-b grid grid-cols-4 gap-2 text-xs font-semibold text-muted-foreground bg-muted/30">
-              <span></span>
-              <span className="text-right">Coins</span>
-              <span className="text-right">EasyPay</span>
-              <span className="text-right">Cash Connect</span>
-            </div>
-
-            {/* Row 1: Opening Balance (read-only if prev day exists, except 1 Jan) */}
-            <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm">
-              <div className="flex items-center gap-1">
-                <span className="text-muted-foreground text-xs">Opening Balance</span>
-                {openingIsReadOnly && <Lock className="h-3 w-3 text-muted-foreground" />}
-              </div>
-              {openingIsReadOnly ? (
-                <>
-                  <div className="text-right"><CurrencyDisplay value={form.coinsOpeningBalance} /></div>
-                  <div className="text-right"><CurrencyDisplay value={form.easypayOpeningBalance} /></div>
-                  <div className="text-right"><CurrencyDisplay value={form.cashConnectOpeningBalance} /></div>
-                </>
-              ) : (
-                <>
-                  <CurrencyInput value={form.coinsOpeningBalance} onChange={v => setForm(f => ({ ...f, coinsOpeningBalance: v }))} />
-                  <CurrencyInput value={form.easypayOpeningBalance} onChange={v => setForm(f => ({ ...f, easypayOpeningBalance: v }))} />
-                  <CurrencyInput value={form.cashConnectOpeningBalance} onChange={v => setForm(f => ({ ...f, cashConnectOpeningBalance: v }))} />
-                </>
-              )}
-            </div>
-
-            {/* Daily Cashup sub-header */}
-            <div className="px-3 py-1 border-b grid grid-cols-4 gap-2 text-xs font-semibold text-muted-foreground bg-muted/10">
-              <span>Daily Cashup</span>
-              <span className="text-right">Daily Coins</span>
-              <span className="text-right">Cash for Easypay</span>
-              <span className="text-right">Cash for CC</span>
-            </div>
-            <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm">
-              <span className="text-muted-foreground text-xs">Deposited</span>
-              <CurrencyInput value={form.dailyCoins} onChange={v => setForm(f => ({ ...f, dailyCoins: v }))} />
-              <CurrencyInput value={form.cashDepositedEasypay} onChange={v => setForm(f => ({ ...f, cashDepositedEasypay: v }))} />
-              <CurrencyInput value={form.cashDepositedCashConnect} onChange={v => setForm(f => ({ ...f, cashDepositedCashConnect: v }))} />
-            </div>
-
-            {/* Row 2: CC Bag Closure — all negative */}
-            <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm bg-red-50/50">
-              <span className="text-muted-foreground text-xs">CC Bag Closure <span className="text-destructive font-bold">(-ve)</span></span>
-              <div>
-                <CurrencyInput value={form.ccBagClosureCoins} onChange={v => setForm(f => ({ ...f, ccBagClosureCoins: Math.abs(v) }))} placeholder="0.00" />
-                <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureCoins)} /></div>
-              </div>
-              <div>
-                <CurrencyInput value={form.ccBagClosureEasypay} onChange={v => setForm(f => ({ ...f, ccBagClosureEasypay: Math.abs(v) }))} placeholder="0.00" />
-                <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureEasypay)} /></div>
-              </div>
-              <div>
-                <CurrencyInput value={form.ccBagClosureCashConnect} onChange={v => setForm(f => ({ ...f, ccBagClosureCashConnect: Math.abs(v) }))} placeholder="0.00" />
-                <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureCashConnect)} /></div>
-              </div>
-            </div>
-
-            {/* Row 3: Transfer from Coins */}
-            <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm bg-blue-50/30">
-              <span className="text-muted-foreground text-xs">Transfer from Coins</span>
-              <div>
-                <CurrencyInput value={form.transferFromCoins} onChange={v => setForm(f => ({ ...f, transferFromCoins: Math.abs(v) }))} placeholder="0.00" />
-                <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.transferFromCoins)} /></div>
-              </div>
-              <div className="text-center text-xs text-muted-foreground">—</div>
-              <div className="text-right">
-                <CurrencyDisplay value={Math.abs(form.transferFromCoins)} className="font-semibold text-green-700" />
-                <div className="text-xs text-muted-foreground">auto (+ve)</div>
-              </div>
-            </div>
-
-            {/* Closing Balance */}
-            <div className="px-3 py-1.5 grid grid-cols-4 gap-2 items-center text-sm bg-secondary font-semibold rounded-b-md">
-              <span>Closing Balance</span>
-              <CurrencyDisplay value={coinsClosing} highlight />
-              <CurrencyDisplay value={easypayClosing} highlight />
-              <CurrencyDisplay value={ccClosing} highlight />
-            </div>
-          </Section>
-
-          {/* 2.1 Banking */}
-          <Section title="2.1 Banking" color="blue">
-            <DataRow label="Bank Charges">
-              <CurrencyInput value={form.bankCharges} onChange={v => setForm(f => ({ ...f, bankCharges: v }))} />
-            </DataRow>
-            <DataRow label="Banking (net deposited)">
-              <CurrencyInput value={form.banking} onChange={v => setForm(f => ({ ...f, banking: v }))} />
-            </DataRow>
-          </Section>
-        </div>
+        <Section title="1.1 Payout Invoices (to enter on branch system)" color="red">
+          <InvoiceTable lines={form.payoutInvoices} type="payout" />
+        </Section>
+        <Section title="1.2 EFT / Non-Cash Invoices" color="blue">
+          <InvoiceTable lines={form.eftInvoices} type="eft" />
+        </Section>
       </div>
+
+      {/* 1.3 Invoice Reconciliation vs Branch Day End — full width */}
+      <Section title="1.3 Invoice Reconciliation vs Branch Day End" color="green">
+        <DataRow label="Total Payout Invoices">
+          <CurrencyDisplay value={payoutInvoiceTotal} />
+        </DataRow>
+        <DataRow label="Total EFT Invoices">
+          <CurrencyDisplay value={eftInvoiceTotal} />
+        </DataRow>
+        <DataRow label="TOTAL ALL INVOICES" total>
+          <CurrencyDisplay value={totalAllInvoices} highlight />
+        </DataRow>
+        <DataRow label="Total VAT" total>
+          <CurrencyDisplay value={totalAllVat} />
+        </DataRow>
+        <div className="border-t mt-1 pt-1">
+          <DataRow label="Branch Day End Total (enter)">
+            <CurrencyInput value={form.branchDayEndTotal} onChange={v => setForm(f => ({ ...f, branchDayEndTotal: v }))} />
+          </DataRow>
+          <DataRow label="Branch Day End VAT (enter)">
+            <CurrencyInput value={form.branchDayEndVat} onChange={v => setForm(f => ({ ...f, branchDayEndVat: v }))} />
+          </DataRow>
+          <div className="px-3 py-2 flex gap-3 text-sm">
+            <div className={`flex items-center gap-1.5 rounded px-2 py-1 ${invMatch ? 'status-green' : 'status-red'}`}>
+              {invMatch ? <CheckCircle className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
+              Total: {invMatch ? 'MATCH' : `Diff ${new Intl.NumberFormat('en-ZA', { minimumFractionDigits: 2 }).format(Math.abs(totalAllInvoices - form.branchDayEndTotal))}`}
+            </div>
+            <div className={`flex items-center gap-1.5 rounded px-2 py-1 ${vatMatch ? 'status-green' : 'status-red'}`}>
+              {vatMatch ? <CheckCircle className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
+              VAT: {vatMatch ? 'MATCH' : `Diff ${new Intl.NumberFormat('en-ZA', { minimumFractionDigits: 2 }).format(Math.abs(totalAllVat - form.branchDayEndVat))}`}
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      {/* 2. Cash Reconciliation — full width, below 1.3 */}
+      <Section title="2. Cash Reconciliation" color="orange">
+        <div className="px-3 py-1 border-b grid grid-cols-4 gap-2 text-xs font-semibold text-muted-foreground bg-muted/30">
+          <span></span>
+          <span className="text-right">Coins</span>
+          <span className="text-right">EasyPay</span>
+          <span className="text-right">Cash Connect</span>
+        </div>
+        <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm">
+          <div className="flex items-center gap-1">
+            <span className="text-muted-foreground text-xs">Opening Balance</span>
+            {openingIsReadOnly && <Lock className="h-3 w-3 text-muted-foreground" />}
+          </div>
+          {openingIsReadOnly ? (
+            <>
+              <div className="text-right"><CurrencyDisplay value={form.coinsOpeningBalance} /></div>
+              <div className="text-right"><CurrencyDisplay value={form.easypayOpeningBalance} /></div>
+              <div className="text-right"><CurrencyDisplay value={form.cashConnectOpeningBalance} /></div>
+            </>
+          ) : (
+            <>
+              <CurrencyInput value={form.coinsOpeningBalance} onChange={v => setForm(f => ({ ...f, coinsOpeningBalance: v }))} />
+              <CurrencyInput value={form.easypayOpeningBalance} onChange={v => setForm(f => ({ ...f, easypayOpeningBalance: v }))} />
+              <CurrencyInput value={form.cashConnectOpeningBalance} onChange={v => setForm(f => ({ ...f, cashConnectOpeningBalance: v }))} />
+            </>
+          )}
+        </div>
+        <div className="px-3 py-1 border-b grid grid-cols-4 gap-2 text-xs font-semibold text-muted-foreground bg-muted/10">
+          <span>Daily Cashup</span>
+          <span className="text-right">Daily Coins</span>
+          <span className="text-right">Cash for Easypay</span>
+          <span className="text-right">Cash for CC</span>
+        </div>
+        <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm">
+          <span className="text-muted-foreground text-xs">Deposited</span>
+          <CurrencyInput value={form.dailyCoins} onChange={v => setForm(f => ({ ...f, dailyCoins: v }))} />
+          <CurrencyInput value={form.cashDepositedEasypay} onChange={v => setForm(f => ({ ...f, cashDepositedEasypay: v }))} />
+          <CurrencyInput value={form.cashDepositedCashConnect} onChange={v => setForm(f => ({ ...f, cashDepositedCashConnect: v }))} />
+        </div>
+        <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm bg-red-50/50">
+          <span className="text-muted-foreground text-xs">CC Bag Closure <span className="text-destructive font-bold">(-ve)</span></span>
+          <div>
+            <CurrencyInput value={form.ccBagClosureCoins} onChange={v => setForm(f => ({ ...f, ccBagClosureCoins: Math.abs(v) }))} placeholder="0.00" />
+            <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureCoins)} /></div>
+          </div>
+          <div>
+            <CurrencyInput value={form.ccBagClosureEasypay} onChange={v => setForm(f => ({ ...f, ccBagClosureEasypay: Math.abs(v) }))} placeholder="0.00" />
+            <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureEasypay)} /></div>
+          </div>
+          <div>
+            <CurrencyInput value={form.ccBagClosureCashConnect} onChange={v => setForm(f => ({ ...f, ccBagClosureCashConnect: Math.abs(v) }))} placeholder="0.00" />
+            <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureCashConnect)} /></div>
+          </div>
+        </div>
+        <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm bg-blue-50/30">
+          <span className="text-muted-foreground text-xs">Transfer from Coins</span>
+          <div>
+            <CurrencyInput value={form.transferFromCoins} onChange={v => setForm(f => ({ ...f, transferFromCoins: Math.abs(v) }))} placeholder="0.00" />
+            <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.transferFromCoins)} /></div>
+          </div>
+          <div className="text-center text-xs text-muted-foreground">—</div>
+          <div className="text-right">
+            <CurrencyDisplay value={Math.abs(form.transferFromCoins)} className="font-semibold text-green-700" />
+            <div className="text-xs text-muted-foreground">auto (+ve)</div>
+          </div>
+        </div>
+        <div className="px-3 py-1.5 grid grid-cols-4 gap-2 items-center text-sm bg-secondary font-semibold rounded-b-md">
+          <span>Closing Balance</span>
+          <CurrencyDisplay value={coinsClosing} highlight />
+          <CurrencyDisplay value={easypayClosing} highlight />
+          <CurrencyDisplay value={ccClosing} highlight />
+        </div>
+      </Section>
+
+      {/* 2.1 Banking — full width, below 2 */}
+      <Section title="2.1 Banking" color="blue">
+        <DataRow label="Bank Charges">
+          <CurrencyInput value={form.bankCharges} onChange={v => setForm(f => ({ ...f, bankCharges: v }))} />
+        </DataRow>
+        <DataRow label="Banking (net deposited)">
+          <CurrencyInput value={form.banking} onChange={v => setForm(f => ({ ...f, banking: v }))} />
+        </DataRow>
+      </Section>
 
       {/* Save button at bottom */}
       <div className="flex flex-col items-center gap-2 pt-2 pb-4">
