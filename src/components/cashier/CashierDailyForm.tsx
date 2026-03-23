@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useCashupStore } from '@/store/cashupStore';
-import { SUPPLIERS, CASHIER_NAMES, ACCOUNTS, RECEIPT_TYPES } from '@/data/masterData';
+import { RECEIPT_TYPES } from '@/data/masterData';
+import { useMasterDataStore } from '@/store/masterDataStore';
 import type { DailyCashup, PayoutLine, ReceiptLine, SpeedpointEntry, AccountEntry, OtherAdjustment } from '@/types/cashup';
 import { Section, DataRow, CurrencyInput, CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Button } from '@/components/ui/button';
