@@ -190,10 +190,24 @@ export function ManagerDailyForm({ selectedDate }: Props) {
     );
   };
 
+  // Cashier short/over calculations (used both at top and inline)
+  const cashierBlock = cashup ? (() => {
+    const shopNetSales = cashup.shop.income - cashup.shop.returns;
+    const shopPayouts = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0);
+    const shopReceipts = cashup.shop.receipts.reduce((s, r) => s + r.amount, 0);
+    const shopTakings = shopNetSales - shopPayouts - cashup.shop.lottoPayouts + shopReceipts;
+    const shopMOP = cashup.shop.cashConnectTotal + cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0) + cashup.shop.accounts.reduce((s, a) => s + a.amount, 0);
+    const shopDiff = shopTakings - shopMOP;
+    const optNetSales = cashup.opt.income - cashup.opt.returns;
+    const optMOP = cashup.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0) + cashup.opt.accounts.reduce((s, a) => s + a.amount, 0);
+    const optDiff = optNetSales - optMOP;
+    return { shopDiff, optDiff };
+  })() : null;
+
   return (
     <div className="space-y-3">
       {/* Header */}
-      <div className="bg-card border rounded-lg p-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="bg-card border rounded-lg p-3 grid grid-cols-2 md:grid-cols-3 gap-3">
         <div>
           <label className="text-xs text-muted-foreground">Entered By</label>
           <select value={form.enteredBy} onChange={e => setForm(f => ({ ...f, enteredBy: e.target.value }))}
@@ -207,11 +221,6 @@ export function ManagerDailyForm({ selectedDate }: Props) {
           <input value={form.explanations} onChange={e => setForm(f => ({ ...f, explanations: e.target.value }))}
             className="input-cell w-full mt-0.5 text-left" placeholder="Any notes for the day..." />
         </div>
-        <div className="flex items-end">
-          <Button onClick={handleSave} className="w-full" size="sm">
-            <Save className="h-3.5 w-3.5 mr-1" />Save Entry
-          </Button>
-        </div>
       </div>
 
       {!cashup && (
@@ -219,6 +228,24 @@ export function ManagerDailyForm({ selectedDate }: Props) {
           <AlertCircle className="h-4 w-4 shrink-0" />
           No cashier data found for this date. Enter cashier sheet first to auto-populate payout vendors.
         </div>
+      )}
+
+      {/* Cashier Short / Over — at the top */}
+      {cashierBlock && (
+        <Section title="Cashier Short / (Over) from Cashup" color="default">
+          <div className="grid grid-cols-2 gap-2 px-3 py-2">
+            <DataRow label="Shop Till">
+              <div className={`rounded px-2 py-0.5 text-sm font-semibold ${Math.abs(cashierBlock.shopDiff) < 0.01 ? 'status-green' : 'status-red'}`}>
+                <CurrencyDisplay value={cashierBlock.shopDiff} />
+              </div>
+            </DataRow>
+            <DataRow label="OPT">
+              <div className={`rounded px-2 py-0.5 text-sm font-semibold ${Math.abs(cashierBlock.optDiff) < 0.01 ? 'status-green' : 'status-red'}`}>
+                <CurrencyDisplay value={cashierBlock.optDiff} />
+              </div>
+            </DataRow>
+          </div>
+        </Section>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -233,8 +260,8 @@ export function ManagerDailyForm({ selectedDate }: Props) {
             <InvoiceTable lines={form.eftInvoices} type="eft" />
           </Section>
 
-          {/* Invoice totals vs Branch */}
-          <Section title="Invoice Reconciliation vs Branch Day End" color="green">
+          {/* 1.3 Invoice Reconciliation vs Branch Day End */}
+          <Section title="1.3 Invoice Reconciliation vs Branch Day End" color="green">
             <DataRow label="Total Payout Invoices">
               <CurrencyDisplay value={payoutInvoiceTotal} />
             </DataRow>
@@ -269,8 +296,8 @@ export function ManagerDailyForm({ selectedDate }: Props) {
         </div>
 
         <div>
-          {/* Cash Reconciliation */}
-          <Section title="Cash Reconciliation" color="orange">
+          {/* 2. Cash Reconciliation */}
+          <Section title="2. Cash Reconciliation" color="orange">
             {/* Column headers */}
             <div className="px-3 py-1 border-b grid grid-cols-4 gap-2 text-xs font-semibold text-muted-foreground bg-muted/30">
               <span></span>
@@ -318,27 +345,15 @@ export function ManagerDailyForm({ selectedDate }: Props) {
             <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm bg-red-50/50">
               <span className="text-muted-foreground text-xs">CC Bag Closure <span className="text-destructive font-bold">(-ve)</span></span>
               <div>
-                <CurrencyInput
-                  value={form.ccBagClosureCoins}
-                  onChange={v => setForm(f => ({ ...f, ccBagClosureCoins: Math.abs(v) }))}
-                  placeholder="0.00"
-                />
+                <CurrencyInput value={form.ccBagClosureCoins} onChange={v => setForm(f => ({ ...f, ccBagClosureCoins: Math.abs(v) }))} placeholder="0.00" />
                 <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureCoins)} /></div>
               </div>
               <div>
-                <CurrencyInput
-                  value={form.ccBagClosureEasypay}
-                  onChange={v => setForm(f => ({ ...f, ccBagClosureEasypay: Math.abs(v) }))}
-                  placeholder="0.00"
-                />
+                <CurrencyInput value={form.ccBagClosureEasypay} onChange={v => setForm(f => ({ ...f, ccBagClosureEasypay: Math.abs(v) }))} placeholder="0.00" />
                 <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureEasypay)} /></div>
               </div>
               <div>
-                <CurrencyInput
-                  value={form.ccBagClosureCashConnect}
-                  onChange={v => setForm(f => ({ ...f, ccBagClosureCashConnect: Math.abs(v) }))}
-                  placeholder="0.00"
-                />
+                <CurrencyInput value={form.ccBagClosureCashConnect} onChange={v => setForm(f => ({ ...f, ccBagClosureCashConnect: Math.abs(v) }))} placeholder="0.00" />
                 <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureCashConnect)} /></div>
               </div>
             </div>
@@ -346,18 +361,11 @@ export function ManagerDailyForm({ selectedDate }: Props) {
             {/* Row 3: Transfer from Coins */}
             <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm bg-blue-50/30">
               <span className="text-muted-foreground text-xs">Transfer from Coins</span>
-              {/* Coins column: editable, must be negative */}
               <div>
-                <CurrencyInput
-                  value={form.transferFromCoins}
-                  onChange={v => setForm(f => ({ ...f, transferFromCoins: Math.abs(v) }))}
-                  placeholder="0.00"
-                />
+                <CurrencyInput value={form.transferFromCoins} onChange={v => setForm(f => ({ ...f, transferFromCoins: Math.abs(v) }))} placeholder="0.00" />
                 <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.transferFromCoins)} /></div>
               </div>
-              {/* EasyPay column: not applicable */}
               <div className="text-center text-xs text-muted-foreground">—</div>
-              {/* Cash Connect column: same amount but positive (auto) */}
               <div className="text-right">
                 <CurrencyDisplay value={Math.abs(form.transferFromCoins)} className="font-semibold text-green-700" />
                 <div className="text-xs text-muted-foreground">auto (+ve)</div>
@@ -373,8 +381,8 @@ export function ManagerDailyForm({ selectedDate }: Props) {
             </div>
           </Section>
 
-          {/* Banking */}
-          <Section title="Banking" color="blue">
+          {/* 2.1 Banking */}
+          <Section title="2.1 Banking" color="blue">
             <DataRow label="Bank Charges">
               <CurrencyInput value={form.bankCharges} onChange={v => setForm(f => ({ ...f, bankCharges: v }))} />
             </DataRow>
@@ -382,34 +390,19 @@ export function ManagerDailyForm({ selectedDate }: Props) {
               <CurrencyInput value={form.banking} onChange={v => setForm(f => ({ ...f, banking: v }))} />
             </DataRow>
           </Section>
-
-          {/* Cashier Short/Over from cashup */}
-          {cashup && (() => {
-            const shopNetSales = cashup.shop.income - cashup.shop.returns;
-            const shopPayouts = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0);
-            const shopReceipts = cashup.shop.receipts.reduce((s, r) => s + r.amount, 0);
-            const shopTakings = shopNetSales - shopPayouts - cashup.shop.lottoPayouts + shopReceipts;
-            const shopMOP = cashup.shop.cashConnectTotal + cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0) + cashup.shop.accounts.reduce((s, a) => s + a.amount, 0);
-            const shopDiff = shopTakings - shopMOP;
-            const optNetSales = cashup.opt.income - cashup.opt.returns;
-            const optMOP = cashup.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0) + cashup.opt.accounts.reduce((s, a) => s + a.amount, 0);
-            const optDiff = optNetSales - optMOP;
-            return (
-              <Section title="Cashier Short / (Over) from Cashup" color="default">
-                <DataRow label="Shop Till">
-                  <div className={`rounded px-2 py-0.5 text-sm font-semibold ${Math.abs(shopDiff) < 0.01 ? 'status-green' : 'status-red'}`}>
-                    <CurrencyDisplay value={shopDiff} />
-                  </div>
-                </DataRow>
-                <DataRow label="OPT">
-                  <div className={`rounded px-2 py-0.5 text-sm font-semibold ${Math.abs(optDiff) < 0.01 ? 'status-green' : 'status-red'}`}>
-                    <CurrencyDisplay value={optDiff} />
-                  </div>
-                </DataRow>
-              </Section>
-            );
-          })()}
         </div>
+      </div>
+
+      {/* Save button at bottom */}
+      <div className="flex flex-col items-center gap-2 pt-2 pb-4">
+        <Button onClick={handleSave} size="lg" className="w-full max-w-xs">
+          <Save className="h-4 w-4 mr-2" />Save Entry
+        </Button>
+        {savedAt && (
+          <p className="text-xs text-muted-foreground">
+            Originally saved: <span className="font-medium">{savedAt}</span>
+          </p>
+        )}
       </div>
     </div>
   );
