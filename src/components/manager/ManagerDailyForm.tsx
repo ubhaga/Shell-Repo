@@ -98,6 +98,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const { payoutSuppliers: SUPPLIERS, eftSuppliers, managerNames: MANAGER_NAMES, categories: CATEGORIES } = useMasterDataStore();
   const existing = getManagerEntryByDate(selectedDate);
   const cashup = getCashupByDate(selectedDate);
+  const isLocked = selectedDate < '2026-01-01';
 
   // Get previous day's closing balances (auto-populate opening)
   const prevDate = format(subDays(new Date(selectedDate), 1), 'yyyy-MM-dd');

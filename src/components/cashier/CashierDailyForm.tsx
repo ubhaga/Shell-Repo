@@ -53,6 +53,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
   const { payoutSuppliers, accounts: ACCOUNTS, cashierNames: CASHIER_NAMES } = useMasterDataStore();
   const SUPPLIERS = payoutSuppliers;
   const existing = getCashupByDate(selectedDate);
+  const isLocked = selectedDate < '2026-01-01';
 
   const [form, setForm] = useState<Omit<DailyCashup, 'id'>>(() => ({
     date: selectedDate,
