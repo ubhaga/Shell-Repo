@@ -248,15 +248,15 @@ export function ManagerDailyForm({ selectedDate }: Props) {
         </Section>
       )}
 
-      {/* 1.1 and 1.2 side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Section title="1.1 Payout Invoices (to enter on branch system)" color="red">
-          <InvoiceTable lines={form.payoutInvoices} type="payout" />
-        </Section>
-        <Section title="1.2 EFT / Non-Cash Invoices" color="blue">
-          <InvoiceTable lines={form.eftInvoices} type="eft" />
-        </Section>
-      </div>
+      {/* 1.1 Payout Invoices */}
+      <Section title="1.1 Payout Invoices (to enter on branch system)" color="red">
+        <InvoiceTable lines={form.payoutInvoices} type="payout" />
+      </Section>
+
+      {/* 1.2 EFT / Non-Cash Invoices */}
+      <Section title="1.2 EFT / Non-Cash Invoices" color="blue">
+        <InvoiceTable lines={form.eftInvoices} type="eft" />
+      </Section>
 
       {/* 1.3 Invoice Reconciliation vs Branch Day End — full width */}
       <Section title="1.3 Invoice Reconciliation vs Branch Day End" color="green">
