@@ -500,7 +500,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
 
       {/* Save button at bottom */}
       <div className="flex flex-col items-center gap-2 pt-2 pb-4">
-        <Button onClick={handleSave} size="lg" className="w-full max-w-xs">
+        <Button onClick={handleSave} size="lg" className="w-full max-w-xs" disabled={isLocked}>
           <Save className="h-4 w-4 mr-2" />Save Entry
         </Button>
         {savedAt && (
