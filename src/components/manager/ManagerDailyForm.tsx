@@ -98,6 +98,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const { payoutSuppliers: SUPPLIERS, eftSuppliers, managerNames: MANAGER_NAMES, categories: CATEGORIES } = useMasterDataStore();
   const existing = getManagerEntryByDate(selectedDate);
   const cashup = getCashupByDate(selectedDate);
+  const isLocked = selectedDate < '2026-01-01';
 
   // Get previous day's closing balances (auto-populate opening)
   const prevDate = format(subDays(new Date(selectedDate), 1), 'yyyy-MM-dd');
@@ -216,6 +217,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
   const handleSave = () => {
+    if (isLocked) return;
     if (existing) updateManagerEntry(existing.id, form);
     else addManagerEntry(form);
     const now = format(new Date(), 'dd MMM yyyy HH:mm:ss');
@@ -246,6 +248,15 @@ export function ManagerDailyForm({ selectedDate }: Props) {
 
   return (
     <div className="space-y-3">
+      {isLocked && (
+        <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/40 rounded-lg text-destructive">
+          <Lock className="h-5 w-5 shrink-0" />
+          <div>
+            <p className="font-semibold text-sm">Period Locked — Read Only</p>
+            <p className="text-xs opacity-80">Dates before 1 January 2026 are locked. No data can be posted or modified.</p>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="bg-card border rounded-lg p-3 grid grid-cols-2 md:grid-cols-3 gap-3">
         <div>
@@ -489,7 +500,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
 
       {/* Save button at bottom */}
       <div className="flex flex-col items-center gap-2 pt-2 pb-4">
-        <Button onClick={handleSave} size="lg" className="w-full max-w-xs">
+        <Button onClick={handleSave} size="lg" className="w-full max-w-xs" disabled={isLocked}>
           <Save className="h-4 w-4 mr-2" />Save Entry
         </Button>
         {savedAt && (

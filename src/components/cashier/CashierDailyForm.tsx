@@ -6,7 +6,7 @@ import { useMasterDataStore } from '@/store/masterDataStore';
 import type { DailyCashup, PayoutLine, ReceiptLine, SpeedpointEntry, AccountEntry, OtherAdjustment } from '@/types/cashup';
 import { Section, DataRow, CurrencyInput, CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Save, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Save, CheckCircle, AlertCircle, Lock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
@@ -53,6 +53,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
   const { payoutSuppliers, accounts: ACCOUNTS, cashierNames: CASHIER_NAMES } = useMasterDataStore();
   const SUPPLIERS = payoutSuppliers;
   const existing = getCashupByDate(selectedDate);
+  const isLocked = selectedDate < '2026-01-01';
 
   const [form, setForm] = useState<Omit<DailyCashup, 'id'>>(() => ({
     date: selectedDate,
@@ -119,10 +120,11 @@ export function CashierDailyForm({ selectedDate }: Props) {
   const optDifference = optTotalTakings - optSpeedpointTotal - optAccountTotal;
 
   const handleSave = () => {
+    if (isLocked) return;
     if (existing) updateCashup(existing.id, form);
     else addCashup(form);
     const now = format(new Date(), 'dd MMM yyyy, HH:mm:ss');
-    setSavedAt(prev => prev ?? now); // only record the first/original save time
+    setSavedAt(prev => prev ?? now);
     toast({ title: 'Cashup saved', description: `Saved for ${format(new Date(selectedDate), 'dd MMM yyyy')}` });
   };
 
@@ -177,6 +179,15 @@ export function CashierDailyForm({ selectedDate }: Props) {
 
   return (
     <div className="space-y-3">
+      {isLocked && (
+        <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/40 rounded-lg text-destructive">
+          <Lock className="h-5 w-5 shrink-0" />
+          <div>
+            <p className="font-semibold text-sm">Period Locked — Read Only</p>
+            <p className="text-xs opacity-80">Dates before 1 January 2026 are locked. No data can be posted or modified.</p>
+          </div>
+        </div>
+      )}
       {/* Header info */}
       <div className="bg-card border rounded-lg p-3 grid grid-cols-2 md:grid-cols-5 gap-3">
         <div>
@@ -483,7 +494,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
 
       {/* ─── SAVE BUTTON ─── */}
       <div className="flex flex-col items-center gap-2 pt-2 pb-4">
-        <Button onClick={handleSave} size="lg" className="px-12">
+        <Button onClick={handleSave} size="lg" className="px-12" disabled={isLocked}>
           <Save className="h-4 w-4 mr-2" /> Save Cashup
         </Button>
         {savedAt && (
