@@ -120,10 +120,11 @@ export function CashierDailyForm({ selectedDate }: Props) {
   const optDifference = optTotalTakings - optSpeedpointTotal - optAccountTotal;
 
   const handleSave = () => {
+    if (isLocked) return;
     if (existing) updateCashup(existing.id, form);
     else addCashup(form);
     const now = format(new Date(), 'dd MMM yyyy, HH:mm:ss');
-    setSavedAt(prev => prev ?? now); // only record the first/original save time
+    setSavedAt(prev => prev ?? now);
     toast({ title: 'Cashup saved', description: `Saved for ${format(new Date(selectedDate), 'dd MMM yyyy')}` });
   };
 

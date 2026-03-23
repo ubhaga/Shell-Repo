@@ -217,6 +217,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
   const handleSave = () => {
+    if (isLocked) return;
     if (existing) updateManagerEntry(existing.id, form);
     else addManagerEntry(form);
     const now = format(new Date(), 'dd MMM yyyy HH:mm:ss');
