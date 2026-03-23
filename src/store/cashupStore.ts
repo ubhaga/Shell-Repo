@@ -63,16 +63,32 @@ export const useCashupStore = create<CashupStore>()(
     }),
     {
       name: 'cashup-store',
-      version: 2,
+      version: 3,
       migrate: (persisted: unknown, version: number) => {
+        const state = persisted as { managerEntries?: Array<Record<string, unknown>> };
         if (version < 2) {
           // Rename transferFromCoin -> transferFromCoins in all manager entries
-          const state = persisted as { managerEntries?: Array<Record<string, unknown>> };
           if (state?.managerEntries) {
             state.managerEntries = state.managerEntries.map(e => {
               if ('transferFromCoin' in e) {
                 const { transferFromCoin, ...rest } = e;
                 return { ...rest, transferFromCoins: transferFromCoin ?? 0 };
+              }
+              return e;
+            });
+          }
+        }
+        if (version < 3) {
+          // Patch Jan 1 2026 opening balances to spreadsheet values
+          if (state?.managerEntries) {
+            state.managerEntries = state.managerEntries.map(e => {
+              if (e.date === '2026-01-01') {
+                return {
+                  ...e,
+                  coinsOpeningBalance: 4483.15,
+                  easypayOpeningBalance: 3500,
+                  cashConnectOpeningBalance: 2000,
+                };
               }
               return e;
             });
