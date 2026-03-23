@@ -184,7 +184,8 @@ export function ManagerDailyForm({ selectedDate }: Props) {
         </div>
       </div>
     </>
-  );
+    );
+  };
 
   return (
     <div className="space-y-3">
