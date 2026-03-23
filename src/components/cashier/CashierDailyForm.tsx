@@ -494,7 +494,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
 
       {/* ─── SAVE BUTTON ─── */}
       <div className="flex flex-col items-center gap-2 pt-2 pb-4">
-        <Button onClick={handleSave} size="lg" className="px-12">
+        <Button onClick={handleSave} size="lg" className="px-12" disabled={isLocked}>
           <Save className="h-4 w-4 mr-2" /> Save Cashup
         </Button>
         {savedAt && (
