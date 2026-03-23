@@ -110,6 +110,8 @@ export function CashierDailyForm({ selectedDate }: Props) {
   const handleSave = () => {
     if (existing) updateCashup(existing.id, form);
     else addCashup(form);
+    const now = format(new Date(), 'dd MMM yyyy, HH:mm:ss');
+    setSavedAt(prev => prev ?? now); // only record the first/original save time
     toast({ title: 'Cashup saved', description: `Saved for ${format(new Date(selectedDate), 'dd MMM yyyy')}` });
   };
 
