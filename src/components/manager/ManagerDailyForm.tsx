@@ -272,12 +272,30 @@ export function ManagerDailyForm({ selectedDate }: Props) {
 
       {/* 1.1 Payout Invoices */}
       <Section title="1.1 Payout Invoices (to enter on branch system)" color="red">
-        <InvoiceTable lines={form.payoutInvoices} type="payout" />
+        <InvoiceTable
+          lines={form.payoutInvoices}
+          supplierList={SUPPLIERS}
+          categories={CATEGORIES}
+          invoiceTotal={payoutInvoiceTotal}
+          vatTotal={payoutVatTotal}
+          onAdd={() => addInvoice('payout')}
+          onRemove={id => removeInvoice(id, 'payout')}
+          onUpdate={(id, patch) => updateInvoice(id, patch, 'payout')}
+        />
       </Section>
 
       {/* 1.2 EFT / Non-Cash Invoices */}
       <Section title="1.2 EFT / Non-Cash Invoices" color="blue">
-        <InvoiceTable lines={form.eftInvoices} type="eft" />
+        <InvoiceTable
+          lines={form.eftInvoices}
+          supplierList={eftSuppliers}
+          categories={CATEGORIES}
+          invoiceTotal={eftInvoiceTotal}
+          vatTotal={eftVatTotal}
+          onAdd={() => addInvoice('eft')}
+          onRemove={id => removeInvoice(id, 'eft')}
+          onUpdate={(id, patch) => updateInvoice(id, patch, 'eft')}
+        />
       </Section>
 
       {/* 1.3 Invoice Reconciliation vs Branch Day End — full width */}
