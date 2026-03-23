@@ -102,7 +102,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   // Get previous day's closing balances (auto-populate opening)
   const prevDate = format(subDays(new Date(selectedDate), 1), 'yyyy-MM-dd');
   const prevEntry = getManagerEntryByDate(prevDate);
-  const isFirstJan2025 = selectedDate === '2025-01-01';
+  const isFirstJan2026 = selectedDate === '2026-01-01';
 
   const [form, setForm] = useState<Omit<ManagerDailyEntry, 'id'>>(() => blankEntry(selectedDate));
 
@@ -112,7 +112,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
     } else {
       const base = blankEntry(selectedDate);
 
-      if (isFirstJan2025) {
+      if (isFirstJan2026) {
         // Seed Jan 1 opening balances from original spreadsheet
         base.coinsOpeningBalance = 4483.15;
         base.easypayOpeningBalance = 3500;
@@ -211,7 +211,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const bankingCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) - bankChargesCalc) * 100) / 100;
 
 
-  const openingIsReadOnly = !isFirstJan2025 && !!prevEntry;
+  const openingIsReadOnly = !isFirstJan2026 && !!prevEntry;
 
   const [savedAt, setSavedAt] = useState<string | null>(null);
 

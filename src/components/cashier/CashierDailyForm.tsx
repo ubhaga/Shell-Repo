@@ -69,8 +69,19 @@ export function CashierDailyForm({ selectedDate }: Props) {
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
   useEffect(() => {
-    if (existing) setForm({ ...existing });
-    else setForm(f => ({ ...f, date: selectedDate, month: selectedDate.slice(0, 7), shop: blankShopShift(), opt: blankOptShift() }));
+    if (existing) {
+      setForm({ ...existing });
+    } else {
+      const shopBase = blankShopShift();
+      // Seed Jan 1 2026 MOP Cash from spreadsheet (Daily Cashup row)
+      if (selectedDate === '2026-01-01') {
+        shopBase.coins = 54;
+        shopBase.easyPay = 2000;
+        shopBase.cashDepositedBanking = 13110;
+        shopBase.cashConnectTotal = 54 + 2000 + 13110; // 15164
+      }
+      setForm(f => ({ ...f, date: selectedDate, month: selectedDate.slice(0, 7), shop: shopBase, opt: blankOptShift() }));
+    }
     setSavedAt(null);
   }, [selectedDate, existing?.id]);
 
