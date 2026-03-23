@@ -492,6 +492,15 @@ export function ManagerDailyForm({ selectedDate }: Props) {
             </tr>
           </tbody>
         </table>
+        <div className="border-t pt-2 pb-2 px-3">
+          <label className="text-xs text-muted-foreground font-medium">Explanations / Notes</label>
+          <input
+            value={form.cashReconcNotes}
+            onChange={e => setForm(f => ({ ...f, cashReconcNotes: e.target.value }))}
+            className="input-cell w-full mt-0.5 text-left text-sm"
+            placeholder="Any notes for section 2..."
+          />
+        </div>
       </Section>
 
       {/* 2.1 Banking — full width, below 2 */}
