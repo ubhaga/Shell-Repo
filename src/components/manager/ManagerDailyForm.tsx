@@ -24,7 +24,7 @@ interface Props { selectedDate: string; }
 
 export function ManagerDailyForm({ selectedDate }: Props) {
   const { getManagerEntryByDate, addManagerEntry, updateManagerEntry, getCashupByDate, managerEntries } = useCashupStore();
-  const { payoutSuppliers: SUPPLIERS, eftSuppliers, managerNames: MANAGER_NAMES } = useMasterDataStore();
+  const { payoutSuppliers: SUPPLIERS, eftSuppliers, managerNames: MANAGER_NAMES, categories: CATEGORIES } = useMasterDataStore();
   const existing = getManagerEntryByDate(selectedDate);
   const cashup = getCashupByDate(selectedDate);
 
