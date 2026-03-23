@@ -106,6 +106,8 @@ export interface ManagerDailyEntry {
   // Branch day end
   branchDayEndTotal: number;
   branchDayEndVat: number;
+  invoiceNotes: string;
+  cashReconcNotes: string;
   bankCharges: number;
   banking: number;
   locked: boolean;
