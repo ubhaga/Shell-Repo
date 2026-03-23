@@ -25,17 +25,19 @@ export function Dashboard({ selectedDate }: Props) {
   const optNetSales = cashup ? cashup.opt.income - cashup.opt.returns : 0;
   const totalNetSales = shopNetSales + optNetSales;
 
-  const shopPayouts = cashup ? cashup.shop.payouts.reduce((s, p) => s + p.amount, 0) + cashup.shop.lottoPayouts : 0;
+  const shopPayoutsTotal = cashup ? cashup.shop.payouts.reduce((s, p) => s + p.amount, 0) : 0;
   const shopReceipts = cashup ? cashup.shop.receipts.reduce((s, r) => s + r.amount, 0) : 0;
-  const shopTakings = shopNetSales - shopPayouts + shopReceipts;
+  const shopTakings = cashup ? shopNetSales - shopPayoutsTotal - cashup.shop.lottoPayouts + shopReceipts : 0;
 
   const shopSP = cashup ? cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0) : 0;
   const optSP = cashup ? cashup.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0) : 0;
   const shopAcc = cashup ? cashup.shop.accounts.reduce((s, a) => s + a.amount, 0) : 0;
   const optAcc = cashup ? cashup.opt.accounts.reduce((s, a) => s + a.amount, 0) : 0;
+  const shopOther = cashup ? cashup.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0) : 0;
 
-  const shopMopTotal = cashup ? cashup.shop.cashConnectTotal + shopSP + shopAcc : 0;
-  const shopDiff = shopTakings - shopMopTotal;
+  // Match CashierDailyForm exactly: cashConnectTotal = cashDepositedBanking + easyPay + coins
+  const cashConnectTotal = cashup ? cashup.shop.cashDepositedBanking + cashup.shop.easyPay + cashup.shop.coins : 0;
+  const shopDiff = cashup ? shopTakings - cashConnectTotal - shopSP - shopAcc - shopOther - cashup.shop.returns_mop - cashup.shop.attendantShortOver : 0;
   const optMopTotal = optSP + optAcc;
   const optDiff = optNetSales - optMopTotal;
 
@@ -140,10 +142,10 @@ export function Dashboard({ selectedDate }: Props) {
                 { label: 'Shop Net Sales', v: shopNetSales },
                 { label: 'OPT Net Sales', v: optNetSales },
                 { label: 'Total Net Sales', v: totalNetSales, bold: true },
-                { label: 'Total Payouts', v: shopPayouts },
+                { label: 'Total Payouts', v: shopPayoutsTotal + (cashup.shop.lottoPayouts ?? 0) },
                 { label: 'Total Receipts', v: shopReceipts },
                 { label: 'Shop Total Takings', v: shopTakings, bold: true },
-                { label: 'Cash Connect', v: cashup.shop.cashConnectTotal },
+                { label: 'Cash Connect', v: cashConnectTotal },
                 { label: 'Shop Speedpoints', v: shopSP },
                 { label: 'OPT Speedpoints', v: optSP },
                 { label: 'Total Speedpoints', v: shopSP + optSP, bold: true },
