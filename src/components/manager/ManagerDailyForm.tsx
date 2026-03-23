@@ -334,44 +334,27 @@ export function ManagerDailyForm({ selectedDate }: Props) {
 
       {/* 2. Cash Reconciliation — full width, below 1.3 */}
       <Section title="2. Cash Reconciliation" color="orange">
-        <div className="px-3 py-1 border-b grid grid-cols-4 gap-2 text-xs font-semibold text-muted-foreground bg-muted/30">
+        {/* Column headers — widths match every row below */}
+        <div className="px-3 py-1 border-b grid grid-cols-[1fr_1fr_1fr_1fr] gap-2 text-xs font-semibold text-muted-foreground bg-muted/30">
           <span></span>
           <span className="text-right">Coins</span>
           <span className="text-right">EasyPay</span>
           <span className="text-right">Cash Connect</span>
         </div>
-        <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm">
+
+        {/* Opening Balance — always read-only, auto-filled from previous day closing */}
+        <div className="px-3 py-1.5 border-b grid grid-cols-[1fr_1fr_1fr_1fr] gap-2 items-center text-sm">
           <div className="flex items-center gap-1">
             <span className="text-muted-foreground text-xs">Opening Balance</span>
-            {openingIsReadOnly && <Lock className="h-3 w-3 text-muted-foreground" />}
+            <Lock className="h-3 w-3 text-muted-foreground" />
           </div>
-          {openingIsReadOnly ? (
-            <>
-              <div className="text-right"><CurrencyDisplay value={form.coinsOpeningBalance} /></div>
-              <div className="text-right"><CurrencyDisplay value={form.easypayOpeningBalance} /></div>
-              <div className="text-right"><CurrencyDisplay value={form.cashConnectOpeningBalance} /></div>
-            </>
-          ) : (
-            <>
-              <CurrencyInput value={form.coinsOpeningBalance} onChange={v => setForm(f => ({ ...f, coinsOpeningBalance: v }))} />
-              <CurrencyInput value={form.easypayOpeningBalance} onChange={v => setForm(f => ({ ...f, easypayOpeningBalance: v }))} />
-              <CurrencyInput value={form.cashConnectOpeningBalance} onChange={v => setForm(f => ({ ...f, cashConnectOpeningBalance: v }))} />
-            </>
-          )}
+          <div className="text-right"><CurrencyDisplay value={form.coinsOpeningBalance} /></div>
+          <div className="text-right"><CurrencyDisplay value={form.easypayOpeningBalance} /></div>
+          <div className="text-right"><CurrencyDisplay value={form.cashConnectOpeningBalance} /></div>
         </div>
-        <div className="px-3 py-1 border-b grid grid-cols-4 gap-2 text-xs font-semibold text-muted-foreground bg-muted/10">
-          <span>Daily Cashup</span>
-          <span className="text-right">Daily Coins</span>
-          <span className="text-right">Cash for Easypay</span>
-          <span className="text-right">Cash for CC</span>
-        </div>
-        <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm">
-          <span className="text-muted-foreground text-xs">Deposited</span>
-          <CurrencyInput value={form.dailyCoins} onChange={v => setForm(f => ({ ...f, dailyCoins: v }))} />
-          <CurrencyInput value={form.cashDepositedEasypay} onChange={v => setForm(f => ({ ...f, cashDepositedEasypay: v }))} />
-          <CurrencyInput value={form.cashDepositedCashConnect} onChange={v => setForm(f => ({ ...f, cashDepositedCashConnect: v }))} />
-        </div>
-        <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm bg-red-50/50">
+
+        {/* CC Bag Closure — all negative */}
+        <div className="px-3 py-1.5 border-b grid grid-cols-[1fr_1fr_1fr_1fr] gap-2 items-center text-sm bg-red-50/50">
           <span className="text-muted-foreground text-xs">CC Bag Closure <span className="text-destructive font-bold">(-ve)</span></span>
           <div>
             <CurrencyInput value={form.ccBagClosureCoins} onChange={v => setForm(f => ({ ...f, ccBagClosureCoins: Math.abs(v) }))} placeholder="0.00" />
@@ -386,7 +369,9 @@ export function ManagerDailyForm({ selectedDate }: Props) {
             <div className="text-xs text-destructive text-right">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureCashConnect)} /></div>
           </div>
         </div>
-        <div className="px-3 py-1.5 border-b grid grid-cols-4 gap-2 items-center text-sm bg-blue-50/30">
+
+        {/* Transfer from Coins */}
+        <div className="px-3 py-1.5 border-b grid grid-cols-[1fr_1fr_1fr_1fr] gap-2 items-center text-sm bg-blue-50/30">
           <span className="text-muted-foreground text-xs">Transfer from Coins</span>
           <div>
             <CurrencyInput value={form.transferFromCoins} onChange={v => setForm(f => ({ ...f, transferFromCoins: Math.abs(v) }))} placeholder="0.00" />
@@ -398,7 +383,9 @@ export function ManagerDailyForm({ selectedDate }: Props) {
             <div className="text-xs text-muted-foreground">auto (+ve)</div>
           </div>
         </div>
-        <div className="px-3 py-1.5 grid grid-cols-4 gap-2 items-center text-sm bg-secondary font-semibold rounded-b-md">
+
+        {/* Closing Balance */}
+        <div className="px-3 py-1.5 grid grid-cols-[1fr_1fr_1fr_1fr] gap-2 items-center text-sm bg-secondary font-semibold rounded-b-md">
           <span>Closing Balance</span>
           <CurrencyDisplay value={coinsClosing} highlight />
           <CurrencyDisplay value={easypayClosing} highlight />
