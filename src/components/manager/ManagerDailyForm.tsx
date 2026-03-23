@@ -414,10 +414,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
               <td className="px-3 py-1.5 text-xs text-muted-foreground">
                 CC Bag Closure BAG no. <span className="text-destructive font-bold">(-ve)</span>
               </td>
-              <td className="px-3 py-1.5">
-                <CurrencyInput value={form.ccBagClosureCoins} onChange={v => setForm(f => ({ ...f, ccBagClosureCoins: Math.abs(v) }))} className="w-full" placeholder="0.00" />
-                <div className="text-xs text-destructive text-right mt-0.5"><CurrencyDisplay value={-Math.abs(form.ccBagClosureCoins)} /></div>
-              </td>
+              <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
               <td className="px-3 py-1.5">
                 <CurrencyInput value={form.ccBagClosureEasypay} onChange={v => setForm(f => ({ ...f, ccBagClosureEasypay: Math.abs(v) }))} className="w-full" placeholder="0.00" />
                 <div className="text-xs text-destructive text-right mt-0.5"><CurrencyDisplay value={-Math.abs(form.ccBagClosureEasypay)} /></div>
