@@ -205,62 +205,6 @@ export function ManagerDailyForm({ selectedDate }: Props) {
     toast({ title: 'Manager entry saved', description: `Saved for ${format(new Date(selectedDate), 'dd MMM yyyy')}` });
   };
 
-  const InvoiceTable = ({ lines, type }: { lines: InvoiceLine[], type: 'payout' | 'eft' }) => {
-    const supplierList = type === 'eft' ? eftSuppliers : SUPPLIERS;
-    return (
-    <>
-      <div className="px-3 py-1 border-b grid grid-cols-12 gap-1 text-xs text-muted-foreground font-semibold bg-muted/30">
-        <span className="col-span-3">Supplier</span>
-        <span className="col-span-3">Category</span>
-        <span className="col-span-2">Doc No.</span>
-        <span className="col-span-2 text-right">Incl.</span>
-        <span className="col-span-1 text-right">VAT</span>
-        <span></span>
-      </div>
-      {lines.map(l => (
-        <div key={l.id} className="px-2 py-1 border-b grid grid-cols-12 gap-1 items-center">
-          <div className="col-span-3">
-            <select value={l.supplier} onChange={e => updateInvoice(l.id, { supplier: e.target.value }, type)}
-              className="input-cell w-full text-left text-xs py-0.5">
-              <option value="">Select...</option>
-              {supplierList.map(s => <option key={s}>{s}</option>)}
-            </select>
-          </div>
-          <div className="col-span-3">
-            <select value={l.category} onChange={e => updateInvoice(l.id, { category: e.target.value }, type)}
-              className="input-cell w-full text-left text-xs py-0.5">
-              <option value="">Category...</option>
-              {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-            </select>
-          </div>
-          <div className="col-span-2">
-            <input value={l.branchDocNum} onChange={e => updateInvoice(l.id, { branchDocNum: e.target.value }, type)}
-              className="input-cell w-full text-xs py-0.5" placeholder="Doc#" />
-          </div>
-          <div className="col-span-2">
-            <CurrencyInput value={l.inclusive} onChange={v => updateInvoice(l.id, { inclusive: v }, type)} className="w-full" />
-          </div>
-          <div className="col-span-1">
-            <CurrencyInput value={l.vat} onChange={v => updateInvoice(l.id, { vat: v }, type)} className="w-full" />
-          </div>
-          <button onClick={() => removeInvoice(l.id, type)} className="text-destructive p-0.5 flex justify-center">
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      ))}
-      <div className="px-3 py-1.5 flex justify-between items-center">
-        <Button variant="outline" size="sm" onClick={() => addInvoice(type)} className="text-xs h-7">
-          <Plus className="h-3 w-3 mr-1" />Add Invoice
-        </Button>
-        <div className="flex gap-4 text-sm font-semibold">
-          <span>Total: <CurrencyDisplay value={type === 'payout' ? payoutInvoiceTotal : eftInvoiceTotal} highlight /></span>
-          <span>VAT: <CurrencyDisplay value={type === 'payout' ? payoutVatTotal : eftVatTotal} /></span>
-        </div>
-      </div>
-    </>
-    );
-  };
-
   // Cashier short/over calculations — must match CashierDailyForm exactly
   const cashierBlock = cashup ? (() => {
     const shopNetSales = cashup.shop.income - cashup.shop.returns;
