@@ -459,10 +459,14 @@ export function ManagerDailyForm({ selectedDate }: Props) {
       {/* 2.1 Banking — full width, below 2 */}
       <Section title="2.1 Banking" color="blue">
         <DataRow label="Bank Charges">
-          <CurrencyInput value={form.bankCharges} onChange={v => setForm(f => ({ ...f, bankCharges: v }))} />
+          <div className="input-cell text-right bg-muted/30 text-sm px-2 py-1 rounded min-w-[120px]">
+            <CurrencyDisplay value={parseFloat((form.ccBagClosureCashConnect / 100 * 3297 * 1.15).toFixed(2))} />
+          </div>
         </DataRow>
         <DataRow label="Banking (net deposited)">
-          <CurrencyInput value={form.banking} onChange={v => setForm(f => ({ ...f, banking: v }))} />
+          <div className="input-cell text-right bg-muted/30 text-sm px-2 py-1 rounded min-w-[120px]">
+            <CurrencyDisplay value={parseFloat((form.ccBagClosureCashConnect - (form.ccBagClosureCashConnect / 100 * 3297 * 1.15)).toFixed(2))} />
+          </div>
         </DataRow>
       </Section>
 
