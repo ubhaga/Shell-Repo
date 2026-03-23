@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useCashupStore } from '@/store/cashupStore';
-import { CATEGORIES } from '@/data/masterData';
 import { useMasterDataStore } from '@/store/masterDataStore';
 import type { ManagerDailyEntry, InvoiceLine } from '@/types/cashup';
 import { Section, DataRow, CurrencyInput, CurrencyDisplay } from '@/components/ui/CashupUI';
