@@ -179,18 +179,18 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const invMatch = Math.abs(totalAllInvoices - form.branchDayEndTotal) < 0.50;
   const vatMatch = Math.abs(totalAllVat - form.branchDayEndVat) < 1.00;
 
-  // Cash reconciliation
-  // Opening = previous day closing (read-only except 1 Jan)
-  // Row 2: CC Bag Closure — all values negative (user enters positive, we store/display as negative)
-  // Row 3: Transfer from Coins — coins NEGATIVE (cash leaves coins), cash connect POSITIVE (cash arrives in CC)
-  // Closing = Opening + Daily + CCBagClosure + Transfer
+  // Daily Cashup pulled directly from Cashier form (read-only)
+  const dailyCashupCoins = cashup?.shop.coins ?? 0;
+  const dailyCashupEasypay = cashup?.shop.easyPay ?? 0;
+  const dailyCashupCashConnect = cashup?.shop.cashDepositedBanking ?? 0;
+
   // CLOSING = Opening + DailyCashup + CCBagClosure + Transfer
-  const coinsClosing = form.coinsOpeningBalance + form.dailyCoins
+  const coinsClosing = form.coinsOpeningBalance + dailyCashupCoins
     - Math.abs(form.ccBagClosureCoins)
     - Math.abs(form.transferFromCoins);
-  const easypayClosing = form.easypayOpeningBalance + form.cashDepositedEasypay
+  const easypayClosing = form.easypayOpeningBalance + dailyCashupEasypay
     - Math.abs(form.ccBagClosureEasypay);
-  const ccClosing = form.cashConnectOpeningBalance + form.cashDepositedCashConnect
+  const ccClosing = form.cashConnectOpeningBalance + dailyCashupCashConnect
     - Math.abs(form.ccBagClosureCashConnect)
     + Math.abs(form.transferFromCoins);
 
@@ -346,45 +346,71 @@ export function ManagerDailyForm({ selectedDate }: Props) {
           <thead>
             <tr className="bg-muted/40 text-xs font-semibold text-muted-foreground border-b">
               <th className="px-3 py-2 text-left font-semibold">DAILY CASH</th>
-              <th className="px-3 py-2 text-right font-semibold">Coins</th>
-              <th className="px-3 py-2 text-right font-semibold">Easy Pay</th>
-              <th className="px-3 py-2 text-right font-semibold">Cash Connect</th>
-              <th className="px-3 py-2 text-right font-semibold">TOTAL CC</th>
+              <th className="px-3 py-2 text-center font-semibold">Coins</th>
+              <th className="px-3 py-2 text-center font-semibold">Easy Pay</th>
+              <th className="px-3 py-2 text-center font-semibold">Cash Connect</th>
+              <th className="px-3 py-2 text-center font-semibold">TOTAL CC</th>
             </tr>
           </thead>
           <tbody>
-            {/* Opening Balance — read-only */}
+            {/* Opening Balance — read-only, values aligned to match input widths below */}
             <tr className="border-b">
-              <td className="px-3 py-1.5 text-xs font-medium flex items-center gap-1">
-                OPENING BALANCE <Lock className="h-3 w-3 text-muted-foreground" />
+              <td className="px-3 py-1.5 text-xs font-medium">
+                <span className="flex items-center gap-1">OPENING BALANCE <Lock className="h-3 w-3 text-muted-foreground" /></span>
               </td>
-              <td className="px-3 py-1.5 text-right"><CurrencyDisplay value={form.coinsOpeningBalance} /></td>
-              <td className="px-3 py-1.5 text-right"><CurrencyDisplay value={form.easypayOpeningBalance} /></td>
-              <td className="px-3 py-1.5 text-right"><CurrencyDisplay value={form.cashConnectOpeningBalance} /></td>
-              <td className="px-3 py-1.5 text-right font-semibold">
-                <CurrencyDisplay value={form.easypayOpeningBalance + form.cashConnectOpeningBalance} />
+              {/* Wrap in same-width container as CurrencyInput so numbers align */}
+              <td className="px-3 py-1.5">
+                <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded">
+                  <CurrencyDisplay value={form.coinsOpeningBalance} />
+                </div>
+              </td>
+              <td className="px-3 py-1.5">
+                <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded">
+                  <CurrencyDisplay value={form.easypayOpeningBalance} />
+                </div>
+              </td>
+              <td className="px-3 py-1.5">
+                <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded">
+                  <CurrencyDisplay value={form.cashConnectOpeningBalance} />
+                </div>
+              </td>
+              <td className="px-3 py-1.5">
+                <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded font-semibold">
+                  <CurrencyDisplay value={form.easypayOpeningBalance + form.cashConnectOpeningBalance} />
+                </div>
               </td>
             </tr>
 
-            {/* Daily Cashup from Cashier Shift */}
-            <tr className="border-b">
-              <td className="px-3 py-1.5 text-xs text-muted-foreground">Daily Cashup (from Cashier Shift)</td>
-              <td className="px-3 py-1.5">
-                <CurrencyInput value={form.dailyCoins} onChange={v => setForm(f => ({ ...f, dailyCoins: v }))} className="w-full" placeholder="0.00" />
+            {/* Daily Cashup — auto-populated from Cashier form, read-only */}
+            <tr className="border-b bg-muted/10">
+              <td className="px-3 py-1.5 text-xs text-muted-foreground">
+                Daily Cashup (from Cashier Shift)
+                <Lock className="h-3 w-3 text-muted-foreground inline ml-1" />
               </td>
               <td className="px-3 py-1.5">
-                <CurrencyInput value={form.cashDepositedEasypay} onChange={v => setForm(f => ({ ...f, cashDepositedEasypay: v }))} className="w-full" placeholder="0.00" />
+                <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded">
+                  <CurrencyDisplay value={dailyCashupCoins} />
+                </div>
               </td>
               <td className="px-3 py-1.5">
-                <CurrencyInput value={form.cashDepositedCashConnect} onChange={v => setForm(f => ({ ...f, cashDepositedCashConnect: v }))} className="w-full" placeholder="0.00" />
+                <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded">
+                  <CurrencyDisplay value={dailyCashupEasypay} />
+                </div>
               </td>
-              <td className="px-3 py-1.5 text-right font-semibold">
-                <CurrencyDisplay value={form.cashDepositedEasypay + form.cashDepositedCashConnect} />
+              <td className="px-3 py-1.5">
+                <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded">
+                  <CurrencyDisplay value={dailyCashupCashConnect} />
+                </div>
+              </td>
+              <td className="px-3 py-1.5">
+                <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded font-semibold">
+                  <CurrencyDisplay value={dailyCashupEasypay + dailyCashupCashConnect} />
+                </div>
               </td>
             </tr>
 
             {/* CC Bag Closure */}
-            <tr className="border-b bg-red-50/30">
+            <tr className="border-b">
               <td className="px-3 py-1.5 text-xs text-muted-foreground">
                 CC Bag Closure BAG no. <span className="text-destructive font-bold">(-ve)</span>
               </td>
@@ -400,21 +426,23 @@ export function ManagerDailyForm({ selectedDate }: Props) {
                 <CurrencyInput value={form.ccBagClosureCashConnect} onChange={v => setForm(f => ({ ...f, ccBagClosureCashConnect: Math.abs(v) }))} className="w-full" placeholder="0.00" />
                 <div className="text-xs text-destructive text-right mt-0.5"><CurrencyDisplay value={-Math.abs(form.ccBagClosureCashConnect)} /></div>
               </td>
-              <td className="px-3 py-1.5 text-right text-destructive font-semibold">
+              <td className="px-3 py-1.5 text-right align-top pt-2 text-destructive font-semibold">
                 <CurrencyDisplay value={-Math.abs(form.ccBagClosureEasypay) - Math.abs(form.ccBagClosureCashConnect)} />
               </td>
             </tr>
 
             {/* Transfer from Coins */}
-            <tr className="border-b bg-blue-50/20">
+            <tr className="border-b">
               <td className="px-3 py-1.5 text-xs text-muted-foreground">Transfer from Coin</td>
               <td className="px-3 py-1.5">
                 <CurrencyInput value={form.transferFromCoins} onChange={v => setForm(f => ({ ...f, transferFromCoins: Math.abs(v) }))} className="w-full" placeholder="0.00" />
                 <div className="text-xs text-destructive text-right mt-0.5"><CurrencyDisplay value={-Math.abs(form.transferFromCoins)} /></div>
               </td>
               <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
-              <td className="px-3 py-1.5 text-right align-middle">
-                <CurrencyDisplay value={Math.abs(form.transferFromCoins)} className="text-green-700 font-semibold" />
+              <td className="px-3 py-1.5 align-middle">
+                <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded text-green-700 font-semibold">
+                  <CurrencyDisplay value={Math.abs(form.transferFromCoins)} />
+                </div>
               </td>
               <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
             </tr>
