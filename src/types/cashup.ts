@@ -102,7 +102,7 @@ export interface ManagerDailyEntry {
   ccBagClosureCoins: number;
   ccBagClosureEasypay: number;
   ccBagClosureCashConnect: number;
-  transferFromCoin: number;
+  transferFromCoins: number;
   // Branch day end
   branchDayEndTotal: number;
   branchDayEndVat: number;
