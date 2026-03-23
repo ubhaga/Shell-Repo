@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useCashupStore } from '@/store/cashupStore';
-import { MANAGER_NAMES } from '@/data/masterData';
+import { useMasterDataStore } from '@/store/masterDataStore';
 import type { MonthlyBranchFigures } from '@/types/cashup';
 import { Section, DataRow, CurrencyInput, CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Button } from '@/components/ui/button';
