@@ -184,14 +184,15 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   // Row 2: CC Bag Closure — all values negative (user enters positive, we store/display as negative)
   // Row 3: Transfer from Coins — coins NEGATIVE (cash leaves coins), cash connect POSITIVE (cash arrives in CC)
   // Closing = Opening + Daily + CCBagClosure + Transfer
+  // CLOSING = Opening + DailyCashup + CCBagClosure + Transfer
   const coinsClosing = form.coinsOpeningBalance + form.dailyCoins
     - Math.abs(form.ccBagClosureCoins)
-    - Math.abs(form.transferFromCoins); // coins go out (negative)
+    - Math.abs(form.transferFromCoins);
   const easypayClosing = form.easypayOpeningBalance + form.cashDepositedEasypay
     - Math.abs(form.ccBagClosureEasypay);
   const ccClosing = form.cashConnectOpeningBalance + form.cashDepositedCashConnect
     - Math.abs(form.ccBagClosureCashConnect)
-    + Math.abs(form.transferFromCoins); // cash arrives from coins (positive)
+    + Math.abs(form.transferFromCoins);
 
   const openingIsReadOnly = !isFirstJan2025 && !!prevEntry;
 
