@@ -179,18 +179,18 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const invMatch = Math.abs(totalAllInvoices - form.branchDayEndTotal) < 0.50;
   const vatMatch = Math.abs(totalAllVat - form.branchDayEndVat) < 1.00;
 
-  // Cash reconciliation
-  // Opening = previous day closing (read-only except 1 Jan)
-  // Row 2: CC Bag Closure — all values negative (user enters positive, we store/display as negative)
-  // Row 3: Transfer from Coins — coins NEGATIVE (cash leaves coins), cash connect POSITIVE (cash arrives in CC)
-  // Closing = Opening + Daily + CCBagClosure + Transfer
+  // Daily Cashup pulled directly from Cashier form (read-only)
+  const dailyCashupCoins = cashup?.shop.coins ?? 0;
+  const dailyCashupEasypay = cashup?.shop.easyPay ?? 0;
+  const dailyCashupCashConnect = cashup?.shop.cashDepositedBanking ?? 0;
+
   // CLOSING = Opening + DailyCashup + CCBagClosure + Transfer
-  const coinsClosing = form.coinsOpeningBalance + form.dailyCoins
+  const coinsClosing = form.coinsOpeningBalance + dailyCashupCoins
     - Math.abs(form.ccBagClosureCoins)
     - Math.abs(form.transferFromCoins);
-  const easypayClosing = form.easypayOpeningBalance + form.cashDepositedEasypay
+  const easypayClosing = form.easypayOpeningBalance + dailyCashupEasypay
     - Math.abs(form.ccBagClosureEasypay);
-  const ccClosing = form.cashConnectOpeningBalance + form.cashDepositedCashConnect
+  const ccClosing = form.cashConnectOpeningBalance + dailyCashupCashConnect
     - Math.abs(form.ccBagClosureCashConnect)
     + Math.abs(form.transferFromCoins);
 
