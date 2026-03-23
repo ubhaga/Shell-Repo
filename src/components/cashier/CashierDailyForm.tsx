@@ -66,9 +66,12 @@ export function CashierDailyForm({ selectedDate }: Props) {
     locked: false,
   }));
 
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+
   useEffect(() => {
     if (existing) setForm({ ...existing });
     else setForm(f => ({ ...f, date: selectedDate, month: selectedDate.slice(0, 7), shop: blankShopShift(), opt: blankOptShift() }));
+    setSavedAt(null);
   }, [selectedDate, existing?.id]);
 
   const setShop = (patch: Partial<typeof form.shop>) =>
@@ -107,6 +110,8 @@ export function CashierDailyForm({ selectedDate }: Props) {
   const handleSave = () => {
     if (existing) updateCashup(existing.id, form);
     else addCashup(form);
+    const now = format(new Date(), 'dd MMM yyyy, HH:mm:ss');
+    setSavedAt(prev => prev ?? now); // only record the first/original save time
     toast({ title: 'Cashup saved', description: `Saved for ${format(new Date(selectedDate), 'dd MMM yyyy')}` });
   };
 
@@ -187,9 +192,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
             className="input-cell w-full mt-0.5" />
         </div>
         <div className="flex items-end">
-          <Button onClick={handleSave} className="w-full" size="sm">
-            <Save className="h-3.5 w-3.5 mr-1" /> Save Cashup
-          </Button>
+          <span className="text-xs text-muted-foreground italic">Use the Save button below ↓</span>
         </div>
       </div>
 
@@ -465,6 +468,18 @@ export function CashierDailyForm({ selectedDate }: Props) {
         <div className="px-4 py-2 text-xs text-muted-foreground bg-muted/30 border-t">
           Shop: Total Takings − MOP Cash − Speedpoints − Accounts − Other &nbsp;|&nbsp; OPT: Net Sales − Speedpoints
         </div>
+      </div>
+
+      {/* ─── SAVE BUTTON ─── */}
+      <div className="flex flex-col items-center gap-2 pt-2 pb-4">
+        <Button onClick={handleSave} size="lg" className="px-12">
+          <Save className="h-4 w-4 mr-2" /> Save Cashup
+        </Button>
+        {savedAt && (
+          <p className="text-xs text-muted-foreground">
+            Originally saved: <span className="font-semibold text-foreground">{savedAt}</span>
+          </p>
+        )}
       </div>
     </div>
   );
