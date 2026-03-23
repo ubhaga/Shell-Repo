@@ -336,69 +336,95 @@ export function ManagerDailyForm({ selectedDate }: Props) {
       <Section title="2. Cash Reconciliation" color="orange">
         <table className="w-full text-sm border-collapse">
           <colgroup>
-            <col className="w-[30%]" />
-            <col className="w-[23%]" />
-            <col className="w-[23%]" />
-            <col className="w-[24%]" />
+            <col className="w-[32%]" />
+            <col className="w-[17%]" />
+            <col className="w-[17%]" />
+            <col className="w-[17%]" />
+            <col className="w-[17%]" />
           </colgroup>
           <thead>
-            <tr className="bg-muted/30 text-xs font-semibold text-muted-foreground">
-              <th className="px-3 py-1.5 text-left border-b font-semibold"></th>
-              <th className="px-3 py-1.5 text-right border-b font-semibold">Coins</th>
-              <th className="px-3 py-1.5 text-right border-b font-semibold">EasyPay</th>
-              <th className="px-3 py-1.5 text-right border-b font-semibold">Cash Connect</th>
+            <tr className="bg-muted/40 text-xs font-semibold text-muted-foreground border-b">
+              <th className="px-3 py-2 text-left font-semibold">DAILY CASH</th>
+              <th className="px-3 py-2 text-right font-semibold">Coins</th>
+              <th className="px-3 py-2 text-right font-semibold">Easy Pay</th>
+              <th className="px-3 py-2 text-right font-semibold">Cash Connect</th>
+              <th className="px-3 py-2 text-right font-semibold">TOTAL CC</th>
             </tr>
           </thead>
           <tbody>
             {/* Opening Balance — read-only */}
             <tr className="border-b">
-              <td className="px-3 py-1.5 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">Opening Balance <Lock className="h-3 w-3 inline" /></div>
+              <td className="px-3 py-1.5 text-xs font-medium flex items-center gap-1">
+                OPENING BALANCE <Lock className="h-3 w-3 text-muted-foreground" />
               </td>
               <td className="px-3 py-1.5 text-right"><CurrencyDisplay value={form.coinsOpeningBalance} /></td>
               <td className="px-3 py-1.5 text-right"><CurrencyDisplay value={form.easypayOpeningBalance} /></td>
               <td className="px-3 py-1.5 text-right"><CurrencyDisplay value={form.cashConnectOpeningBalance} /></td>
+              <td className="px-3 py-1.5 text-right font-semibold">
+                <CurrencyDisplay value={form.easypayOpeningBalance + form.cashConnectOpeningBalance} />
+              </td>
+            </tr>
+
+            {/* Daily Cashup from Cashier Shift */}
+            <tr className="border-b">
+              <td className="px-3 py-1.5 text-xs text-muted-foreground">Daily Cashup (from Cashier Shift)</td>
+              <td className="px-3 py-1.5">
+                <CurrencyInput value={form.dailyCoins} onChange={v => setForm(f => ({ ...f, dailyCoins: v }))} className="w-full" placeholder="0.00" />
+              </td>
+              <td className="px-3 py-1.5">
+                <CurrencyInput value={form.cashDepositedEasypay} onChange={v => setForm(f => ({ ...f, cashDepositedEasypay: v }))} className="w-full" placeholder="0.00" />
+              </td>
+              <td className="px-3 py-1.5">
+                <CurrencyInput value={form.cashDepositedCashConnect} onChange={v => setForm(f => ({ ...f, cashDepositedCashConnect: v }))} className="w-full" placeholder="0.00" />
+              </td>
+              <td className="px-3 py-1.5 text-right font-semibold">
+                <CurrencyDisplay value={form.cashDepositedEasypay + form.cashDepositedCashConnect} />
+              </td>
             </tr>
 
             {/* CC Bag Closure */}
-            <tr className="border-b bg-red-50/50">
+            <tr className="border-b bg-red-50/30">
               <td className="px-3 py-1.5 text-xs text-muted-foreground">
-                CC Bag Closure <span className="text-destructive font-bold">(-ve)</span>
+                CC Bag Closure BAG no. <span className="text-destructive font-bold">(-ve)</span>
               </td>
-              <td className="px-3 py-1">
+              <td className="px-3 py-1.5">
                 <CurrencyInput value={form.ccBagClosureCoins} onChange={v => setForm(f => ({ ...f, ccBagClosureCoins: Math.abs(v) }))} className="w-full" placeholder="0.00" />
-                <div className="text-xs text-destructive text-right mt-0.5">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureCoins)} /></div>
+                <div className="text-xs text-destructive text-right mt-0.5"><CurrencyDisplay value={-Math.abs(form.ccBagClosureCoins)} /></div>
               </td>
-              <td className="px-3 py-1">
+              <td className="px-3 py-1.5">
                 <CurrencyInput value={form.ccBagClosureEasypay} onChange={v => setForm(f => ({ ...f, ccBagClosureEasypay: Math.abs(v) }))} className="w-full" placeholder="0.00" />
-                <div className="text-xs text-destructive text-right mt-0.5">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureEasypay)} /></div>
+                <div className="text-xs text-destructive text-right mt-0.5"><CurrencyDisplay value={-Math.abs(form.ccBagClosureEasypay)} /></div>
               </td>
-              <td className="px-3 py-1">
+              <td className="px-3 py-1.5">
                 <CurrencyInput value={form.ccBagClosureCashConnect} onChange={v => setForm(f => ({ ...f, ccBagClosureCashConnect: Math.abs(v) }))} className="w-full" placeholder="0.00" />
-                <div className="text-xs text-destructive text-right mt-0.5">= <CurrencyDisplay value={-Math.abs(form.ccBagClosureCashConnect)} /></div>
+                <div className="text-xs text-destructive text-right mt-0.5"><CurrencyDisplay value={-Math.abs(form.ccBagClosureCashConnect)} /></div>
+              </td>
+              <td className="px-3 py-1.5 text-right text-destructive font-semibold">
+                <CurrencyDisplay value={-Math.abs(form.ccBagClosureEasypay) - Math.abs(form.ccBagClosureCashConnect)} />
               </td>
             </tr>
 
             {/* Transfer from Coins */}
-            <tr className="border-b bg-blue-50/30">
-              <td className="px-3 py-1.5 text-xs text-muted-foreground">Transfer from Coins</td>
-              <td className="px-3 py-1">
+            <tr className="border-b bg-blue-50/20">
+              <td className="px-3 py-1.5 text-xs text-muted-foreground">Transfer from Coin</td>
+              <td className="px-3 py-1.5">
                 <CurrencyInput value={form.transferFromCoins} onChange={v => setForm(f => ({ ...f, transferFromCoins: Math.abs(v) }))} className="w-full" placeholder="0.00" />
-                <div className="text-xs text-destructive text-right mt-0.5">= <CurrencyDisplay value={-Math.abs(form.transferFromCoins)} /></div>
+                <div className="text-xs text-destructive text-right mt-0.5"><CurrencyDisplay value={-Math.abs(form.transferFromCoins)} /></div>
               </td>
-              <td className="px-3 py-1.5 text-center text-xs text-muted-foreground">—</td>
-              <td className="px-3 py-1.5 text-right">
-                <CurrencyDisplay value={Math.abs(form.transferFromCoins)} className="font-semibold text-green-700" />
-                <div className="text-xs text-muted-foreground">auto (+ve)</div>
+              <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
+              <td className="px-3 py-1.5 text-right align-middle">
+                <CurrencyDisplay value={Math.abs(form.transferFromCoins)} className="text-green-700 font-semibold" />
               </td>
+              <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
             </tr>
 
             {/* Closing Balance */}
-            <tr className="bg-secondary font-semibold">
-              <td className="px-3 py-1.5 rounded-bl-md">Closing Balance</td>
-              <td className="px-3 py-1.5 text-right"><CurrencyDisplay value={coinsClosing} highlight /></td>
-              <td className="px-3 py-1.5 text-right"><CurrencyDisplay value={easypayClosing} highlight /></td>
-              <td className="px-3 py-1.5 text-right rounded-br-md"><CurrencyDisplay value={ccClosing} highlight /></td>
+            <tr className="bg-secondary font-semibold border-t-2">
+              <td className="px-3 py-2 rounded-bl-md font-bold text-xs uppercase">CLOSING BALANCE</td>
+              <td className="px-3 py-2 text-right"><CurrencyDisplay value={coinsClosing} highlight /></td>
+              <td className="px-3 py-2 text-right"><CurrencyDisplay value={easypayClosing} highlight /></td>
+              <td className="px-3 py-2 text-right"><CurrencyDisplay value={ccClosing} highlight /></td>
+              <td className="px-3 py-2 text-right rounded-br-md"><CurrencyDisplay value={easypayClosing + ccClosing} highlight /></td>
             </tr>
           </tbody>
         </table>
