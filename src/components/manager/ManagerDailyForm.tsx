@@ -190,17 +190,24 @@ export function ManagerDailyForm({ selectedDate }: Props) {
     );
   };
 
-  // Cashier short/over calculations (used both at top and inline)
+  // Cashier short/over calculations — must match CashierDailyForm exactly
   const cashierBlock = cashup ? (() => {
     const shopNetSales = cashup.shop.income - cashup.shop.returns;
-    const shopPayouts = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0);
-    const shopReceipts = cashup.shop.receipts.reduce((s, r) => s + r.amount, 0);
-    const shopTakings = shopNetSales - shopPayouts - cashup.shop.lottoPayouts + shopReceipts;
-    const shopMOP = cashup.shop.cashConnectTotal + cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0) + cashup.shop.accounts.reduce((s, a) => s + a.amount, 0);
-    const shopDiff = shopTakings - shopMOP;
+    const shopPayoutsTotal = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0);
+    const shopTotalReceipts = cashup.shop.receipts.reduce((s, r) => s + r.amount, 0);
+    const shopTotalTakings = shopNetSales - shopPayoutsTotal - cashup.shop.lottoPayouts + shopTotalReceipts;
+
+    const cashConnectTotal = cashup.shop.cashDepositedBanking + cashup.shop.easyPay + cashup.shop.coins;
+    const shopSpeedpointTotal = cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0);
+    const shopAccountTotal = cashup.shop.accounts.reduce((s, a) => s + a.amount, 0);
+    const shopOtherTotal = cashup.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0);
+    const shopDiff = shopTotalTakings - cashConnectTotal - shopSpeedpointTotal - shopAccountTotal - shopOtherTotal - cashup.shop.returns_mop - cashup.shop.attendantShortOver;
+
     const optNetSales = cashup.opt.income - cashup.opt.returns;
-    const optMOP = cashup.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0) + cashup.opt.accounts.reduce((s, a) => s + a.amount, 0);
-    const optDiff = optNetSales - optMOP;
+    const optSpeedpointTotal = cashup.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0);
+    const optAccountTotal = cashup.opt.accounts.reduce((s, a) => s + a.amount, 0);
+    const optDiff = optNetSales - optSpeedpointTotal - optAccountTotal;
+
     return { shopDiff, optDiff };
   })() : null;
 
