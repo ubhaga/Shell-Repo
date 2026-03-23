@@ -134,7 +134,7 @@ export function MasterDataSettings() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         <EditableList
-          title="Payout Suppliers"
+          title="Payout Invoice Suppliers"
           color="bg-red-600"
           items={store.payoutSuppliers}
           onAdd={item => store.addPayoutSupplier(item)}
@@ -142,7 +142,7 @@ export function MasterDataSettings() {
           onDelete={item => store.deletePayoutSupplier(item)}
         />
         <EditableList
-          title="EFT / Non-Cash Suppliers"
+          title="EFT / Non-Cash Invoice Suppliers"
           color="bg-orange-600"
           items={store.eftSuppliers}
           onAdd={item => store.addEftSupplier(item)}
