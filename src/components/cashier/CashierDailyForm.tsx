@@ -50,6 +50,8 @@ function ColHeader({ left, right }: { left: string; right: string }) {
 
 export function CashierDailyForm({ selectedDate }: Props) {
   const { getCashupByDate, addCashup, updateCashup } = useCashupStore();
+  const { payoutSuppliers, accounts: ACCOUNTS, cashierNames: CASHIER_NAMES } = useMasterDataStore();
+  const SUPPLIERS = payoutSuppliers;
   const existing = getCashupByDate(selectedDate);
 
   const [form, setForm] = useState<Omit<DailyCashup, 'id'>>(() => ({
