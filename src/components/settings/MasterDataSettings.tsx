@@ -124,7 +124,7 @@ export function MasterDataSettings() {
   const store = useMasterDataStore();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="bg-card border rounded-lg p-4">
         <h2 className="text-base font-bold text-foreground">Master Data / Settings</h2>
         <p className="text-xs text-muted-foreground mt-0.5">
@@ -132,47 +132,70 @@ export function MasterDataSettings() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <EditableList
-          title="Payout Invoice Suppliers"
-          color="bg-red-600"
-          items={store.payoutSuppliers}
-          onAdd={item => store.addPayoutSupplier(item)}
-          onUpdate={(old, next) => store.updatePayoutSupplier(old, next)}
-          onDelete={item => store.deletePayoutSupplier(item)}
-        />
-        <EditableList
-          title="EFT / Non-Cash Invoice Suppliers"
-          color="bg-orange-600"
-          items={store.eftSuppliers}
-          onAdd={item => store.addEftSupplier(item)}
-          onUpdate={(old, next) => store.updateEftSupplier(old, next)}
-          onDelete={item => store.deleteEftSupplier(item)}
-        />
-        <EditableList
-          title="Accounts (Debtors)"
-          color="bg-blue-600"
-          items={store.accounts}
-          onAdd={item => store.addAccount(item)}
-          onUpdate={(old, next) => store.updateAccount(old, next)}
-          onDelete={item => store.deleteAccount(item)}
-        />
-        <EditableList
-          title="Cashier Names"
-          color="bg-green-700"
-          items={store.cashierNames}
-          onAdd={item => store.addCashierName(item)}
-          onUpdate={(old, next) => store.updateCashierName(old, next)}
-          onDelete={item => store.deleteCashierName(item)}
-        />
-        <EditableList
-          title="Manager Names"
-          color="bg-purple-700"
-          items={store.managerNames}
-          onAdd={item => store.addManagerName(item)}
-          onUpdate={(old, next) => store.updateManagerName(old, next)}
-          onDelete={item => store.deleteManagerName(item)}
-        />
+      {/* Section 1.1 & 1.2 — Invoice Tables */}
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
+          1.1 Payout Invoice Suppliers &amp; 1.2 EFT / Non-Cash Invoice Suppliers
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <EditableList
+            title="Payout Invoice Suppliers (1.1)"
+            color="bg-red-600"
+            items={store.payoutSuppliers}
+            onAdd={item => store.addPayoutSupplier(item)}
+            onUpdate={(old, next) => store.updatePayoutSupplier(old, next)}
+            onDelete={item => store.deletePayoutSupplier(item)}
+          />
+          <EditableList
+            title="EFT / Non-Cash Invoice Suppliers (1.2)"
+            color="bg-orange-600"
+            items={store.eftSuppliers}
+            onAdd={item => store.addEftSupplier(item)}
+            onUpdate={(old, next) => store.updateEftSupplier(old, next)}
+            onDelete={item => store.deleteEftSupplier(item)}
+          />
+          <EditableList
+            title="Invoice Categories (1.1 &amp; 1.2)"
+            color="bg-amber-700"
+            items={store.categories}
+            onAdd={item => store.addCategory(item)}
+            onUpdate={(old, next) => store.updateCategory(old, next)}
+            onDelete={item => store.deleteCategory(item)}
+          />
+        </div>
+      </div>
+
+      {/* Other master data */}
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
+          Other Lists
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <EditableList
+            title="Accounts (Debtors)"
+            color="bg-blue-600"
+            items={store.accounts}
+            onAdd={item => store.addAccount(item)}
+            onUpdate={(old, next) => store.updateAccount(old, next)}
+            onDelete={item => store.deleteAccount(item)}
+          />
+          <EditableList
+            title="Cashier Names"
+            color="bg-green-700"
+            items={store.cashierNames}
+            onAdd={item => store.addCashierName(item)}
+            onUpdate={(old, next) => store.updateCashierName(old, next)}
+            onDelete={item => store.deleteCashierName(item)}
+          />
+          <EditableList
+            title="Manager Names"
+            color="bg-purple-700"
+            items={store.managerNames}
+            onAdd={item => store.addManagerName(item)}
+            onUpdate={(old, next) => store.updateManagerName(old, next)}
+            onDelete={item => store.deleteManagerName(item)}
+          />
+        </div>
       </div>
     </div>
   );
