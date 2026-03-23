@@ -194,6 +194,11 @@ export function ManagerDailyForm({ selectedDate }: Props) {
     - Math.abs(form.ccBagClosureCashConnect)
     + Math.abs(form.transferFromCoins);
 
+  // 2.1 Banking — derived from CC Bag Closure Cash Connect
+  const bankChargesCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) / 100 * 0.3297 * 1.15) * 100) / 100;
+  const bankingCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) - bankChargesCalc) * 100) / 100;
+
+
   const openingIsReadOnly = !isFirstJan2025 && !!prevEntry;
 
   const [savedAt, setSavedAt] = useState<string | null>(null);
