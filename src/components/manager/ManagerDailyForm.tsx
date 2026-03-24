@@ -406,30 +406,34 @@ export function ManagerDailyForm({ selectedDate }: Props) {
             </tr>
           </thead>
           <tbody>
-            {/* Opening Balance — read-only, values aligned to match input widths below */}
+            {/* Opening Balance — always read-only, sourced from prev day closing or Jan 1 seed */}
             <tr className="border-b">
               <td className="px-3 py-1.5 text-xs font-medium">
-                <span className="flex items-center gap-1">OPENING BALANCE <Lock className="h-3 w-3 text-muted-foreground" /></span>
+                <span className="flex items-center gap-1">
+                  OPENING BALANCE <Lock className="h-3 w-3 text-muted-foreground" />
+                  {usePrevClosingAsOpening && (
+                    <span className="text-[10px] text-muted-foreground font-normal ml-1">(prev day closing)</span>
+                  )}
+                </span>
               </td>
-              {/* Wrap in same-width container as CurrencyInput so numbers align */}
               <td className="px-3 py-1.5">
                 <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded">
-                  <CurrencyDisplay value={form.coinsOpeningBalance} />
+                  <CurrencyDisplay value={effectiveCoinsOpening} />
                 </div>
               </td>
               <td className="px-3 py-1.5">
                 <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded">
-                  <CurrencyDisplay value={form.easypayOpeningBalance} />
+                  <CurrencyDisplay value={effectiveEasypayOpening} />
                 </div>
               </td>
               <td className="px-3 py-1.5">
                 <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded">
-                  <CurrencyDisplay value={form.cashConnectOpeningBalance} />
+                  <CurrencyDisplay value={effectiveCCOpening} />
                 </div>
               </td>
               <td className="px-3 py-1.5">
                 <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded font-semibold">
-                  <CurrencyDisplay value={form.easypayOpeningBalance + form.cashConnectOpeningBalance} />
+                  <CurrencyDisplay value={effectiveEasypayOpening + effectiveCCOpening} />
                 </div>
               </td>
             </tr>
