@@ -102,9 +102,28 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const isLocked = selectedDate < '2026-01-01';
 
   // Get previous day's closing balances (auto-populate opening)
-  const prevDate = format(subDays(new Date(selectedDate), 1), 'yyyy-MM-dd');
+  const prevDate = format(subDays(new Date(selectedDate + 'T00:00:00'), 1), 'yyyy-MM-dd');
   const prevEntry = getManagerEntryByDate(prevDate);
   const isFirstJan2026 = selectedDate === '2026-01-01';
+
+  // For dates >= 28 Feb 2026, opening balance is always derived live from prev day closing
+  const usePrevClosingAsOpening = selectedDate >= '2026-02-28' && !!prevEntry;
+
+  // Compute prev day closing balances
+  const prevCoinsClosing = prevEntry
+    ? prevEntry.coinsOpeningBalance + (getCashupByDate(prevDate)?.shop.coins ?? 0)
+      - Math.abs(prevEntry.ccBagClosureCoins)
+      - Math.abs(prevEntry.transferFromCoins)
+    : 0;
+  const prevEasypayClosing = prevEntry
+    ? prevEntry.easypayOpeningBalance + (getCashupByDate(prevDate)?.shop.easyPay ?? 0)
+      - Math.abs(prevEntry.ccBagClosureEasypay)
+    : 0;
+  const prevCCClosing = prevEntry
+    ? prevEntry.cashConnectOpeningBalance + (getCashupByDate(prevDate)?.shop.cashDepositedBanking ?? 0)
+      - Math.abs(prevEntry.ccBagClosureCashConnect)
+      + Math.abs(prevEntry.transferFromCoins)
+    : 0;
 
   const [form, setForm] = useState<Omit<ManagerDailyEntry, 'id'>>(() => blankEntry(selectedDate));
 
@@ -125,15 +144,6 @@ export function ManagerDailyForm({ selectedDate }: Props) {
         // Transfer from Coins
         base.transferFromCoins = 2000;
       } else if (prevEntry) {
-        // Auto-populate opening balances from previous day closing
-        const prevCoinsClosing = prevEntry.coinsOpeningBalance + prevEntry.dailyCoins
-          - Math.abs(prevEntry.ccBagClosureCoins)
-          + prevEntry.transferFromCoins;
-        const prevEasypayClosing = prevEntry.easypayOpeningBalance + prevEntry.cashDepositedEasypay
-          - Math.abs(prevEntry.ccBagClosureEasypay);
-        const prevCCClosing = prevEntry.cashConnectOpeningBalance + prevEntry.cashDepositedCashConnect
-          - Math.abs(prevEntry.ccBagClosureCashConnect)
-          - prevEntry.transferFromCoins;
         base.coinsOpeningBalance = prevCoinsClosing;
         base.easypayOpeningBalance = prevEasypayClosing;
         base.cashConnectOpeningBalance = prevCCClosing;
@@ -198,13 +208,18 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const dailyCashupEasypay = cashup?.shop.easyPay ?? 0;
   const dailyCashupCashConnect = cashup?.shop.cashDepositedBanking ?? 0;
 
+  // Opening balances: for dates >= 28 Feb 2026 always use live prev-day closing
+  const effectiveCoinsOpening = usePrevClosingAsOpening ? prevCoinsClosing : form.coinsOpeningBalance;
+  const effectiveEasypayOpening = usePrevClosingAsOpening ? prevEasypayClosing : form.easypayOpeningBalance;
+  const effectiveCCOpening = usePrevClosingAsOpening ? prevCCClosing : form.cashConnectOpeningBalance;
+
   // CLOSING = Opening + DailyCashup + CCBagClosure + Transfer
-  const coinsClosing = form.coinsOpeningBalance + dailyCashupCoins
+  const coinsClosing = effectiveCoinsOpening + dailyCashupCoins
     - Math.abs(form.ccBagClosureCoins)
     - Math.abs(form.transferFromCoins);
-  const easypayClosing = form.easypayOpeningBalance + dailyCashupEasypay
+  const easypayClosing = effectiveEasypayOpening + dailyCashupEasypay
     - Math.abs(form.ccBagClosureEasypay);
-  const ccClosing = form.cashConnectOpeningBalance + dailyCashupCashConnect
+  const ccClosing = effectiveCCOpening + dailyCashupCashConnect
     - Math.abs(form.ccBagClosureCashConnect)
     + Math.abs(form.transferFromCoins);
 
@@ -212,8 +227,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const bankChargesCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) / 100 * 0.3297 * 1.15) * 100) / 100;
   const bankingCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) - bankChargesCalc) * 100) / 100;
 
-
-  const openingIsReadOnly = !isFirstJan2026 && !!prevEntry;
+  const openingIsReadOnly = true; // Always read-only — seeded from prev day or Jan 1 spreadsheet values
 
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
@@ -392,30 +406,34 @@ export function ManagerDailyForm({ selectedDate }: Props) {
             </tr>
           </thead>
           <tbody>
-            {/* Opening Balance — read-only, values aligned to match input widths below */}
+            {/* Opening Balance — always read-only, sourced from prev day closing or Jan 1 seed */}
             <tr className="border-b">
               <td className="px-3 py-1.5 text-xs font-medium">
-                <span className="flex items-center gap-1">OPENING BALANCE <Lock className="h-3 w-3 text-muted-foreground" /></span>
+                <span className="flex items-center gap-1">
+                  OPENING BALANCE <Lock className="h-3 w-3 text-muted-foreground" />
+                  {usePrevClosingAsOpening && (
+                    <span className="text-[10px] text-muted-foreground font-normal ml-1">(prev day closing)</span>
+                  )}
+                </span>
               </td>
-              {/* Wrap in same-width container as CurrencyInput so numbers align */}
               <td className="px-3 py-1.5">
                 <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded">
-                  <CurrencyDisplay value={form.coinsOpeningBalance} />
+                  <CurrencyDisplay value={effectiveCoinsOpening} />
                 </div>
               </td>
               <td className="px-3 py-1.5">
                 <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded">
-                  <CurrencyDisplay value={form.easypayOpeningBalance} />
+                  <CurrencyDisplay value={effectiveEasypayOpening} />
                 </div>
               </td>
               <td className="px-3 py-1.5">
                 <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded">
-                  <CurrencyDisplay value={form.cashConnectOpeningBalance} />
+                  <CurrencyDisplay value={effectiveCCOpening} />
                 </div>
               </td>
               <td className="px-3 py-1.5">
                 <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded font-semibold">
-                  <CurrencyDisplay value={form.easypayOpeningBalance + form.cashConnectOpeningBalance} />
+                  <CurrencyDisplay value={effectiveEasypayOpening + effectiveCCOpening} />
                 </div>
               </td>
             </tr>
