@@ -102,9 +102,28 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const isLocked = selectedDate < '2026-01-01';
 
   // Get previous day's closing balances (auto-populate opening)
-  const prevDate = format(subDays(new Date(selectedDate), 1), 'yyyy-MM-dd');
+  const prevDate = format(subDays(new Date(selectedDate + 'T00:00:00'), 1), 'yyyy-MM-dd');
   const prevEntry = getManagerEntryByDate(prevDate);
   const isFirstJan2026 = selectedDate === '2026-01-01';
+
+  // For dates >= 28 Feb 2026, opening balance is always derived live from prev day closing
+  const usePrevClosingAsOpening = selectedDate >= '2026-02-28' && !!prevEntry;
+
+  // Compute prev day closing balances
+  const prevCoinsClosing = prevEntry
+    ? prevEntry.coinsOpeningBalance + (getCashupByDate(prevDate)?.shop.coins ?? 0)
+      - Math.abs(prevEntry.ccBagClosureCoins)
+      - Math.abs(prevEntry.transferFromCoins)
+    : 0;
+  const prevEasypayClosing = prevEntry
+    ? prevEntry.easypayOpeningBalance + (getCashupByDate(prevDate)?.shop.easyPay ?? 0)
+      - Math.abs(prevEntry.ccBagClosureEasypay)
+    : 0;
+  const prevCCClosing = prevEntry
+    ? prevEntry.cashConnectOpeningBalance + (getCashupByDate(prevDate)?.shop.cashDepositedBanking ?? 0)
+      - Math.abs(prevEntry.ccBagClosureCashConnect)
+      + Math.abs(prevEntry.transferFromCoins)
+    : 0;
 
   const [form, setForm] = useState<Omit<ManagerDailyEntry, 'id'>>(() => blankEntry(selectedDate));
 
@@ -125,15 +144,6 @@ export function ManagerDailyForm({ selectedDate }: Props) {
         // Transfer from Coins
         base.transferFromCoins = 2000;
       } else if (prevEntry) {
-        // Auto-populate opening balances from previous day closing
-        const prevCoinsClosing = prevEntry.coinsOpeningBalance + prevEntry.dailyCoins
-          - Math.abs(prevEntry.ccBagClosureCoins)
-          + prevEntry.transferFromCoins;
-        const prevEasypayClosing = prevEntry.easypayOpeningBalance + prevEntry.cashDepositedEasypay
-          - Math.abs(prevEntry.ccBagClosureEasypay);
-        const prevCCClosing = prevEntry.cashConnectOpeningBalance + prevEntry.cashDepositedCashConnect
-          - Math.abs(prevEntry.ccBagClosureCashConnect)
-          - prevEntry.transferFromCoins;
         base.coinsOpeningBalance = prevCoinsClosing;
         base.easypayOpeningBalance = prevEasypayClosing;
         base.cashConnectOpeningBalance = prevCCClosing;
