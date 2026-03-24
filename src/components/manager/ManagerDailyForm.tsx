@@ -208,13 +208,18 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const dailyCashupEasypay = cashup?.shop.easyPay ?? 0;
   const dailyCashupCashConnect = cashup?.shop.cashDepositedBanking ?? 0;
 
+  // Opening balances: for dates >= 28 Feb 2026 always use live prev-day closing
+  const effectiveCoinsOpening = usePrevClosingAsOpening ? prevCoinsClosing : form.coinsOpeningBalance;
+  const effectiveEasypayOpening = usePrevClosingAsOpening ? prevEasypayClosing : form.easypayOpeningBalance;
+  const effectiveCCOpening = usePrevClosingAsOpening ? prevCCClosing : form.cashConnectOpeningBalance;
+
   // CLOSING = Opening + DailyCashup + CCBagClosure + Transfer
-  const coinsClosing = form.coinsOpeningBalance + dailyCashupCoins
+  const coinsClosing = effectiveCoinsOpening + dailyCashupCoins
     - Math.abs(form.ccBagClosureCoins)
     - Math.abs(form.transferFromCoins);
-  const easypayClosing = form.easypayOpeningBalance + dailyCashupEasypay
+  const easypayClosing = effectiveEasypayOpening + dailyCashupEasypay
     - Math.abs(form.ccBagClosureEasypay);
-  const ccClosing = form.cashConnectOpeningBalance + dailyCashupCashConnect
+  const ccClosing = effectiveCCOpening + dailyCashupCashConnect
     - Math.abs(form.ccBagClosureCashConnect)
     + Math.abs(form.transferFromCoins);
 
@@ -222,8 +227,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const bankChargesCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) / 100 * 0.3297 * 1.15) * 100) / 100;
   const bankingCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) - bankChargesCalc) * 100) / 100;
 
-
-  const openingIsReadOnly = !isFirstJan2026 && !!prevEntry;
+  const openingIsReadOnly = true; // Always read-only — seeded from prev day or Jan 1 spreadsheet values
 
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
