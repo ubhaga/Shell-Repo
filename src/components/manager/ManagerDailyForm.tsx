@@ -106,8 +106,8 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const prevEntry = getManagerEntryByDate(prevDate);
   const isFirstJan2026 = selectedDate === '2026-01-01';
 
-  // For dates >= 28 Feb 2026, opening balance is always derived live from prev day closing
-  const usePrevClosingAsOpening = selectedDate >= '2026-02-28' && !!prevEntry;
+  // Opening balance is always derived live from prev day closing (for any date with a prev entry)
+  const usePrevClosingAsOpening = !!prevEntry && !isFirstJan2026;
 
   // Compute prev day closing balances
   const prevCoinsClosing = prevEntry
