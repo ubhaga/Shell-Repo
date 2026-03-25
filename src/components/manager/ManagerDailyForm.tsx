@@ -7,7 +7,83 @@ import { Section, DataRow, CurrencyInput, CurrencyDisplay } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, Save, AlertCircle, CheckCircle, Lock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { format, subDays } from 'date-fns';
+import { format, subDays, addDays, parseISO } from 'date-fns';
+
+// ---- Recursive chain helper ----
+// Walk forward from Jan 1 2026 to compute the TRUE effective closing balance for any date.
+// This ensures each day's opening is based on the correctly-derived previous closing,
+// regardless of what stale values may have been stored.
+interface EffectiveClosing { coins: number; easypay: number; cc: number; }
+
+function computeEffectiveClosingForDate(
+  targetDate: string,
+  getEntry: (d: string) => ManagerDailyEntry | undefined,
+  getCashup: (d: string) => { shop: { coins: number; easyPay: number; cashDepositedBanking: number } } | undefined,
+): EffectiveClosing | null {
+  const SEED_DATE = '2026-01-01';
+  if (targetDate < SEED_DATE) return null;
+
+  // Build ordered list of dates from SEED_DATE to targetDate
+  const dates: string[] = [];
+  let d = parseISO(SEED_DATE);
+  const end = parseISO(targetDate);
+  while (d <= end) {
+    dates.push(format(d, 'yyyy-MM-dd'));
+    d = addDays(d, 1);
+  }
+
+  // Seed values for Jan 1 2026
+  const seedEntry = getEntry(SEED_DATE);
+  let coinsOpening = 4483.15;
+  let easypayOpening = 3500;
+  let ccOpening = 2000;
+
+  // Walk forward, computing closing for each day
+  for (const date of dates) {
+    const entry = getEntry(date);
+    const cashup = getCashup(date);
+
+    // Effective opening for this date
+    let effCoinsOpen: number;
+    let effEasypayOpen: number;
+    let effCCOpen: number;
+
+    if (date === SEED_DATE) {
+      // Jan 1: use seed values (ignore any stale stored opening)
+      effCoinsOpen = 4483.15;
+      effEasypayOpen = 3500;
+      effCCOpen = 2000;
+    } else {
+      // Every other date: opening = previous day's effective closing
+      effCoinsOpen = coinsOpening;
+      effEasypayOpen = easypayOpening;
+      effCCOpen = ccOpening;
+    }
+
+    if (!entry) {
+      // No entry yet — closing equals opening (no movements recorded)
+      coinsOpening = effCoinsOpen;
+      easypayOpening = effEasypayOpen;
+      ccOpening = effCCOpen;
+      continue;
+    }
+
+    const dailyCoins = cashup?.shop.coins ?? 0;
+    const dailyEasypay = cashup?.shop.easyPay ?? 0;
+    const dailyCC = cashup?.shop.cashDepositedBanking ?? 0;
+
+    coinsOpening = effCoinsOpen + dailyCoins
+      - Math.abs(entry.ccBagClosureCoins)
+      - Math.abs(entry.transferFromCoins);
+    easypayOpening = effEasypayOpen + dailyEasypay
+      - Math.abs(entry.ccBagClosureEasypay);
+    ccOpening = effCCOpen + dailyCC
+      - Math.abs(entry.ccBagClosureCashConnect)
+      + Math.abs(entry.transferFromCoins);
+  }
+
+  return { coins: coinsOpening, easypay: easypayOpening, cc: ccOpening };
+}
 
 // ---- Invoice table: defined OUTSIDE the parent so React never remounts inputs on keystroke ----
 interface InvoiceTableProps {
