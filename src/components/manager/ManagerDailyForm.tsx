@@ -106,8 +106,8 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const prevEntry = getManagerEntryByDate(prevDate);
   const isFirstJan2026 = selectedDate === '2026-01-01';
 
-  // For dates >= 28 Feb 2026, opening balance is always derived live from prev day closing
-  const usePrevClosingAsOpening = selectedDate >= '2026-02-28' && !!prevEntry;
+  // Opening balance is always derived live from prev day closing (for any date with a prev entry)
+  const usePrevClosingAsOpening = !!prevEntry && !isFirstJan2026;
 
   // Compute prev day closing balances
   const prevCoinsClosing = prevEntry
@@ -208,7 +208,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const dailyCashupEasypay = cashup?.shop.easyPay ?? 0;
   const dailyCashupCashConnect = cashup?.shop.cashDepositedBanking ?? 0;
 
-  // Opening balances: for dates >= 28 Feb 2026 always use live prev-day closing
+  // Opening balances: always use live prev-day closing when a prev entry exists
   const effectiveCoinsOpening = usePrevClosingAsOpening ? prevCoinsClosing : form.coinsOpeningBalance;
   const effectiveEasypayOpening = usePrevClosingAsOpening ? prevEasypayClosing : form.easypayOpeningBalance;
   const effectiveCCOpening = usePrevClosingAsOpening ? prevCCClosing : form.cashConnectOpeningBalance;
