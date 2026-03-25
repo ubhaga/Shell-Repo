@@ -179,7 +179,6 @@ export function ManagerDailyForm({ selectedDate }: Props) {
 
   const isFirstJan2026 = selectedDate === '2026-01-01';
   const prevDate = format(subDays(new Date(selectedDate + 'T00:00:00'), 1), 'yyyy-MM-dd');
-  const prevEntry = getManagerEntryByDate(prevDate);
 
   // Compute the TRUE prev-day closing by walking the full chain from Jan 1 forward.
   // This ensures no stale stored opening values pollute the chain.
