@@ -1,17 +1,17 @@
-import { useState } from 'react';
-import { format } from 'date-fns';
-import { CashierDailyForm } from '@/components/cashier/CashierDailyForm';
-import { ManagerDailyForm } from '@/components/manager/ManagerDailyForm';
-import { ManagerMonthlyForm } from '@/components/manager/ManagerMonthlyForm';
-import { Dashboard } from '@/components/dashboard/Dashboard';
-import { Reports } from '@/components/reports/Reports';
-import { MasterDataSettings } from '@/components/settings/MasterDataSettings';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings } from 'lucide-react';
+import { useState } from "react";
+import { format } from "date-fns";
+import { CashierDailyForm } from "@/components/cashier/CashierDailyForm";
+import { ManagerDailyForm } from "@/components/manager/ManagerDailyForm";
+import { ManagerMonthlyForm } from "@/components/manager/ManagerMonthlyForm";
+import { Dashboard } from "@/components/dashboard/Dashboard";
+import { Reports } from "@/components/reports/Reports";
+import { MasterDataSettings } from "@/components/settings/MasterDataSettings";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings } from "lucide-react";
 
 export default function Index() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
   return (
     <div className="min-h-screen bg-background">
@@ -23,7 +23,7 @@ export default function Index() {
               <ClipboardList className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground">BP Zoolake Cashup System</h1>
+              <h1 className="text-lg font-bold text-foreground">Shell Craighall Cashup System</h1>
               <p className="text-xs text-muted-foreground">Daily Cashup & Reconciliation</p>
             </div>
           </div>
