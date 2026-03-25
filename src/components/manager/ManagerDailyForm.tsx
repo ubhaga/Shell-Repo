@@ -177,29 +177,19 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const cashup = getCashupByDate(selectedDate);
   const isLocked = selectedDate < '2026-01-01';
 
-  // Get previous day's closing balances (auto-populate opening)
+  const isFirstJan2026 = selectedDate === '2026-01-01';
   const prevDate = format(subDays(new Date(selectedDate + 'T00:00:00'), 1), 'yyyy-MM-dd');
   const prevEntry = getManagerEntryByDate(prevDate);
-  const isFirstJan2026 = selectedDate === '2026-01-01';
 
-  // Opening balance is always derived live from prev day closing (for any date with a prev entry)
-  const usePrevClosingAsOpening = !!prevEntry && !isFirstJan2026;
+  // Compute the TRUE prev-day closing by walking the full chain from Jan 1 forward.
+  // This ensures no stale stored opening values pollute the chain.
+  const prevClosing = computeEffectiveClosingForDate(prevDate, getManagerEntryByDate, getCashupByDate);
+  const prevCoinsClosing = prevClosing?.coins ?? 0;
+  const prevEasypayClosing = prevClosing?.easypay ?? 0;
+  const prevCCClosing = prevClosing?.cc ?? 0;
 
-  // Compute prev day closing balances
-  const prevCoinsClosing = prevEntry
-    ? prevEntry.coinsOpeningBalance + (getCashupByDate(prevDate)?.shop.coins ?? 0)
-      - Math.abs(prevEntry.ccBagClosureCoins)
-      - Math.abs(prevEntry.transferFromCoins)
-    : 0;
-  const prevEasypayClosing = prevEntry
-    ? prevEntry.easypayOpeningBalance + (getCashupByDate(prevDate)?.shop.easyPay ?? 0)
-      - Math.abs(prevEntry.ccBagClosureEasypay)
-    : 0;
-  const prevCCClosing = prevEntry
-    ? prevEntry.cashConnectOpeningBalance + (getCashupByDate(prevDate)?.shop.cashDepositedBanking ?? 0)
-      - Math.abs(prevEntry.ccBagClosureCashConnect)
-      + Math.abs(prevEntry.transferFromCoins)
-    : 0;
+  // Opening is always derived from prev day's effective closing (unless it's the seed date)
+  const usePrevClosingAsOpening = selectedDate >= '2026-01-01' && !isFirstJan2026 && prevClosing !== null;
 
   const [form, setForm] = useState<Omit<ManagerDailyEntry, 'id'>>(() => blankEntry(selectedDate));
 
@@ -208,26 +198,21 @@ export function ManagerDailyForm({ selectedDate }: Props) {
       setForm({ ...existing });
     } else {
       const base = blankEntry(selectedDate);
-
       if (isFirstJan2026) {
-        // Seed Jan 1 opening balances from original spreadsheet
         base.coinsOpeningBalance = 4483.15;
         base.easypayOpeningBalance = 3500;
         base.cashConnectOpeningBalance = 2000;
-        // CC Bag Closure (EasyPay + CashConnect only — Coins column is blank)
         base.ccBagClosureEasypay = 5500;
         base.ccBagClosureCashConnect = 10000;
-        // Transfer from Coins
         base.transferFromCoins = 2000;
-      } else if (prevEntry) {
+      } else if (usePrevClosingAsOpening) {
         base.coinsOpeningBalance = prevCoinsClosing;
         base.easypayOpeningBalance = prevEasypayClosing;
         base.cashConnectOpeningBalance = prevCCClosing;
       }
       setForm(base);
     }
-  }, [selectedDate, existing?.id, prevEntry?.id]);
-
+  }, [selectedDate, existing?.id]);
 
   // Auto-populate payout invoices from cashup
   useEffect(() => {
@@ -284,12 +269,12 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const dailyCashupEasypay = cashup?.shop.easyPay ?? 0;
   const dailyCashupCashConnect = cashup?.shop.cashDepositedBanking ?? 0;
 
-  // Opening balances: always use live prev-day closing when a prev entry exists
+  // Opening balances: always use chain-derived prev-day closing (never the stale stored value)
   const effectiveCoinsOpening = usePrevClosingAsOpening ? prevCoinsClosing : form.coinsOpeningBalance;
   const effectiveEasypayOpening = usePrevClosingAsOpening ? prevEasypayClosing : form.easypayOpeningBalance;
   const effectiveCCOpening = usePrevClosingAsOpening ? prevCCClosing : form.cashConnectOpeningBalance;
 
-  // CLOSING = Opening + DailyCashup + CCBagClosure + Transfer
+  // CLOSING = Opening + DailyCashup - CCBagClosure ± Transfer
   const coinsClosing = effectiveCoinsOpening + dailyCashupCoins
     - Math.abs(form.ccBagClosureCoins)
     - Math.abs(form.transferFromCoins);
