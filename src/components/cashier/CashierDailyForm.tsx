@@ -296,10 +296,10 @@ export function CashierDailyForm({ selectedDate }: Props) {
               <span className="text-muted-foreground">Returns (Yest Shift)</span>
               <CurrencyInput value={form.shop.returns} onChange={(v) => setShop({ returns: v })} />
             </div>
-            <span className="text-muted-foreground">Returns (Today Shift)</span>
-<CurrencyInput
-  value={form.shop.returns_today}
-  onChange={v => setShop({ returns_today: v })}
+            <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
+              <span className="text-muted-foreground">Returns (Today Shift)</span>
+              <CurrencyInput value={form.shop.returns_today} onChange={(v) => setShop({ returns_today: v })} />
+            </div>
             <div className="flex items-center justify-between px-3 py-1.5 bg-secondary text-sm font-semibold">
               <span>Net Sales</span>
               <CurrencyDisplay value={shopNetSales} highlight />
