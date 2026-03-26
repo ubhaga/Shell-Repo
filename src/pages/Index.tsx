@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { CashierDailyForm } from "@/components/cashier/CashierDailyForm";
 import { ManagerDailyForm } from "@/components/manager/ManagerDailyForm";
@@ -7,7 +7,9 @@ import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Reports } from "@/components/reports/Reports";
 import { MasterDataSettings } from "@/components/settings/MasterDataSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2 } from "lucide-react";
+import { useCashupStore } from "@/store/cashupStore";
+import { useMasterDataStore } from "@/store/masterDataStore";
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState("dashboard");
