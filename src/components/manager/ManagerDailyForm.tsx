@@ -33,7 +33,6 @@ function computeEffectiveClosingForDate(
   }
 
   // Seed values for Jan 1 2026
-  const seedEntry = getEntry(SEED_DATE);
   let coinsOpening = 4483.15;
   let easypayOpening = 3500;
   let ccOpening = 2000;
@@ -60,26 +59,22 @@ function computeEffectiveClosingForDate(
       effCCOpen = ccOpening;
     }
 
-    if (!entry) {
-      // No entry yet — closing equals opening (no movements recorded)
-      coinsOpening = effCoinsOpen;
-      easypayOpening = effEasypayOpen;
-      ccOpening = effCCOpen;
-      continue;
-    }
-
     const dailyCoins = cashup?.shop.coins ?? 0;
     const dailyEasypay = cashup?.shop.easyPay ?? 0;
     const dailyCC = cashup?.shop.cashDepositedBanking ?? 0;
+    const closureCoins = Math.abs(entry?.ccBagClosureCoins ?? 0);
+    const closureEasypay = Math.abs(entry?.ccBagClosureEasypay ?? 0);
+    const closureCC = Math.abs(entry?.ccBagClosureCashConnect ?? 0);
+    const transferFromCoins = Math.abs(entry?.transferFromCoins ?? 0);
 
     coinsOpening = effCoinsOpen + dailyCoins
-      - Math.abs(entry.ccBagClosureCoins)
-      - Math.abs(entry.transferFromCoins);
+      - closureCoins
+      - transferFromCoins;
     easypayOpening = effEasypayOpen + dailyEasypay
-      - Math.abs(entry.ccBagClosureEasypay);
+      - closureEasypay;
     ccOpening = effCCOpen + dailyCC
-      - Math.abs(entry.ccBagClosureCashConnect)
-      + Math.abs(entry.transferFromCoins);
+      - closureCC
+      + transferFromCoins;
   }
 
   return { coins: coinsOpening, easypay: easypayOpening, cc: ccOpening };
@@ -350,8 +345,19 @@ export function ManagerDailyForm({ selectedDate }: Props) {
       return;
     }
 
-    if (existing) updateManagerEntry(existing.id, form);
-    else addManagerEntry(form);
+    const payload: Omit<ManagerDailyEntry, 'id'> = {
+      ...form,
+      coinsOpeningBalance: effectiveCoinsOpening,
+      easypayOpeningBalance: effectiveEasypayOpening,
+      cashConnectOpeningBalance: effectiveCCOpening,
+      bankCharges: bankChargesCalc,
+      banking: bankingCalc,
+    };
+
+    if (existing) updateManagerEntry(existing.id, payload);
+    else addManagerEntry(payload);
+
+    setForm(payload);
     const now = format(new Date(), 'dd MMM yyyy HH:mm:ss');
     setSavedAt(prev => prev ?? now);
     toast({ title: 'Manager entry saved', description: `Saved for ${format(new Date(selectedDate), 'dd MMM yyyy')}` });
