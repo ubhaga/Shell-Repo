@@ -14,7 +14,204 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      daily_cashups: {
+        Row: {
+          cashier_name: string
+          created_at: string
+          date: string
+          entered_by: string
+          id: string
+          locked: boolean
+          month: string
+          notes: string
+          opt: Json
+          opt_shift_number: number
+          shop: Json
+          shop_shift_number: number
+          updated_at: string
+        }
+        Insert: {
+          cashier_name?: string
+          created_at?: string
+          date: string
+          entered_by?: string
+          id?: string
+          locked?: boolean
+          month: string
+          notes?: string
+          opt?: Json
+          opt_shift_number?: number
+          shop?: Json
+          shop_shift_number?: number
+          updated_at?: string
+        }
+        Update: {
+          cashier_name?: string
+          created_at?: string
+          date?: string
+          entered_by?: string
+          id?: string
+          locked?: boolean
+          month?: string
+          notes?: string
+          opt?: Json
+          opt_shift_number?: number
+          shop?: Json
+          shop_shift_number?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      manager_daily_entries: {
+        Row: {
+          bank_charges: number
+          banking: number
+          branch_day_end_total: number
+          branch_day_end_vat: number
+          cash_connect_opening_balance: number
+          cash_deposited_cash_connect: number
+          cash_deposited_easypay: number
+          cash_reconc_notes: string
+          cashup_id: string
+          cc_bag_closure_cash_connect: number
+          cc_bag_closure_coins: number
+          cc_bag_closure_easypay: number
+          coins_opening_balance: number
+          created_at: string
+          daily_coins: number
+          date: string
+          easypay_opening_balance: number
+          eft_invoices: Json
+          entered_by: string
+          explanations: string
+          id: string
+          invoice_notes: string
+          locked: boolean
+          payout_invoices: Json
+          transfer_from_coins: number
+          updated_at: string
+        }
+        Insert: {
+          bank_charges?: number
+          banking?: number
+          branch_day_end_total?: number
+          branch_day_end_vat?: number
+          cash_connect_opening_balance?: number
+          cash_deposited_cash_connect?: number
+          cash_deposited_easypay?: number
+          cash_reconc_notes?: string
+          cashup_id?: string
+          cc_bag_closure_cash_connect?: number
+          cc_bag_closure_coins?: number
+          cc_bag_closure_easypay?: number
+          coins_opening_balance?: number
+          created_at?: string
+          daily_coins?: number
+          date: string
+          easypay_opening_balance?: number
+          eft_invoices?: Json
+          entered_by?: string
+          explanations?: string
+          id?: string
+          invoice_notes?: string
+          locked?: boolean
+          payout_invoices?: Json
+          transfer_from_coins?: number
+          updated_at?: string
+        }
+        Update: {
+          bank_charges?: number
+          banking?: number
+          branch_day_end_total?: number
+          branch_day_end_vat?: number
+          cash_connect_opening_balance?: number
+          cash_deposited_cash_connect?: number
+          cash_deposited_easypay?: number
+          cash_reconc_notes?: string
+          cashup_id?: string
+          cc_bag_closure_cash_connect?: number
+          cc_bag_closure_coins?: number
+          cc_bag_closure_easypay?: number
+          coins_opening_balance?: number
+          created_at?: string
+          daily_coins?: number
+          date?: string
+          easypay_opening_balance?: number
+          eft_invoices?: Json
+          entered_by?: string
+          explanations?: string
+          id?: string
+          invoice_notes?: string
+          locked?: boolean
+          payout_invoices?: Json
+          transfer_from_coins?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      master_data: {
+        Row: {
+          data: Json
+          id: string
+          key: string
+          updated_at: string
+        }
+        Insert: {
+          data?: Json
+          id?: string
+          key: string
+          updated_at?: string
+        }
+        Update: {
+          data?: Json
+          id?: string
+          key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      monthly_branch_figures: {
+        Row: {
+          branch_net_sales: number
+          branch_total_invoices_capital: number
+          branch_total_invoices_vat: number
+          branch_total_payouts: number
+          branch_total_receipts: number
+          created_at: string
+          entered_by: string
+          id: string
+          month: string
+          notes: string
+          updated_at: string
+        }
+        Insert: {
+          branch_net_sales?: number
+          branch_total_invoices_capital?: number
+          branch_total_invoices_vat?: number
+          branch_total_payouts?: number
+          branch_total_receipts?: number
+          created_at?: string
+          entered_by?: string
+          id?: string
+          month: string
+          notes?: string
+          updated_at?: string
+        }
+        Update: {
+          branch_net_sales?: number
+          branch_total_invoices_capital?: number
+          branch_total_invoices_vat?: number
+          branch_total_payouts?: number
+          branch_total_receipts?: number
+          created_at?: string
+          entered_by?: string
+          id?: string
+          month?: string
+          notes?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

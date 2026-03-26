@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { CashierDailyForm } from "@/components/cashier/CashierDailyForm";
 import { ManagerDailyForm } from "@/components/manager/ManagerDailyForm";
@@ -7,11 +7,33 @@ import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Reports } from "@/components/reports/Reports";
 import { MasterDataSettings } from "@/components/settings/MasterDataSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2 } from "lucide-react";
+import { useCashupStore } from "@/store/cashupStore";
+import { useMasterDataStore } from "@/store/masterDataStore";
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const cashupLoaded = useCashupStore(s => s.loaded);
+  const loadCashups = useCashupStore(s => s.loadAll);
+  const masterLoaded = useMasterDataStore(s => s.loaded);
+  const loadMaster = useMasterDataStore(s => s.loadAll);
+
+  useEffect(() => {
+    if (!cashupLoaded) loadCashups();
+    if (!masterLoaded) loadMaster();
+  }, []);
+
+  if (!cashupLoaded || !masterLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Loading data...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
