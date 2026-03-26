@@ -295,7 +295,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
             </div>
             <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
               <span className="text-muted-foreground">Returns (Yest Shift)</span>
-              <CurrencyInput value={form.shop.returns} onChange={(v) => setShop({ returns: v })} />
+              <CurrencyInput value={form.shop.returns} onChange={(v) => setShop({ returns: v, returns_mop: -v })} />
             </div>
             <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
               <span className="text-muted-foreground">Returns (Today Shift)</span>
@@ -580,7 +580,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
         ))}
         <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
           <span className="text-muted-foreground">Returns (refund next day)</span>
-          <CurrencyInput value={form.shop.returns_mop} onChange={(v) => setShop({ returns_mop: v })} allowNegative />
+          <CurrencyInput value={form.shop.returns_mop} onChange={() => {}} allowNegative disabled />
         </div>
         <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
           <span className="text-muted-foreground">Attendant Short/(Over)</span>
