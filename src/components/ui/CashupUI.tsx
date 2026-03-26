@@ -6,20 +6,22 @@ interface CurrencyInputProps {
   className?: string;
   placeholder?: string;
   allowNegative?: boolean;
+  disabled?: boolean;
 }
 
-export function CurrencyInput({ value, onChange, className, placeholder = '0.00', allowNegative }: CurrencyInputProps) {
+export function CurrencyInput({ value, onChange, className, placeholder = '0.00', allowNegative, disabled }: CurrencyInputProps) {
   return (
     <input
       type="number"
       step="0.01"
       value={value === 0 ? '' : value}
       placeholder={placeholder}
+      disabled={disabled}
       onChange={(e) => {
         const v = parseFloat(e.target.value);
         onChange(isNaN(v) ? 0 : v);
       }}
-      className={cn('input-cell', className)}
+      className={cn('input-cell', disabled && 'opacity-50 cursor-not-allowed', className)}
     />
   );
 }
