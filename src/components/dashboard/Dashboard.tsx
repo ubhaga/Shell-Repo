@@ -1,11 +1,46 @@
+import { useState } from 'react';
 import { useCashupStore } from '@/store/cashupStore';
 import { CurrencyDisplay } from '@/components/ui/CashupUI';
-import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle, CalendarDays, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import { MonthlyDashboard } from './MonthlyDashboard';
 
 interface Props { selectedDate: string; }
 
 export function Dashboard({ selectedDate }: Props) {
+  const [view, setView] = useState<'daily' | 'monthly'>('monthly');
+  const { getCashupByDate, getManagerEntryByDate } = useCashupStore();
+
+  return (
+    <div className="space-y-4">
+      {/* View toggle */}
+      <div className="flex gap-1 bg-muted rounded-lg p-1 w-fit">
+        <button
+          onClick={() => setView('monthly')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === 'monthly' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+        >
+          <Calendar className="h-4 w-4" />
+          Monthly
+        </button>
+        <button
+          onClick={() => setView('daily')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === 'daily' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+        >
+          <CalendarDays className="h-4 w-4" />
+          Daily
+        </button>
+      </div>
+
+      {view === 'monthly' ? (
+        <MonthlyDashboard selectedDate={selectedDate} />
+      ) : (
+        <DailyDashboard selectedDate={selectedDate} />
+      )}
+    </div>
+  );
+}
+
+function DailyDashboard({ selectedDate }: Props) {
   const { getCashupByDate, getManagerEntryByDate } = useCashupStore();
   const cashup = getCashupByDate(selectedDate);
   const managerEntry = getManagerEntryByDate(selectedDate);
@@ -20,7 +55,6 @@ export function Dashboard({ selectedDate }: Props) {
     );
   }
 
-  // Compute cashier metrics
   const shopNetSales = cashup ? cashup.shop.income - cashup.shop.returns - (cashup.shop.returns_today ?? 0) : 0;
   const optNetSales = cashup ? cashup.opt.income - cashup.opt.returns : 0;
   const totalNetSales = shopNetSales + optNetSales;
@@ -35,13 +69,11 @@ export function Dashboard({ selectedDate }: Props) {
   const optAcc = cashup ? cashup.opt.accounts.reduce((s, a) => s + a.amount, 0) : 0;
   const shopOther = cashup ? cashup.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0) : 0;
 
-  // Match CashierDailyForm exactly: cashConnectTotal = cashDepositedBanking + easyPay + coins
   const cashConnectTotal = cashup ? cashup.shop.cashDepositedBanking + cashup.shop.easyPay + cashup.shop.coins : 0;
   const shopDiff = cashup ? shopTakings - cashConnectTotal - shopSP - shopAcc - shopOther - cashup.shop.returns_mop - cashup.shop.attendantShortOver : 0;
   const optMopTotal = optSP + optAcc;
   const optDiff = optNetSales - optMopTotal;
 
-  // Manager metrics
   const invTotal = managerEntry
     ? managerEntry.payoutInvoices.reduce((s, i) => s + i.inclusive, 0) + managerEntry.eftInvoices.reduce((s, i) => s + i.inclusive, 0)
     : 0;
@@ -89,7 +121,6 @@ export function Dashboard({ selectedDate }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Main status banner */}
       <div className={`rounded-2xl border-2 p-5 flex items-center gap-4 ${allGreen ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`}>
         <div className="text-4xl">{allGreen ? '🟢' : '🔴'}</div>
         <div>
@@ -104,35 +135,13 @@ export function Dashboard({ selectedDate }: Props) {
         </div>
       </div>
 
-      {/* Status grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatusCard
-          label="Shop Till Balance"
-          value={<CurrencyDisplay value={shopDiff} />}
-          status={!cashup ? 'pending' : shopBalanced ? 'green' : 'red'}
-          detail={cashup ? (shopBalanced ? 'Balanced ✓' : `Short/(Over)`) : 'No data'}
-        />
-        <StatusCard
-          label="OPT Balance"
-          value={<CurrencyDisplay value={optDiff} />}
-          status={!cashup ? 'pending' : optBalanced ? 'green' : 'red'}
-          detail={cashup ? (optBalanced ? 'Balanced ✓' : `Short/(Over)`) : 'No data'}
-        />
-        <StatusCard
-          label="Invoice vs Branch"
-          value={managerEntry ? (invMatch ? 'MATCH' : `Diff R${Math.abs(invTotal - managerEntry.branchDayEndTotal).toFixed(2)}`) : 'Pending'}
-          status={!managerEntry ? 'pending' : invMatch ? 'green' : 'red'}
-          detail="Invoices captured vs branch"
-        />
-        <StatusCard
-          label="VAT Reconciliation"
-          value={managerEntry ? (vatMatch ? 'MATCH' : `Diff R${Math.abs(invVat - managerEntry.branchDayEndVat).toFixed(2)}`) : 'Pending'}
-          status={!managerEntry ? 'pending' : vatMatch ? 'green' : 'red'}
-          detail="VAT component verification"
-        />
+        <StatusCard label="Shop Till Balance" value={<CurrencyDisplay value={shopDiff} />} status={!cashup ? 'pending' : shopBalanced ? 'green' : 'red'} detail={cashup ? (shopBalanced ? 'Balanced ✓' : 'Short/(Over)') : 'No data'} />
+        <StatusCard label="OPT Balance" value={<CurrencyDisplay value={optDiff} />} status={!cashup ? 'pending' : optBalanced ? 'green' : 'red'} detail={cashup ? (optBalanced ? 'Balanced ✓' : 'Short/(Over)') : 'No data'} />
+        <StatusCard label="Invoice vs Branch" value={managerEntry ? (invMatch ? 'MATCH' : `Diff R${Math.abs(invTotal - managerEntry.branchDayEndTotal).toFixed(2)}`) : 'Pending'} status={!managerEntry ? 'pending' : invMatch ? 'green' : 'red'} detail="Invoices captured vs branch" />
+        <StatusCard label="VAT Reconciliation" value={managerEntry ? (vatMatch ? 'MATCH' : `Diff R${Math.abs(invVat - managerEntry.branchDayEndVat).toFixed(2)}`) : 'Pending'} status={!managerEntry ? 'pending' : vatMatch ? 'green' : 'red'} detail="VAT component verification" />
       </div>
 
-      {/* Key figures */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {cashup && (
           <div className="bg-card border rounded-xl p-4">
@@ -158,7 +167,6 @@ export function Dashboard({ selectedDate }: Props) {
             </div>
           </div>
         )}
-
         {managerEntry && (
           <div className="bg-card border rounded-xl p-4">
             <h3 className="font-bold text-sm mb-3 text-primary">Manager Summary</h3>
