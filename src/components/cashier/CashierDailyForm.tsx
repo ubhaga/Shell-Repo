@@ -712,6 +712,34 @@ export function CashierDailyForm({ selectedDate }: Props) {
           </p>
         )}
       </div>
+
+      {/* ─── OVER CONFIRMATION DIALOG ─── */}
+      <AlertDialog open={overConfirmOpen} onOpenChange={setOverConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" /> Cashier is Over
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {shopDifference < -0.01 && optDifference < -0.01
+                ? "Both the Shop Till and OPT shifts show a negative balance (cashier is over)."
+                : shopDifference < -0.01
+                  ? "The Shop Till shift shows a negative balance (cashier is over)."
+                  : "The OPT shift shows a negative balance (cashier is over)."}
+              {" "}Are you sure you want to save?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go Back</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { setOverConfirmOpen(false); commitSave(); }}
+            >
+              Yes, Save Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
