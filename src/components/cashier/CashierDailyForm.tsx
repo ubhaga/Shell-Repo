@@ -98,6 +98,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
   }));
 
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [overConfirmOpen, setOverConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (existing) {
