@@ -21,7 +21,7 @@ export function Dashboard({ selectedDate }: Props) {
   }
 
   // Compute cashier metrics
-  const shopNetSales = cashup ? cashup.shop.income - cashup.shop.returns : 0;
+  const shopNetSales = cashup ? cashup.shop.income - cashup.shop.returns - (cashup.shop.returns_today ?? 0) : 0;
   const optNetSales = cashup ? cashup.opt.income - cashup.opt.returns : 0;
   const totalNetSales = shopNetSales + optNetSales;
 
