@@ -6,6 +6,7 @@ interface CurrencyInputProps {
   className?: string;
   placeholder?: string;
   allowNegative?: boolean;
+  disabled?: boolean;
 }
 
 export function CurrencyInput({ value, onChange, className, placeholder = '0.00', allowNegative }: CurrencyInputProps) {
