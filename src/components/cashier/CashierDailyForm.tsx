@@ -13,6 +13,16 @@ import type {
 } from "@/types/cashup";
 import { Section, DataRow, CurrencyInput, CurrencyDisplay } from "@/components/ui/CashupUI";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Plus, Trash2, Save, CheckCircle, AlertCircle, Lock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
