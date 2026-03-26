@@ -13,6 +13,16 @@ import type {
 } from "@/types/cashup";
 import { Section, DataRow, CurrencyInput, CurrencyDisplay } from "@/components/ui/CashupUI";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Plus, Trash2, Save, CheckCircle, AlertCircle, Lock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -88,6 +98,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
   }));
 
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [overConfirmOpen, setOverConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (existing) {
@@ -150,13 +161,68 @@ export function CashierDailyForm({ selectedDate }: Props) {
   // OPT balance = OPT Takings - OPT Speedpoints - OPT Accounts
   const optDifference = optTotalTakings - optSpeedpointTotal - optAccountTotal;
 
-  const handleSave = () => {
-    if (isLocked) return;
+  const commitSave = () => {
     if (existing) updateCashup(existing.id, form);
     else addCashup(form);
     const now = format(new Date(), "dd MMM yyyy, HH:mm:ss");
     setSavedAt((prev) => prev ?? now);
     toast({ title: "Cashup saved", description: `Saved for ${format(new Date(selectedDate), "dd MMM yyyy")}` });
+  };
+
+  const handleSave = () => {
+    if (isLocked) return;
+
+    // --- Mandatory header fields ---
+    const missing: string[] = [];
+    if (!form.enteredBy.trim()) missing.push("Entered By");
+    if (!form.cashierName.trim()) missing.push("Cashier");
+    if (!form.shopShiftNumber) missing.push("Shop Shift #");
+    if (!form.optShiftNumber) missing.push("OPT Shift #");
+    if (!form.shop.income && !form.opt.income) missing.push("Income (Gross Sales) — at least one shift required");
+
+    if (missing.length > 0) {
+      toast({
+        title: "Missing required fields",
+        description: `Please fill in: ${missing.join(", ")}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // --- Receipts: seq# mandatory if amount entered ---
+    const receiptsWithoutSeq = form.shop.receipts.filter((r) => r.amount !== 0 && !r.seqNo.trim());
+    if (receiptsWithoutSeq.length > 0) {
+      const types = receiptsWithoutSeq.map((r) => r.type).join(", ");
+      toast({
+        title: "Receipt Seq No. required",
+        description: `Please enter a Seq No. for: ${types}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // --- Speedpoints: batch# mandatory if amount entered ---
+    const shopSpBad = form.shop.speedpoints.filter((s) => s.shopAmount !== 0 && !s.batchNo.trim());
+    const optSpBad = form.opt.speedpoints.filter((s) => s.optAmount !== 0 && !s.batchNo.trim());
+    const allSpBad = [...shopSpBad.map((s) => `Shop — ${s.terminal}`), ...optSpBad.map((s) => `OPT — ${s.terminal}`)];
+    if (allSpBad.length > 0) {
+      toast({
+        title: "Speedpoint Batch # required",
+        description: `Please enter a Batch # for: ${allSpBad.join(", ")}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // --- Over (negative balance) confirmation ---
+    const shopOver = shopDifference < -0.01;
+    const optOver = optDifference < -0.01;
+    if (shopOver || optOver) {
+      setOverConfirmOpen(true);
+      return;
+    }
+
+    commitSave();
   };
 
   const addPayout = () => setShop({ payouts: [...form.shop.payouts, { id: uuidv4(), vendor: "", amount: 0 }] });
@@ -646,6 +712,34 @@ export function CashierDailyForm({ selectedDate }: Props) {
           </p>
         )}
       </div>
+
+      {/* ─── OVER CONFIRMATION DIALOG ─── */}
+      <AlertDialog open={overConfirmOpen} onOpenChange={setOverConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" /> Cashier is Over
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {shopDifference < -0.01 && optDifference < -0.01
+                ? "Both the Shop Till and OPT shifts show a negative balance (cashier is over)."
+                : shopDifference < -0.01
+                  ? "The Shop Till shift shows a negative balance (cashier is over)."
+                  : "The OPT shift shows a negative balance (cashier is over)."}
+              {" "}Are you sure you want to save?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go Back</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { setOverConfirmOpen(false); commitSave(); }}
+            >
+              Yes, Save Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
