@@ -42,21 +42,30 @@ export function Reports() {
   );
   const receiptsTotal = receiptsReport.reduce((s, r) => s + r.amount, 0);
 
-  // Speedpoints report
-  const speedpointsReport = monthCashups.flatMap(c =>
-    c.shop.speedpoints.map(sp => ({
-      date: c.date,
-      cashier: c.cashierName,
-      terminal: sp.terminal,
-      batchNo: sp.batchNo,
-      shopAmount: sp.shopAmount,
-      optAmount: sp.optAmount,
-      total: sp.shopAmount + sp.optAmount,
-    }))
-  );
-  const spShopTotal = speedpointsReport.reduce((s, r) => s + r.shopAmount, 0);
-  const spOptTotal = speedpointsReport.reduce((s, r) => s + r.optAmount, 0);
-  const spGrandTotal = speedpointsReport.reduce((s, r) => s + r.total, 0);
+  // Speedpoints report — pivoted by terminal, split Shop / OPT
+  const SHOP_TERMINALS = ['Term 247608', 'Forecourt', 'Retail', 'Scan to pay'];
+  const OPT_TERMINALS = ['Term 247608', 'Forecourt 2', 'V Plus', 'Scan to pay'];
+  const ALL_TERMINALS = [...new Set([...SHOP_TERMINALS, ...OPT_TERMINALS])]; // 6 unique
+
+  type SpRow = { date: string; shift: 'Shop' | 'OPT'; terminals: Record<string, { batchNo: string; amount: number }> ; total: number };
+  const speedpointRows: SpRow[] = monthCashups.flatMap(c => {
+    const shopRow: SpRow = { date: c.date, shift: 'Shop', terminals: {}, total: 0 };
+    c.shop.speedpoints.forEach(sp => {
+      shopRow.terminals[sp.terminal] = { batchNo: sp.batchNo, amount: sp.shopAmount };
+      shopRow.total += sp.shopAmount;
+    });
+    const optRow: SpRow = { date: c.date, shift: 'OPT', terminals: {}, total: 0 };
+    c.opt.speedpoints.forEach(sp => {
+      optRow.terminals[sp.terminal] = { batchNo: sp.batchNo, amount: sp.optAmount };
+      optRow.total += sp.optAmount;
+    });
+    return [shopRow, optRow];
+  });
+  const spShopTotal = speedpointRows.filter(r => r.shift === 'Shop').reduce((s, r) => s + r.total, 0);
+  const spOptTotal = speedpointRows.filter(r => r.shift === 'OPT').reduce((s, r) => s + r.total, 0);
+  const spGrandTotal = spShopTotal + spOptTotal;
+  const spTerminalTotals: Record<string, number> = {};
+  ALL_TERMINALS.forEach(t => { spTerminalTotals[t] = speedpointRows.reduce((s, r) => s + (r.terminals[t]?.amount || 0), 0); });
 
   // Accounts report — shop + OPT combined per day
   const accountsReport = monthCashups.flatMap(c => {
