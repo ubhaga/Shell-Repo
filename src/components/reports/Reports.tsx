@@ -318,8 +318,8 @@ export function Reports() {
                           <React.Fragment key={c.date}>
                             {/* Shop section header on first day */}
                             {ci === 0 && (
-                              <tr className="bg-green-50 dark:bg-green-950/30">
-                                <td colSpan={2 + ALL_TERMINALS.length * 2} className="px-2 py-1.5 font-semibold text-xs text-green-700 dark:text-green-400 uppercase tracking-wider">Shop Till</td>
+                              <tr className="bg-muted/50">
+                                <td colSpan={2 + ALL_TERMINALS.length * 2} className="px-2 py-1.5 font-semibold text-xs text-foreground uppercase tracking-wider">Shop Till</td>
                               </tr>
                             )}
                             <tr className="border-b hover:bg-muted/30">
@@ -340,8 +340,8 @@ export function Reports() {
                         );
                       })}
                       {/* OPT Section */}
-                      <tr className="bg-purple-50 dark:bg-purple-950/30">
-                        <td colSpan={2 + ALL_TERMINALS.length * 2} className="px-2 py-1.5 font-semibold text-xs text-purple-700 dark:text-purple-400 uppercase tracking-wider">OPT</td>
+                      <tr className="bg-accent/50">
+                        <td colSpan={2 + ALL_TERMINALS.length * 2} className="px-2 py-1.5 font-semibold text-xs text-accent-foreground uppercase tracking-wider">OPT</td>
                       </tr>
                       {monthCashups.map(c => {
                         const optRow = speedpointRows.find(r => r.date === c.date && r.shift === 'OPT');
