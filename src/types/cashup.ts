@@ -34,7 +34,8 @@ export interface AccountEntry {
 export interface CashierShift {
   // Section 1 - Income
   income: number;
-  returns: number;
+  returns: number; // yesterday shift
+  returns_today: number; // new field
   // Section 2 - Payouts
   payouts: PayoutLine[];
   lottoPayouts: number;
@@ -64,7 +65,20 @@ export interface DailyCashup {
   optShiftNumber: number;
   cashierName: string;
   shop: CashierShift;
-  opt: Omit<CashierShift, 'cashConnectTotal' | 'cashDepositedBanking' | 'easyPay' | 'coins' | 'receipts' | 'otherAdjustments' | 'accounts' | 'payouts' | 'lottoPayouts' | 'returns_mop' | 'attendantShortOver'> & {
+  opt: Omit<
+    CashierShift,
+    | "cashConnectTotal"
+    | "cashDepositedBanking"
+    | "easyPay"
+    | "coins"
+    | "receipts"
+    | "otherAdjustments"
+    | "accounts"
+    | "payouts"
+    | "lottoPayouts"
+    | "returns_mop"
+    | "attendantShortOver"
+  > & {
     income: number;
     returns: number;
     speedpoints: SpeedpointEntry[];
@@ -128,7 +142,7 @@ export interface MonthlyBranchFigures {
   notes: string;
 }
 
-export type DashboardStatus = 'green' | 'red' | 'pending';
+export type DashboardStatus = "green" | "red" | "pending";
 
 export interface DailyDashboardMetric {
   label: string;
