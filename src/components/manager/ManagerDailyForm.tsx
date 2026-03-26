@@ -293,6 +293,63 @@ export function ManagerDailyForm({ selectedDate }: Props) {
 
   const handleSave = () => {
     if (isLocked) return;
+
+    // 1. Mandatory: Entered By
+    if (!form.enteredBy) {
+      toast({ title: 'Missing information', description: 'Please select who entered this record (Entered By).', variant: 'destructive' });
+      return;
+    }
+
+    // 2. Invoice line validation — supplier, category, doc no are mandatory if any amount entered
+    const incompletePayoutInvoices = form.payoutInvoices.filter(i => i.inclusive !== 0 && (!i.supplier || !i.category || !i.branchDocNum));
+    if (incompletePayoutInvoices.length > 0) {
+      toast({ title: 'Incomplete payout invoices', description: 'Each payout invoice with an amount must have a Supplier, Category and Doc No.', variant: 'destructive' });
+      return;
+    }
+    const hasBlankPayoutLine = form.payoutInvoices.some(i => i.inclusive === 0 && (!i.supplier || !i.category || !i.branchDocNum));
+    if (hasBlankPayoutLine) {
+      toast({ title: 'Incomplete payout invoices', description: 'All payout invoice rows must have a Supplier, Category and Doc No (or remove empty rows).', variant: 'destructive' });
+      return;
+    }
+
+    const incompleteEftInvoices = form.eftInvoices.filter(i => i.inclusive !== 0 && (!i.supplier || !i.category || !i.branchDocNum));
+    if (incompleteEftInvoices.length > 0) {
+      toast({ title: 'Incomplete EFT invoices', description: 'Each EFT/Non-Cash invoice with an amount must have a Supplier, Category and Doc No.', variant: 'destructive' });
+      return;
+    }
+    const hasBlankEftLine = form.eftInvoices.some(i => i.inclusive === 0 && (!i.supplier || !i.category || !i.branchDocNum));
+    if (hasBlankEftLine) {
+      toast({ title: 'Incomplete EFT invoices', description: 'All EFT/Non-Cash invoice rows must have a Supplier, Category and Doc No (or remove empty rows).', variant: 'destructive' });
+      return;
+    }
+
+    // 3. Branch Day End is mandatory if any invoices exist
+    const hasAnyInvoices = form.payoutInvoices.length > 0 || form.eftInvoices.length > 0;
+    if (hasAnyInvoices) {
+      if (!form.branchDayEndTotal || form.branchDayEndTotal === 0) {
+        toast({ title: 'Missing Branch Day End Total', description: 'Branch Day End Total is mandatory when invoices are entered.', variant: 'destructive' });
+        return;
+      }
+      if (!form.branchDayEndVat || form.branchDayEndVat === 0) {
+        toast({ title: 'Missing Branch Day End VAT', description: 'Branch Day End VAT is mandatory when invoices are entered.', variant: 'destructive' });
+        return;
+      }
+    }
+
+    // 4. Closing balance cannot be negative
+    const negativeClosingFields: string[] = [];
+    if (coinsClosing < -0.005) negativeClosingFields.push('Coins');
+    if (easypayClosing < -0.005) negativeClosingFields.push('Easy Pay');
+    if (ccClosing < -0.005) negativeClosingFields.push('Cash Connect');
+    if (negativeClosingFields.length > 0) {
+      toast({
+        title: 'Negative closing balance',
+        description: `The closing balance for ${negativeClosingFields.join(', ')} is negative. Please correct the figures before saving.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (existing) updateManagerEntry(existing.id, form);
     else addManagerEntry(form);
     const now = format(new Date(), 'dd MMM yyyy HH:mm:ss');
