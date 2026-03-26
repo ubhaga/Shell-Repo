@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useCashupStore } from '@/store/cashupStore';
 import { CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Button } from '@/components/ui/button';
