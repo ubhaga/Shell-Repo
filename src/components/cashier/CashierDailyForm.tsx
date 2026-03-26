@@ -20,7 +20,7 @@ import { format } from "date-fns";
 const blankShopShift = (): DailyCashup["shop"] => ({
   income: 0,
   returns: 0,
-  returns_today: 0,
+  return_today: 0,
   payouts: [],
   lottoPayouts: 0,
   receipts: RECEIPT_TYPES.map((type) => ({ id: uuidv4(), type, seqNo: "", amount: 0 })),
@@ -43,7 +43,6 @@ const blankShopShift = (): DailyCashup["shop"] => ({
 const blankOptShift = (): DailyCashup["opt"] => ({
   income: 0,
   returns: 0,
-  returns_today: 0,
   speedpoints: [
     { terminal: "Term 247608", batchNo: "", shopAmount: 0, optAmount: 0 },
     { terminal: "Forecourt 2", batchNo: "", shopAmount: 0, optAmount: 0 },
@@ -117,7 +116,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
 
   // ---- CALCULATIONS ----
   const shopPayoutsTotal = form.shop.payouts.reduce((s, p) => s + p.amount, 0);
-  const shopNetSales = form.shop.income - form.shop.returns;
+  const shopNetSales = form.shop.income - form.shop.returns - form.shop.returns_today;
   const shopTotalReceipts = form.shop.receipts.reduce((s, r) => s + r.amount, 0);
   const shopTotalTakings = shopNetSales - shopPayoutsTotal - form.shop.lottoPayouts + shopTotalReceipts;
 
@@ -297,10 +296,10 @@ export function CashierDailyForm({ selectedDate }: Props) {
               <span className="text-muted-foreground">Returns (Yest Shift)</span>
               <CurrencyInput value={form.shop.returns} onChange={(v) => setShop({ returns: v })} />
             </div>
-            <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
-              <span className="text-muted-foreground">Returns (Today Shift)</span>
-              <CurrencyInput value={form.shop.returns_today} onChange={(v) => setShop({ returns_today: v })} />
-            </div>
+            <span className="text-muted-foreground">Returns (Today Shift)</span>
+<CurrencyInput
+  value={form.shop.returns_today}
+  onChange={v => setShop({ returns_today: v })}
             <div className="flex items-center justify-between px-3 py-1.5 bg-secondary text-sm font-semibold">
               <span>Net Sales</span>
               <CurrencyDisplay value={shopNetSales} highlight />
