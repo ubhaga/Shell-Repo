@@ -20,6 +20,7 @@ import { format } from "date-fns";
 const blankShopShift = (): DailyCashup["shop"] => ({
   income: 0,
   returns: 0,
+  returns_today: 0,
   payouts: [],
   lottoPayouts: 0,
   receipts: RECEIPT_TYPES.map((type) => ({ id: uuidv4(), type, seqNo: "", amount: 0 })),
@@ -42,6 +43,7 @@ const blankShopShift = (): DailyCashup["shop"] => ({
 const blankOptShift = (): DailyCashup["opt"] => ({
   income: 0,
   returns: 0,
+  returns_today: 0,
   speedpoints: [
     { terminal: "Term 247608", batchNo: "", shopAmount: 0, optAmount: 0 },
     { terminal: "Forecourt 2", batchNo: "", shopAmount: 0, optAmount: 0 },
