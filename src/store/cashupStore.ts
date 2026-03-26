@@ -1,101 +1,219 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { DailyCashup, ManagerDailyEntry, MonthlyBranchFigures } from '@/types/cashup';
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
+
+// ── helpers: camelCase ↔ snake_case mappers ──
+
+function cashupToRow(c: DailyCashup) {
+  return {
+    id: c.id,
+    date: c.date,
+    month: c.month,
+    entered_by: c.enteredBy,
+    shop_shift_number: c.shopShiftNumber,
+    opt_shift_number: c.optShiftNumber,
+    cashier_name: c.cashierName,
+    shop: c.shop as unknown,
+    opt: c.opt as unknown,
+    notes: c.notes,
+    locked: c.locked,
+  };
+}
+
+function rowToCashup(r: Record<string, unknown>): DailyCashup {
+  return {
+    id: r.id as string,
+    date: r.date as string,
+    month: r.month as string,
+    enteredBy: r.entered_by as string,
+    shopShiftNumber: r.shop_shift_number as number,
+    optShiftNumber: r.opt_shift_number as number,
+    cashierName: r.cashier_name as string,
+    shop: r.shop as DailyCashup['shop'],
+    opt: r.opt as DailyCashup['opt'],
+    notes: r.notes as string,
+    locked: r.locked as boolean,
+  };
+}
+
+function managerToRow(e: ManagerDailyEntry) {
+  return {
+    id: e.id,
+    date: e.date,
+    cashup_id: e.cashupId,
+    entered_by: e.enteredBy,
+    explanations: e.explanations,
+    payout_invoices: e.payoutInvoices as unknown,
+    eft_invoices: e.eftInvoices as unknown,
+    coins_opening_balance: e.coinsOpeningBalance,
+    easypay_opening_balance: e.easypayOpeningBalance,
+    cash_connect_opening_balance: e.cashConnectOpeningBalance,
+    daily_coins: e.dailyCoins,
+    cash_deposited_easypay: e.cashDepositedEasypay,
+    cash_deposited_cash_connect: e.cashDepositedCashConnect,
+    cc_bag_closure_coins: e.ccBagClosureCoins,
+    cc_bag_closure_easypay: e.ccBagClosureEasypay,
+    cc_bag_closure_cash_connect: e.ccBagClosureCashConnect,
+    transfer_from_coins: e.transferFromCoins,
+    branch_day_end_total: e.branchDayEndTotal,
+    branch_day_end_vat: e.branchDayEndVat,
+    invoice_notes: e.invoiceNotes,
+    cash_reconc_notes: e.cashReconcNotes,
+    bank_charges: e.bankCharges,
+    banking: e.banking,
+    locked: e.locked,
+  };
+}
+
+function rowToManager(r: Record<string, unknown>): ManagerDailyEntry {
+  return {
+    id: r.id as string,
+    date: r.date as string,
+    cashupId: r.cashup_id as string,
+    enteredBy: r.entered_by as string,
+    explanations: r.explanations as string,
+    payoutInvoices: (r.payout_invoices ?? []) as ManagerDailyEntry['payoutInvoices'],
+    eftInvoices: (r.eft_invoices ?? []) as ManagerDailyEntry['eftInvoices'],
+    coinsOpeningBalance: Number(r.coins_opening_balance ?? 0),
+    easypayOpeningBalance: Number(r.easypay_opening_balance ?? 0),
+    cashConnectOpeningBalance: Number(r.cash_connect_opening_balance ?? 0),
+    dailyCoins: Number(r.daily_coins ?? 0),
+    cashDepositedEasypay: Number(r.cash_deposited_easypay ?? 0),
+    cashDepositedCashConnect: Number(r.cash_deposited_cash_connect ?? 0),
+    ccBagClosureCoins: Number(r.cc_bag_closure_coins ?? 0),
+    ccBagClosureEasypay: Number(r.cc_bag_closure_easypay ?? 0),
+    ccBagClosureCashConnect: Number(r.cc_bag_closure_cash_connect ?? 0),
+    transferFromCoins: Number(r.transfer_from_coins ?? 0),
+    branchDayEndTotal: Number(r.branch_day_end_total ?? 0),
+    branchDayEndVat: Number(r.branch_day_end_vat ?? 0),
+    invoiceNotes: r.invoice_notes as string,
+    cashReconcNotes: r.cash_reconc_notes as string,
+    bankCharges: Number(r.bank_charges ?? 0),
+    banking: Number(r.banking ?? 0),
+    locked: r.locked as boolean,
+  };
+}
+
+function monthlyToRow(f: MonthlyBranchFigures) {
+  return {
+    id: f.id,
+    month: f.month,
+    entered_by: f.enteredBy,
+    branch_net_sales: f.branchNetSales,
+    branch_total_payouts: f.branchTotalPayouts,
+    branch_total_receipts: f.branchTotalReceipts,
+    branch_total_invoices_capital: f.branchTotalInvoicesCapital,
+    branch_total_invoices_vat: f.branchTotalInvoicesVat,
+    notes: f.notes,
+  };
+}
+
+function rowToMonthly(r: Record<string, unknown>): MonthlyBranchFigures {
+  return {
+    id: r.id as string,
+    month: r.month as string,
+    enteredBy: r.entered_by as string,
+    branchNetSales: Number(r.branch_net_sales ?? 0),
+    branchTotalPayouts: Number(r.branch_total_payouts ?? 0),
+    branchTotalReceipts: Number(r.branch_total_receipts ?? 0),
+    branchTotalInvoicesCapital: Number(r.branch_total_invoices_capital ?? 0),
+    branchTotalInvoicesVat: Number(r.branch_total_invoices_vat ?? 0),
+    notes: r.notes as string,
+  };
+}
+
+// ── Store ──
 
 interface CashupStore {
   cashups: DailyCashup[];
   managerEntries: ManagerDailyEntry[];
   monthlyFigures: MonthlyBranchFigures[];
-  
+  loaded: boolean;
+
+  // Init
+  loadAll: () => Promise<void>;
+
   // Cashier actions
-  addCashup: (cashup: Omit<DailyCashup, 'id'>) => string;
-  updateCashup: (id: string, cashup: Partial<DailyCashup>) => void;
-  deleteCashup: (id: string) => void;
+  addCashup: (cashup: Omit<DailyCashup, 'id'>) => Promise<string>;
+  updateCashup: (id: string, cashup: Partial<DailyCashup>) => Promise<void>;
+  deleteCashup: (id: string) => Promise<void>;
   getCashupByDate: (date: string) => DailyCashup | undefined;
-  
+
   // Manager daily actions
-  addManagerEntry: (entry: Omit<ManagerDailyEntry, 'id'>) => string;
-  updateManagerEntry: (id: string, entry: Partial<ManagerDailyEntry>) => void;
+  addManagerEntry: (entry: Omit<ManagerDailyEntry, 'id'>) => Promise<string>;
+  updateManagerEntry: (id: string, entry: Partial<ManagerDailyEntry>) => Promise<void>;
   getManagerEntryByDate: (date: string) => ManagerDailyEntry | undefined;
-  
+
   // Monthly actions
-  addMonthlyFigures: (figures: Omit<MonthlyBranchFigures, 'id'>) => string;
-  updateMonthlyFigures: (id: string, figures: Partial<MonthlyBranchFigures>) => void;
+  addMonthlyFigures: (figures: Omit<MonthlyBranchFigures, 'id'>) => Promise<string>;
+  updateMonthlyFigures: (id: string, figures: Partial<MonthlyBranchFigures>) => Promise<void>;
   getMonthlyFiguresByMonth: (month: string) => MonthlyBranchFigures | undefined;
 }
 
-export const useCashupStore = create<CashupStore>()(
-  persist(
-    (set, get) => ({
-      cashups: [],
-      managerEntries: [],
-      monthlyFigures: [],
+export const useCashupStore = create<CashupStore>()((set, get) => ({
+  cashups: [],
+  managerEntries: [],
+  monthlyFigures: [],
+  loaded: false,
 
-      addCashup: (cashup) => {
-        const id = uuidv4();
-        set((s) => ({ cashups: [...s.cashups, { ...cashup, id }] }));
-        return id;
-      },
-      updateCashup: (id, cashup) =>
-        set((s) => ({ cashups: s.cashups.map((c) => (c.id === id ? { ...c, ...cashup } : c)) })),
-      deleteCashup: (id) =>
-        set((s) => ({ cashups: s.cashups.filter((c) => c.id !== id) })),
-      getCashupByDate: (date) => get().cashups.find((c) => c.date === date),
+  loadAll: async () => {
+    const [cashRes, manRes, monRes] = await Promise.all([
+      supabase.from('daily_cashups').select('*').order('date'),
+      supabase.from('manager_daily_entries').select('*').order('date'),
+      supabase.from('monthly_branch_figures').select('*').order('month'),
+    ]);
+    set({
+      cashups: (cashRes.data ?? []).map(r => rowToCashup(r as Record<string, unknown>)),
+      managerEntries: (manRes.data ?? []).map(r => rowToManager(r as Record<string, unknown>)),
+      monthlyFigures: (monRes.data ?? []).map(r => rowToMonthly(r as Record<string, unknown>)),
+      loaded: true,
+    });
+  },
 
-      addManagerEntry: (entry) => {
-        const id = uuidv4();
-        set((s) => ({ managerEntries: [...s.managerEntries, { ...entry, id }] }));
-        return id;
-      },
-      updateManagerEntry: (id, entry) =>
-        set((s) => ({ managerEntries: s.managerEntries.map((e) => (e.id === id ? { ...e, ...entry } : e)) })),
-      getManagerEntryByDate: (date) => get().managerEntries.find((e) => e.date === date),
+  addCashup: async (cashup) => {
+    const id = uuidv4();
+    const full = { ...cashup, id } as DailyCashup;
+    set((s) => ({ cashups: [...s.cashups, full] }));
+    await supabase.from('daily_cashups').insert(cashupToRow(full) as never);
+    return id;
+  },
+  updateCashup: async (id, cashup) => {
+    set((s) => ({ cashups: s.cashups.map((c) => (c.id === id ? { ...c, ...cashup } : c)) }));
+    const updated = get().cashups.find(c => c.id === id);
+    if (updated) await supabase.from('daily_cashups').update(cashupToRow(updated) as never).eq('id', id);
+  },
+  deleteCashup: async (id) => {
+    set((s) => ({ cashups: s.cashups.filter((c) => c.id !== id) }));
+    await supabase.from('daily_cashups').delete().eq('id', id);
+  },
+  getCashupByDate: (date) => get().cashups.find((c) => c.date === date),
 
-      addMonthlyFigures: (figures) => {
-        const id = uuidv4();
-        set((s) => ({ monthlyFigures: [...s.monthlyFigures, { ...figures, id }] }));
-        return id;
-      },
-      updateMonthlyFigures: (id, figures) =>
-        set((s) => ({ monthlyFigures: s.monthlyFigures.map((f) => (f.id === id ? { ...f, ...figures } : f)) })),
-      getMonthlyFiguresByMonth: (month) => get().monthlyFigures.find((f) => f.month === month),
-    }),
-    {
-      name: 'cashup-store',
-      version: 3,
-      migrate: (persisted: unknown, version: number) => {
-        const state = persisted as { managerEntries?: Array<Record<string, unknown>> };
-        if (version < 2) {
-          // Rename transferFromCoin -> transferFromCoins in all manager entries
-          if (state?.managerEntries) {
-            state.managerEntries = state.managerEntries.map(e => {
-              if ('transferFromCoin' in e) {
-                const { transferFromCoin, ...rest } = e;
-                return { ...rest, transferFromCoins: transferFromCoin ?? 0 };
-              }
-              return e;
-            });
-          }
-        }
-        if (version < 3) {
-          // Patch Jan 1 2026 opening balances to spreadsheet values
-          if (state?.managerEntries) {
-            state.managerEntries = state.managerEntries.map(e => {
-              if (e.date === '2026-01-01') {
-                return {
-                  ...e,
-                  coinsOpeningBalance: 4483.15,
-                  easypayOpeningBalance: 3500,
-                  cashConnectOpeningBalance: 2000,
-                };
-              }
-              return e;
-            });
-          }
-        }
-        return persisted;
-      },
-    }
-  )
-);
+  addManagerEntry: async (entry) => {
+    const id = uuidv4();
+    const full = { ...entry, id } as ManagerDailyEntry;
+    set((s) => ({ managerEntries: [...s.managerEntries, full] }));
+    await supabase.from('manager_daily_entries').insert(managerToRow(full) as never);
+    return id;
+  },
+  updateManagerEntry: async (id, entry) => {
+    set((s) => ({ managerEntries: s.managerEntries.map((e) => (e.id === id ? { ...e, ...entry } : e)) }));
+    const updated = get().managerEntries.find(e => e.id === id);
+    if (updated) await supabase.from('manager_daily_entries').update(managerToRow(updated) as never).eq('id', id);
+  },
+  getManagerEntryByDate: (date) => get().managerEntries.find((e) => e.date === date),
+
+  addMonthlyFigures: async (figures) => {
+    const id = uuidv4();
+    const full = { ...figures, id } as MonthlyBranchFigures;
+    set((s) => ({ monthlyFigures: [...s.monthlyFigures, full] }));
+    await supabase.from('monthly_branch_figures').insert(monthlyToRow(full) as never);
+    return id;
+  },
+  updateMonthlyFigures: async (id, figures) => {
+    set((s) => ({ monthlyFigures: s.monthlyFigures.map((f) => (f.id === id ? { ...f, ...figures } : f)) }));
+    const updated = get().monthlyFigures.find(f => f.id === id);
+    if (updated) await supabase.from('monthly_branch_figures').update(monthlyToRow(updated) as never).eq('id', id);
+  },
+  getMonthlyFiguresByMonth: (month) => get().monthlyFigures.find((f) => f.month === month),
+}));
