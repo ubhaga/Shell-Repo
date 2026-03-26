@@ -127,13 +127,13 @@ export function MonthlyDashboard({ selectedDate }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/50 border-b">
-                <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground w-12">Day</th>
-                <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Date</th>
-                <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Cashier</th>
-                <th className="text-right px-3 py-2.5 font-semibold text-muted-foreground">Shop Till</th>
-                <th className="text-right px-3 py-2.5 font-semibold text-muted-foreground">OPT</th>
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground">Invoices</th>
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground">VAT</th>
+                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground w-12 border-r">Day</th>
+                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Date</th>
+                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Cashier</th>
+                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Shop Till</th>
+                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">OPT</th>
+                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Invoices</th>
+                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">VAT</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground w-12">Status</th>
               </tr>
             </thead>
@@ -143,8 +143,8 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                 if (!row.hasData) {
                   return (
                     <tr key={row.date} className="border-b last:border-b-0 bg-muted/10">
-                      <td className="px-3 py-2 text-muted-foreground/40 font-mono">{format(d, 'd')}</td>
-                      <td className="px-3 py-2 text-muted-foreground/40">{format(d, 'EEE dd')}</td>
+                      <td className="px-3 py-2 text-center text-muted-foreground/40 font-mono border-r">{format(d, 'd')}</td>
+                      <td className="px-3 py-2 text-center text-muted-foreground/40 border-r">{format(d, 'EEE dd')}</td>
                       <td colSpan={6} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">No data</td>
                     </tr>
                   );
@@ -159,35 +159,35 @@ export function MonthlyDashboard({ selectedDate }: Props) {
 
                 return (
                   <tr key={row.date} className={`border-b last:border-b-0 ${allOk ? '' : 'bg-red-50/50'}`}>
-                    <td className="px-3 py-2 font-mono text-muted-foreground">{format(d, 'd')}</td>
-                    <td className="px-3 py-2 font-medium">{format(d, 'EEE dd MMM')}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{row.cashierName || '—'}</td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-3 py-2 text-center font-mono text-muted-foreground border-r">{format(d, 'd')}</td>
+                    <td className="px-3 py-2 text-center font-medium border-r">{format(d, 'EEE dd MMM')}</td>
+                    <td className="px-3 py-2 text-center text-muted-foreground border-r">{row.cashierName || '—'}</td>
+                    <td className="px-3 py-2 text-center border-r">
                       {row.shopDiff !== null ? (
-                        <span className={`inline-flex items-center gap-1 font-mono ${shopOk ? 'text-green-700' : 'text-red-600 font-semibold'}`}>
+                        <span className={`inline-flex items-center justify-center gap-1 font-mono ${shopOk ? 'text-green-700' : 'text-red-600 font-semibold'}`}>
                           <CurrencyDisplay value={row.shopDiff} />
                         </span>
                       ) : (
                         <span className="text-muted-foreground/30">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-3 py-2 text-center border-r">
                       {showOpt ? (
-                        <span className="inline-flex items-center gap-1 font-mono text-red-600 font-semibold">
+                        <span className="inline-flex items-center justify-center gap-1 font-mono text-red-600 font-semibold">
                           <CurrencyDisplay value={row.optDiff!} />
                         </span>
                       ) : (
                         <span className="text-muted-foreground/30">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-center">
+                    <td className="px-3 py-2 text-center border-r">
                       {row.invMatch !== null ? (
                         <StatusIcon status={invOk ? 'green' : 'red'} />
                       ) : (
                         <StatusIcon status="none" />
                       )}
                     </td>
-                    <td className="px-3 py-2 text-center">
+                    <td className="px-3 py-2 text-center border-r">
                       {row.vatMatch !== null ? (
                         <StatusIcon status={vatOk ? 'green' : 'red'} />
                       ) : (
@@ -208,17 +208,17 @@ export function MonthlyDashboard({ selectedDate }: Props) {
             {dataRows.length > 0 && (
               <tfoot>
                 <tr className="bg-muted/50 border-t-2 font-semibold">
-                  <td colSpan={3} className="px-3 py-2.5">Monthly Total</td>
-                  <td className="px-3 py-2.5 text-right">
+                  <td colSpan={3} className="px-3 py-2.5 text-center border-r">Monthly Total</td>
+                  <td className="px-3 py-2.5 text-center border-r">
                     <CurrencyDisplay value={totalShopDiff} highlight />
                   </td>
-                  <td className="px-3 py-2.5 text-right">
+                  <td className="px-3 py-2.5 text-center border-r">
                     <CurrencyDisplay value={dataRows.reduce((s, r) => s + (r.optDiff !== null && Math.abs(r.optDiff) >= 0.01 ? r.optDiff : 0), 0)} />
                   </td>
-                  <td className="px-3 py-2.5 text-center text-xs text-muted-foreground">
+                  <td className="px-3 py-2.5 text-center text-xs text-muted-foreground border-r">
                     {dataRows.filter(r => r.invMatch === true).length}/{dataRows.filter(r => r.invMatch !== null).length}
                   </td>
-                  <td className="px-3 py-2.5 text-center text-xs text-muted-foreground">
+                  <td className="px-3 py-2.5 text-center text-xs text-muted-foreground border-r">
                     {dataRows.filter(r => r.vatMatch === true).length}/{dataRows.filter(r => r.vatMatch !== null).length}
                   </td>
                   <td className="px-3 py-2.5 text-center text-xs">
