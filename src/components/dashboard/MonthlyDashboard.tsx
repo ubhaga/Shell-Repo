@@ -180,26 +180,32 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                         <span className="text-muted-foreground/30">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-center border-r">
-                      {row.invMatch !== null ? (
-                        <StatusIcon status={invOk ? 'green' : 'red'} />
-                      ) : (
-                        <StatusIcon status="none" />
-                      )}
+                    <td className="px-3 py-2 border-r">
+                      <div className="flex justify-center">
+                        {row.invMatch !== null ? (
+                          <StatusIcon status={invOk ? 'green' : 'red'} />
+                        ) : (
+                          <StatusIcon status="none" />
+                        )}
+                      </div>
                     </td>
-                    <td className="px-3 py-2 text-center border-r">
-                      {row.vatMatch !== null ? (
-                        <StatusIcon status={vatOk ? 'green' : 'red'} />
-                      ) : (
-                        <StatusIcon status="none" />
-                      )}
+                    <td className="px-3 py-2 border-r">
+                      <div className="flex justify-center">
+                        {row.vatMatch !== null ? (
+                          <StatusIcon status={vatOk ? 'green' : 'red'} />
+                        ) : (
+                          <StatusIcon status="none" />
+                        )}
+                      </div>
                     </td>
-                    <td className="px-3 py-2 text-center">
-                      {allOk ? (
-                        <span className="inline-block w-3 h-3 rounded-full bg-green-500" />
-                      ) : (
-                        <span className="inline-block w-3 h-3 rounded-full bg-red-500" />
-                      )}
+                    <td className="px-3 py-2">
+                      <div className="flex justify-center">
+                        {allOk ? (
+                          <span className="inline-block w-3 h-3 rounded-full bg-green-500" />
+                        ) : (
+                          <span className="inline-block w-3 h-3 rounded-full bg-red-500" />
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
