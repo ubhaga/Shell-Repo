@@ -274,63 +274,109 @@ export function Reports() {
           <div className="bg-card border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
               <h3 className="font-semibold text-sm">Speedpoint Report — {monthLabel}</h3>
-              <Button size="sm" variant="outline" onClick={() => exportCSV(speedpointsReport, `speedpoints-${filterMonth}.csv`)}>
+              <Button size="sm" variant="outline" onClick={() => {
+                const rows = speedpointRows.map(r => {
+                  const row: Record<string, string | number> = { Date: r.date, Shift: r.shift };
+                  ALL_TERMINALS.forEach(t => { row[`Batch# ${t}`] = r.terminals[t]?.batchNo || ''; row[t] = r.terminals[t]?.amount || 0; });
+                  row['Total'] = r.total;
+                  return row;
+                });
+                exportCSV(rows, `speedpoints-${filterMonth}.csv`);
+              }}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
             </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Cashier</TableHead>
-                  <TableHead>Terminal</TableHead>
-                  <TableHead>Batch No.</TableHead>
-                  <TableHead className="text-right">Shop Amount</TableHead>
-                  <TableHead className="text-right">OPT Amount</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {speedpointsReport.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No speedpoint data for this month</TableCell></TableRow>
-                ) : (
-                  <>
-                    {speedpointsReport.map((r, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="text-sm">{formatDate(r.date)}</TableCell>
-                        <TableCell className="text-sm">{r.cashier}</TableCell>
-                        <TableCell className="text-sm">{r.terminal}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{r.batchNo}</TableCell>
-                        <TableCell className="text-right"><CurrencyDisplay value={r.shopAmount} /></TableCell>
-                        <TableCell className="text-right"><CurrencyDisplay value={r.optAmount} /></TableCell>
-                        <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.total} /></TableCell>
-                      </TableRow>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/30">
+                    <th className="px-2 py-2 text-left font-semibold text-muted-foreground border-r" rowSpan={2}>Date</th>
+                    {ALL_TERMINALS.map(t => (
+                      <th key={t} className="px-1 py-1 text-center font-semibold text-muted-foreground border-r" colSpan={2}>{t}</th>
                     ))}
-                    <TableRow className="bg-secondary font-semibold">
-                      <TableCell colSpan={4}>TOTAL</TableCell>
-                      <TableCell className="text-right"><CurrencyDisplay value={spShopTotal} highlight /></TableCell>
-                      <TableCell className="text-right"><CurrencyDisplay value={spOptTotal} highlight /></TableCell>
-                      <TableCell className="text-right"><CurrencyDisplay value={spGrandTotal} highlight /></TableCell>
-                    </TableRow>
-                  </>
-                )}
-              </TableBody>
-            </Table>
-            {speedpointsReport.length > 0 && (
-              <div className="border-t p-4">
-                <h4 className="text-sm font-semibold mb-2">Summary by Terminal</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {Object.entries(
-                    speedpointsReport.reduce((acc, r) => { acc[r.terminal] = (acc[r.terminal] || 0) + r.total; return acc; }, {} as Record<string, number>)
-                  ).sort((a, b) => b[1] - a[1]).map(([terminal, total]) => (
-                    <div key={terminal} className="flex justify-between text-sm bg-muted/30 rounded px-2 py-1">
-                      <span className="text-muted-foreground truncate mr-2">{terminal}</span>
-                      <CurrencyDisplay value={total} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                    <th className="px-2 py-2 text-right font-semibold text-muted-foreground" rowSpan={2}>Total</th>
+                  </tr>
+                  <tr className="border-b bg-muted/20">
+                    {ALL_TERMINALS.map(t => (
+                      <React.Fragment key={`sub-${t}`}>
+                        <th className="px-1 py-1 text-center text-xs text-muted-foreground">Batch #</th>
+                        <th className="px-1 py-1 text-right text-xs text-muted-foreground border-r">Amount</th>
+                      </React.Fragment>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {speedpointRows.length === 0 ? (
+                    <tr><td colSpan={2 + ALL_TERMINALS.length * 2} className="text-center text-muted-foreground py-8">No speedpoint data for this month</td></tr>
+                  ) : (
+                    <>
+                      {/* Group by date, shop first then opt */}
+                      {monthCashups.map((c, ci) => {
+                        const shopRow = speedpointRows.find(r => r.date === c.date && r.shift === 'Shop');
+                        const optRow = speedpointRows.find(r => r.date === c.date && r.shift === 'OPT');
+                        return (
+                          <React.Fragment key={c.date}>
+                            {/* Shop section header on first day */}
+                            {ci === 0 && (
+                              <tr className="bg-green-50 dark:bg-green-950/30">
+                                <td colSpan={2 + ALL_TERMINALS.length * 2} className="px-2 py-1.5 font-semibold text-xs text-green-700 dark:text-green-400 uppercase tracking-wider">Shop Till</td>
+                              </tr>
+                            )}
+                            <tr className="border-b hover:bg-muted/30">
+                              <td className="px-2 py-1.5 border-r font-mono text-xs">{format(new Date(c.date), 'dd MMM')}</td>
+                              {ALL_TERMINALS.map(t => {
+                                const d = shopRow?.terminals[t];
+                                return (
+                                  <React.Fragment key={t}>
+                                    <td className="px-1 py-1.5 text-center text-xs text-muted-foreground">{d?.batchNo || ''}</td>
+                                    <td className="px-1 py-1.5 text-right text-xs border-r">{d && d.amount ? <CurrencyDisplay value={d.amount} /> : '-'}</td>
+                                  </React.Fragment>
+                                );
+                              })}
+                              <td className="px-2 py-1.5 text-right font-semibold text-xs"><CurrencyDisplay value={shopRow?.total || 0} /></td>
+                            </tr>
+                            {/* Insert OPT section header before first OPT row, after all shop rows */}
+                          </React.Fragment>
+                        );
+                      })}
+                      {/* OPT Section */}
+                      <tr className="bg-purple-50 dark:bg-purple-950/30">
+                        <td colSpan={2 + ALL_TERMINALS.length * 2} className="px-2 py-1.5 font-semibold text-xs text-purple-700 dark:text-purple-400 uppercase tracking-wider">OPT</td>
+                      </tr>
+                      {monthCashups.map(c => {
+                        const optRow = speedpointRows.find(r => r.date === c.date && r.shift === 'OPT');
+                        return (
+                          <tr key={`opt-${c.date}`} className="border-b hover:bg-muted/30">
+                            <td className="px-2 py-1.5 border-r font-mono text-xs">{format(new Date(c.date), 'dd MMM')}</td>
+                            {ALL_TERMINALS.map(t => {
+                              const d = optRow?.terminals[t];
+                              return (
+                                <React.Fragment key={t}>
+                                  <td className="px-1 py-1.5 text-center text-xs text-muted-foreground">{d?.batchNo || ''}</td>
+                                  <td className="px-1 py-1.5 text-right text-xs border-r">{d && d.amount ? <CurrencyDisplay value={d.amount} /> : '-'}</td>
+                                </React.Fragment>
+                              );
+                            })}
+                            <td className="px-2 py-1.5 text-right font-semibold text-xs"><CurrencyDisplay value={optRow?.total || 0} /></td>
+                          </tr>
+                        );
+                      })}
+                      {/* Totals */}
+                      <tr className="bg-secondary font-semibold border-t-2">
+                        <td className="px-2 py-2 border-r">TOTAL</td>
+                        {ALL_TERMINALS.map(t => (
+                          <React.Fragment key={`tot-${t}`}>
+                            <td className="px-1 py-2"></td>
+                            <td className="px-1 py-2 text-right border-r"><CurrencyDisplay value={spTerminalTotals[t]} highlight /></td>
+                          </React.Fragment>
+                        ))}
+                        <td className="px-2 py-2 text-right"><CurrencyDisplay value={spGrandTotal} highlight /></td>
+                      </tr>
+                    </>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </TabsContent>
 
