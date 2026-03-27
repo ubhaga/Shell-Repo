@@ -40,8 +40,8 @@ const blankShopShift = (): DailyCashup["shop"] => ({
   coins: 0,
   speedpoints: [
     { terminal: "Term 247608", batchNo: "", shopAmount: 0, optAmount: 0 },
-    { terminal: "Forecourt", batchNo: "", shopAmount: 0, optAmount: 0 },
-    { terminal: "Retail", batchNo: "", shopAmount: 0, optAmount: 0 },
+    { terminal: "Forecourt 929661", batchNo: "", shopAmount: 0, optAmount: 0 },
+    { terminal: "Retail 200660", batchNo: "", shopAmount: 0, optAmount: 0 },
     { terminal: "Scan to pay", batchNo: "", shopAmount: 0, optAmount: 0 },
   ],
   accounts: [],
@@ -725,15 +725,18 @@ export function CashierDailyForm({ selectedDate }: Props) {
                 ? "Both the Shop Till and OPT shifts show a negative balance (cashier is over)."
                 : shopDifference < -0.01
                   ? "The Shop Till shift shows a negative balance (cashier is over)."
-                  : "The OPT shift shows a negative balance (cashier is over)."}
-              {" "}Are you sure you want to save?
+                  : "The OPT shift shows a negative balance (cashier is over)."}{" "}
+              Are you sure you want to save?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Go Back</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => { setOverConfirmOpen(false); commitSave(); }}
+              onClick={() => {
+                setOverConfirmOpen(false);
+                commitSave();
+              }}
             >
               Yes, Save Anyway
             </AlertDialogAction>
