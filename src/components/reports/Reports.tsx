@@ -465,7 +465,7 @@ export function Reports() {
                   <Button size="sm" variant="outline" onClick={() => {
                     const rows = speedpointByDate.map(r => {
                       const row: Record<string, string | number> = { Date: r.date };
-                      visibleTerminals.forEach(t => {
+                      SP_TERMINALS.forEach(t => {
                         row[`Batch# ${t}`] = r.terminals[t]?.batchNo ?? '';
                         row[t] = r.terminals[t]?.total ?? 0;
                       });
