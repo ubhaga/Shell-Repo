@@ -130,11 +130,15 @@ export function Reports() {
 
   // MOP report — Cash (CC) uses cashConnectTotal from section 5 MOP Cash
   const mopReport = monthCashups.map(c => {
-    const shopSP = c.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0);
-    const optSP = c.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0);
+    const spTerminals = ['Term 247608', 'Forecourt 929661', 'Retail 200660'];
+    const shopSP = c.shop.speedpoints.filter(sp => spTerminals.includes(sp.terminal)).reduce((s, sp) => s + sp.shopAmount, 0);
+    const optSP = c.opt.speedpoints.filter(sp => spTerminals.includes(sp.terminal)).reduce((s, sp) => s + sp.optAmount, 0);
+    const scanToPay = c.shop.speedpoints.filter(sp => sp.terminal === 'Scan to pay').reduce((s, sp) => s + sp.shopAmount, 0)
+      + c.opt.speedpoints.filter(sp => sp.terminal === 'Scan to pay').reduce((s, sp) => s + sp.optAmount, 0);
+    const vPlus = c.shop.speedpoints.filter(sp => sp.terminal === 'V Plus').reduce((s, sp) => s + sp.shopAmount, 0)
+      + c.opt.speedpoints.filter(sp => sp.terminal === 'V Plus').reduce((s, sp) => s + sp.optAmount, 0);
     const shopAcc = c.shop.accounts.reduce((s, a) => s + a.amount, 0);
     const optAcc = c.opt.accounts.reduce((s, a) => s + a.amount, 0);
-    // cashConnectTotal = cashDepositedBanking + easyPay + coins (the auto-calculated total in section 5)
     const cash = c.shop.cashConnectTotal;
     return {
       date: c.date,
@@ -142,8 +146,10 @@ export function Reports() {
       shopSpeedpoint: shopSP,
       optSpeedpoint: optSP,
       totalSpeedpoint: shopSP + optSP,
+      scanToPay,
+      vPlus,
       accounts: shopAcc + optAcc,
-      total: cash + shopSP + optSP + shopAcc + optAcc,
+      total: cash + shopSP + optSP + scanToPay + vPlus + shopAcc + optAcc,
     };
   });
 
