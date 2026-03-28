@@ -61,13 +61,37 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
       const csvLines = text.split('\n').map(l => l.trim()).filter(Boolean);
       if (csvLines.length < 2) { toast.error('CSV file appears empty'); setLoading(false); return; }
 
-      const headers = csvLines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
-      const dateIdx = headers.findIndex(h => h.includes('date'));
-      const descIdx = headers.findIndex(h => h.includes('description') || h.includes('narrative') || h.includes('detail'));
-      const amountIdx = headers.findIndex(h => h.includes('amount') || h.includes('debit') || h.includes('credit'));
+      const parseCSVRow = (row: string): string[] => {
+        const result: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        for (const char of row) {
+          if (char === '"') { inQuotes = !inQuotes; }
+          else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+          else { current += char; }
+        }
+        result.push(current.trim());
+        return result;
+      };
 
-      if (dateIdx === -1 || descIdx === -1 || amountIdx === -1) {
-        toast.error('Could not find Date, Description, and Amount columns in CSV');
+      const headers = parseCSVRow(csvLines[0]).map(h => h.toLowerCase().replace(/"/g, '').trim());
+      
+      // Flexible column detection
+      const dateIdx = headers.findIndex(h => h.includes('date') || h.includes('posting') || h === 'trans date' || h === 'value date');
+      const descIdx = headers.findIndex(h => h.includes('description') || h.includes('narrative') || h.includes('detail') || h.includes('reference') || h.includes('particulars') || h.includes('payee'));
+      
+      // Try amount, then debit/credit separately
+      let amountIdx = headers.findIndex(h => h === 'amount' || h === 'transaction amount' || h === 'value');
+      const debitIdx = headers.findIndex(h => h.includes('debit') || h === 'dr');
+      const creditIdx = headers.findIndex(h => h.includes('credit') || h === 'cr');
+      const useDebitCredit = amountIdx === -1 && (debitIdx !== -1 || creditIdx !== -1);
+      if (amountIdx === -1 && !useDebitCredit) {
+        // Fallback: find any numeric-looking column that isn't the date
+        amountIdx = headers.findIndex((h, i) => i !== dateIdx && i !== descIdx && (h.includes('amount') || h.includes('balance') || h.includes('money')));
+      }
+
+      if (dateIdx === -1 || descIdx === -1 || (amountIdx === -1 && !useDebitCredit)) {
+        toast.error(`Could not auto-detect columns. Found headers: ${headers.join(', ')}. Need Date, Description, and Amount/Debit/Credit columns.`);
         setLoading(false);
         return;
       }
