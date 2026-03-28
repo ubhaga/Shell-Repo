@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCashupStore } from '@/store/cashupStore';
 import { useMasterDataStore } from '@/store/masterDataStore';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,7 +6,7 @@ import { CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { Save, ChevronDown, ChevronRight } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, addDays, getDay, parse } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -181,96 +181,26 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
       : format(sun, 'dd MMM')
   );
 
-  const renderTable = (title: string, supplierList: string[]) => (
-    <div className="bg-card border rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
-        <h3 className="font-semibold text-sm">{title}</h3>
-      </div>
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="sticky left-0 bg-muted z-10 min-w-[120px]">Supplier</TableHead>
-              <TableHead className="text-right min-w-[100px]">Opening Bal</TableHead>
-              {weekLabels.map((label, i) => (
-                <React.Fragment key={i}>
-                  <TableHead className="text-right min-w-[90px] text-xs text-green-600">+ Inv</TableHead>
-                  <TableHead className="text-right min-w-[90px] text-xs text-red-600">− Paid</TableHead>
-                  <TableHead className="text-right min-w-[100px] font-semibold">{label}</TableHead>
-                </React.Fragment>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {supplierList.map(supplier => {
-              const ob = editingOB[supplier] !== undefined
-                ? parseFloat(editingOB[supplier]) || 0
-                : (openingBalances[supplier] ?? 0);
-              const weeks = supplierWeekly[supplier];
-              let runningBalance = ob;
+  const renderTable = (title: string, supplierList: string[]) => {
+    const activeSuppliers = supplierList.filter(s => {
+      const weeks = supplierWeekly[s];
+      const ob = openingBalances[s] ?? 0;
+      return ob !== 0 || weeks.some(w => w.invoices > 0 || w.payments > 0);
+    });
+    const inactiveSuppliers = supplierList.filter(s => !activeSuppliers.includes(s));
 
-              return (
-                <TableRow key={supplier}>
-                  <TableCell className="sticky left-0 bg-card z-10 text-xs font-medium whitespace-nowrap">
-                    {supplier}
-                  </TableCell>
-                  <TableCell className="text-right p-1">
-                    <Input
-                      type="number"
-                      className="w-24 text-right text-xs h-7"
-                      value={editingOB[supplier] ?? (openingBalances[supplier] ?? '')}
-                      onChange={e => setEditingOB(prev => ({ ...prev, [supplier]: e.target.value }))}
-                    />
-                  </TableCell>
-                  {weeks.map((week, wi) => {
-                    runningBalance = runningBalance + week.invoices - week.payments;
-                    return (
-                      <React.Fragment key={wi}>
-                        <TableCell className="text-right text-xs">
-                          {week.invoices > 0 ? <CurrencyDisplay value={week.invoices} /> : <span className="text-muted-foreground">—</span>}
-                        </TableCell>
-                        <TableCell className="text-right text-xs">
-                          {week.payments > 0 ? <span className="text-red-600"><CurrencyDisplay value={week.payments} /></span> : <span className="text-muted-foreground">—</span>}
-                        </TableCell>
-                        <TableCell className="text-right text-xs font-semibold">
-                          <CurrencyDisplay value={runningBalance} />
-                        </TableCell>
-                      </React.Fragment>
-                    );
-                  })}
-                </TableRow>
-              );
-            })}
-            <TableRow className="bg-secondary font-semibold">
-              <TableCell className="sticky left-0 bg-secondary z-10 text-xs">TOTAL</TableCell>
-              <TableCell className="text-right text-xs">
-                <CurrencyDisplay value={supplierList.reduce((s, sup) => s + (openingBalances[sup] ?? 0), 0)} highlight />
-              </TableCell>
-              {sundays.map((_, wi) => {
-                const totalInv = supplierList.reduce((s, sup) => s + supplierWeekly[sup][wi].invoices, 0);
-                const totalPay = supplierList.reduce((s, sup) => s + supplierWeekly[sup][wi].payments, 0);
-                let totalBal = 0;
-                supplierList.forEach(sup => {
-                  let bal = openingBalances[sup] ?? 0;
-                  for (let w = 0; w <= wi; w++) {
-                    bal += supplierWeekly[sup][w].invoices - supplierWeekly[sup][w].payments;
-                  }
-                  totalBal += bal;
-                });
-                return (
-                  <React.Fragment key={wi}>
-                    <TableCell className="text-right text-xs"><CurrencyDisplay value={totalInv} highlight /></TableCell>
-                    <TableCell className="text-right text-xs text-red-600"><CurrencyDisplay value={totalPay} /></TableCell>
-                    <TableCell className="text-right text-xs font-bold"><CurrencyDisplay value={totalBal} highlight /></TableCell>
-                  </React.Fragment>
-                );
-              })}
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
-    </div>
-  );
+    return <CreditorsTable
+      title={title}
+      activeSuppliers={activeSuppliers}
+      inactiveSuppliers={inactiveSuppliers}
+      supplierWeekly={supplierWeekly}
+      openingBalances={openingBalances}
+      editingOB={editingOB}
+      setEditingOB={setEditingOB}
+      weekLabels={weekLabels}
+      sundays={sundays}
+    />;
+  };
 
   return (
     <div className="space-y-6">
