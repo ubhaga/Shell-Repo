@@ -64,7 +64,9 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     if (!upper.startsWith('CR ')) return null;
     const crName = upper.slice(3).trim();
     for (const s of suppliers) {
-      if (crName.startsWith(s.toUpperCase())) return s;
+      const sUpper = s.toUpperCase();
+      // Match either direction: bank may abbreviate supplier name or vice versa
+      if (crName.startsWith(sUpper) || sUpper.startsWith(crName)) return s;
     }
     return null;
   };
