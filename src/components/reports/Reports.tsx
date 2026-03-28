@@ -598,7 +598,7 @@ export function Reports() {
                                   </React.Fragment>
                                 );
                               })}
-                              <TableCell className="text-right font-semibold border-l"><CurrencyDisplay value={r.total} /></TableCell>
+                              <TableCell className="text-right font-semibold border-l"><CurrencyDisplay value={selectedTerminal === 'all' ? r.total : visibleTerminals.reduce((s, t) => s + (r.terminals[t]?.total ?? 0), 0)} /></TableCell>
                             </TableRow>
                           );
                         })}
@@ -618,7 +618,7 @@ export function Reports() {
                               )}
                             </React.Fragment>
                           ))}
-                          <TableCell className="text-right border-l"><CurrencyDisplay value={spGrandTotal} highlight /></TableCell>
+                          <TableCell className="text-right border-l"><CurrencyDisplay value={selectedTerminal === 'all' ? spGrandTotal : visibleTerminals.reduce((s, t) => s + (spColumnTotals[t] ?? 0), 0)} highlight /></TableCell>
                         </TableRow>
                       </>
                     )}
