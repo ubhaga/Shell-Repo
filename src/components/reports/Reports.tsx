@@ -500,24 +500,56 @@ export function Reports() {
                                       <span className="text-muted-foreground">0</span>
                                     )}
                                   </TableCell>
-                                  {bankLines.length > 0 && (
-                                    <>
-                                      <TableCell className="text-right text-sm">
-                                        {m.bankAmount > 0 ? (
-                                          <span className={m.matched ? 'text-green-600 font-medium' : ''}><CurrencyDisplay value={m.bankAmount} /></span>
-                                        ) : td && td.total > 0 ? (
-                                          <span className="text-destructive text-xs">—</span>
-                                        ) : <span className="text-muted-foreground">—</span>}
-                                      </TableCell>
-                                      <TableCell className="text-right text-sm">
-                                        {m.bankAmount > 0 && !m.matched ? (
-                                          <span className="text-destructive font-semibold"><CurrencyDisplay value={m.diff} /></span>
-                                        ) : m.matched ? (
-                                          <span className="text-green-600 text-xs">✓</span>
-                                        ) : <span className="text-muted-foreground">—</span>}
-                                      </TableCell>
-                                    </>
-                                  )}
+                                  {bankLines.length > 0 && (() => {
+                                    const dropKey = `${r.date}|${t}`;
+                                    const isDropTarget = td && td.total > 0 && !m.matched;
+                                    const isDragOver = dragOverTarget === dropKey;
+                                    const manualLines = manualMatches[dropKey] || [];
+                                    return (
+                                      <>
+                                        <TableCell
+                                          className={`text-right text-sm ${isDropTarget ? 'cursor-pointer' : ''} ${isDragOver ? 'bg-primary/20 ring-2 ring-primary ring-inset' : ''}`}
+                                          onDragOver={isDropTarget ? (e) => handleDragOver(e, dropKey) : undefined}
+                                          onDragLeave={isDropTarget ? handleDragLeave : undefined}
+                                          onDrop={isDropTarget ? (e) => handleDrop(e, dropKey) : undefined}
+                                        >
+                                          {m.bankAmount > 0 ? (
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <span className={`${m.matched ? 'text-green-600 font-medium' : ''} ${m.manual ? 'underline decoration-dashed cursor-help' : ''}`}>
+                                                  <CurrencyDisplay value={m.bankAmount} />
+                                                </span>
+                                              </TooltipTrigger>
+                                              {m.manual && (
+                                                <TooltipContent>
+                                                  <div className="text-xs space-y-1">
+                                                    <div className="font-semibold mb-1">Manual matches:</div>
+                                                    {manualLines.map(ml => (
+                                                      <div key={ml.idx} className="flex items-center gap-2">
+                                                        <span>{ml.description} = <CurrencyDisplay value={ml.amount} /></span>
+                                                        <button onClick={() => handleRemoveManualMatch(dropKey, ml.idx)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                </TooltipContent>
+                                              )}
+                                            </Tooltip>
+                                          ) : td && td.total > 0 ? (
+                                            <span className={`text-xs ${isDragOver ? 'text-primary font-medium' : 'text-destructive'}`}>
+                                              {isDragOver ? '⬇ Drop here' : '—'}
+                                            </span>
+                                          ) : <span className="text-muted-foreground">—</span>}
+                                        </TableCell>
+                                        <TableCell className="text-right text-sm">
+                                          {m.bankAmount > 0 && !m.matched ? (
+                                            <span className="text-destructive font-semibold"><CurrencyDisplay value={m.diff} /></span>
+                                          ) : m.matched ? (
+                                            <span className="text-green-600 text-xs">✓</span>
+                                          ) : <span className="text-muted-foreground">—</span>}
+                                        </TableCell>
+                                      </>
+                                    );
+                                  })()}
                                 </React.Fragment>
                               );
                             })}
