@@ -52,7 +52,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   // If month doesn't end on Sunday, add monthEnd as final period
   if (getDay(monthEnd) !== 0) sundays.push(monthEnd);
 
-  const suppliers = [...eftSuppliers].sort();
+  const suppliers = [...eftSuppliers].filter(s => s.toUpperCase() !== 'DAWN CONSULTANTS').sort();
 
   // EFT invoices from manager daily entries for this month
   const monthManagers = managerEntries.filter(e => e.date.startsWith(filterMonth));
