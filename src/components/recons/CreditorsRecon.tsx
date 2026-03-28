@@ -52,7 +52,11 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   // If month doesn't end on Sunday, add monthEnd as final period
   if (getDay(monthEnd) !== 0) sundays.push(monthEnd);
 
-  const suppliers = [...eftSuppliers].filter(s => s.toUpperCase() !== 'DAWN CONSULTANTS').sort();
+  const FUEL_CREDITORS = ['Shell Downstream', 'F2K'];
+  const isFuelCreditor = (s: string) => FUEL_CREDITORS.some(fc => fc.toUpperCase() === s.toUpperCase());
+  const allSuppliers = [...eftSuppliers].filter(s => s.toUpperCase() !== 'DAWN CONSULTANTS').sort();
+  const suppliers = allSuppliers.filter(s => !isFuelCreditor(s));
+  const fuelSuppliers = allSuppliers.filter(s => isFuelCreditor(s));
 
   // EFT invoices from manager daily entries for this month
   const monthManagers = managerEntries.filter(e => e.date.startsWith(filterMonth));
