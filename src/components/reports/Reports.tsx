@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { BankStatementTab } from './BankStatementTab';
+import { CreditorsRecon } from '@/components/recons/CreditorsRecon';
 
 export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   const { cashups, managerEntries } = useCashupStore();
@@ -459,8 +460,9 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
           <TabsTrigger value="bank">Bank</TabsTrigger>
         </TabsList>
         ) : (
-        <TabsList className="grid grid-cols-1 w-full max-w-xs">
+        <TabsList className="grid grid-cols-2 w-full max-w-md">
           <TabsTrigger value="speedpoints">Speedpoints</TabsTrigger>
+          <TabsTrigger value="creditors">Creditors</TabsTrigger>
         </TabsList>
         )}
 
@@ -1077,6 +1079,11 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
               </TableBody>
             </Table>
           </div>
+        </TabsContent>
+
+        {/* Creditors */}
+        <TabsContent value="creditors">
+          <CreditorsRecon filterMonth={filterMonth} />
         </TabsContent>
 
         {/* Bank Statement */}

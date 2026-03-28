@@ -50,6 +50,30 @@ export type Database = {
         }
         Relationships: []
       }
+      creditor_opening_balances: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          month: string
+          supplier: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          month: string
+          supplier: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          month?: string
+          supplier?: string
+        }
+        Relationships: []
+      }
       daily_cashups: {
         Row: {
           cashier_name: string
