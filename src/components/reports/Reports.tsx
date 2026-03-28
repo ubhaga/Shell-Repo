@@ -441,218 +441,210 @@ export function Reports() {
 
         {/* Speedpoints */}
         <TabsContent value="speedpoints">
-          <div className="bg-card border rounded-lg overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
-              <h3 className="font-semibold text-sm">Speedpoint Report — {monthLabel}</h3>
-              <Button size="sm" variant="outline" onClick={() => {
-                const rows = speedpointByDate.map(r => {
-                  const row: Record<string, string | number> = { Date: r.date };
-                  SP_TERMINALS.forEach(t => {
-                    row[`Batch# ${t}`] = r.terminals[t]?.batchNo ?? '';
-                    row[t] = r.terminals[t]?.total ?? 0;
+          <div className={`flex gap-4 ${unmatchedTerminalLines.length > 0 ? '' : ''}`}>
+            {/* Main speedpoint report */}
+            <div className={`bg-card border rounded-lg overflow-hidden ${unmatchedTerminalLines.length > 0 ? 'flex-1 min-w-0' : 'w-full'}`}>
+              <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
+                <h3 className="font-semibold text-sm">Speedpoint Report — {monthLabel}</h3>
+                <Button size="sm" variant="outline" onClick={() => {
+                  const rows = speedpointByDate.map(r => {
+                    const row: Record<string, string | number> = { Date: r.date };
+                    SP_TERMINALS.forEach(t => {
+                      row[`Batch# ${t}`] = r.terminals[t]?.batchNo ?? '';
+                      row[t] = r.terminals[t]?.total ?? 0;
+                    });
+                    row.Total = r.total;
+                    return row;
                   });
-                  row.Total = r.total;
-                  return row;
-                });
-                exportCSV(rows, `speedpoints-${filterMonth}.csv`);
-              }}>
-                <Download className="h-3.5 w-3.5 mr-1" />Export CSV
-              </Button>
-            </div>
-            <TooltipProvider>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead rowSpan={2} className="align-bottom">Date</TableHead>
-                    {SP_TERMINALS.map(t => (
-                      <TableHead key={t} colSpan={bankLines.length > 0 ? 4 : 2} className="text-center border-l">{t}</TableHead>
-                    ))}
-                    <TableHead rowSpan={2} className="text-right align-bottom border-l">Total</TableHead>
-                  </TableRow>
-                  <TableRow>
-                    {SP_TERMINALS.map(t => (
-                      <React.Fragment key={t}>
-                        <TableHead className="text-center border-l text-xs text-muted-foreground">Batch#</TableHead>
-                        <TableHead className="text-right text-xs text-muted-foreground">Cashup</TableHead>
-                        {bankLines.length > 0 && (
-                          <>
-                            <TableHead className="text-right text-xs text-muted-foreground">Bank</TableHead>
-                            <TableHead className="text-right text-xs text-muted-foreground">Diff</TableHead>
-                          </>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {speedpointByDate.length === 0 ? (
-                    <TableRow><TableCell colSpan={2 + SP_TERMINALS.length * (bankLines.length > 0 ? 4 : 2)} className="text-center text-muted-foreground py-8">No speedpoint data for this month</TableCell></TableRow>
-                  ) : (
-                    <>
-                      {speedpointByDate.map((r, rowIdx) => {
-                        const matchData = speedpointMatches[rowIdx];
-                        // Determine if entire row is matched
-                        const allMatched = bankLines.length > 0 && SP_TERMINALS.every(t => {
-                          const td = r.terminals[t];
-                          return !td || td.total === 0 || matchData[t]?.matched;
-                        });
-                        return (
-                          <TableRow key={r.date} className={allMatched ? 'bg-green-50 dark:bg-green-950/20' : 'hover:bg-muted/30'}>
-                            <TableCell className="text-sm font-mono">{format(new Date(r.date), 'dd/MM/yyyy')}</TableCell>
-                            {SP_TERMINALS.map(t => {
-                              const td = r.terminals[t];
-                              const m = matchData[t];
-                              const hasBreakdown = td && (td.shopAmount > 0 && td.optAmount > 0);
-                              return (
-                                <React.Fragment key={t}>
-                                  <TableCell className="text-center text-sm text-muted-foreground border-l">{td?.batchNo || ''}</TableCell>
-                                  <TableCell className="text-right">
-                                    {td && td.total > 0 ? (
-                                      hasBreakdown ? (
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <span className="cursor-help underline decoration-dotted"><CurrencyDisplay value={td.total} /></span>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <div className="text-xs space-y-1">
-                                              <div>Shop: <CurrencyDisplay value={td.shopAmount} /></div>
-                                              <div>OPT: <CurrencyDisplay value={td.optAmount} /></div>
-                                            </div>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      ) : (
-                                        <CurrencyDisplay value={td.total} />
-                                      )
-                                    ) : (
-                                      <span className="text-muted-foreground">0</span>
-                                    )}
-                                  </TableCell>
-                                  {bankLines.length > 0 && (() => {
-                                    const dropKey = `${r.date}|${t}`;
-                                    const isDropTarget = td && td.total > 0 && !m.matched;
-                                    const isDragOver = dragOverTarget === dropKey;
-                                    const manualLines = manualMatches[dropKey] || [];
-                                    return (
-                                      <>
-                                        <TableCell
-                                          className={`text-right text-sm ${isDropTarget ? 'cursor-pointer' : ''} ${isDragOver ? 'bg-primary/20 ring-2 ring-primary ring-inset' : ''}`}
-                                          onDragOver={isDropTarget ? (e) => handleDragOver(e, dropKey) : undefined}
-                                          onDragLeave={isDropTarget ? handleDragLeave : undefined}
-                                          onDrop={isDropTarget ? (e) => handleDrop(e, dropKey) : undefined}
-                                        >
-                                          {m.bankAmount > 0 ? (
-                                            <Tooltip>
-                                              <TooltipTrigger asChild>
-                                                <span className={`${m.matched ? 'text-green-600 font-medium' : ''} ${m.manual ? 'underline decoration-dashed cursor-help' : ''}`}>
-                                                  <CurrencyDisplay value={m.bankAmount} />
-                                                </span>
-                                              </TooltipTrigger>
-                                              {m.manual && (
-                                                <TooltipContent>
-                                                  <div className="text-xs space-y-1">
-                                                    <div className="font-semibold mb-1">Manual matches:</div>
-                                                    {manualLines.map(ml => (
-                                                      <div key={ml.idx} className="flex items-center gap-2">
-                                                        <span>{ml.description} = <CurrencyDisplay value={ml.amount} /></span>
-                                                        <button onClick={() => handleRemoveManualMatch(dropKey, ml.idx)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
-                                                      </div>
-                                                    ))}
-                                                  </div>
-                                                </TooltipContent>
-                                              )}
-                                            </Tooltip>
-                                          ) : td && td.total > 0 ? (
-                                            <span className={`text-xs ${isDragOver ? 'text-primary font-medium' : 'text-destructive'}`}>
-                                              {isDragOver ? '⬇ Drop here' : '—'}
-                                            </span>
-                                          ) : <span className="text-muted-foreground">—</span>}
-                                        </TableCell>
-                                        <TableCell className="text-right text-sm">
-                                          {m.bankAmount > 0 && !m.matched ? (
-                                            <span className="text-destructive font-semibold"><CurrencyDisplay value={m.diff} /></span>
-                                          ) : m.matched ? (
-                                            <span className="text-green-600 text-xs">✓</span>
-                                          ) : <span className="text-muted-foreground">—</span>}
-                                        </TableCell>
-                                      </>
-                                    );
-                                  })()}
-                                </React.Fragment>
-                              );
-                            })}
-                            <TableCell className="text-right font-semibold border-l"><CurrencyDisplay value={r.total} /></TableCell>
-                          </TableRow>
-                        );
-                      })}
-                      <TableRow className="bg-secondary font-semibold border-t-2">
-                        <TableCell>TOTAL</TableCell>
-                        {SP_TERMINALS.map(t => (
-                          <React.Fragment key={t}>
-                            <TableCell className="border-l"></TableCell>
-                            <TableCell className="text-right"><CurrencyDisplay value={spColumnTotals[t]} highlight /></TableCell>
-                            {bankLines.length > 0 && (
-                              <>
-                                <TableCell className="text-right"><CurrencyDisplay value={bankTerminalTotals[t]} /></TableCell>
-                                <TableCell className={`text-right ${Math.abs(spColumnTotals[t] - bankTerminalTotals[t]) > 0.01 ? 'text-destructive' : 'text-green-600'}`}>
-                                  <CurrencyDisplay value={spColumnTotals[t] - bankTerminalTotals[t]} />
-                                </TableCell>
-                              </>
-                            )}
-                          </React.Fragment>
-                        ))}
-                        <TableCell className="text-right border-l"><CurrencyDisplay value={spGrandTotal} highlight /></TableCell>
-                      </TableRow>
-                    </>
-                  )}
-                </TableBody>
-              </Table>
-            </TooltipProvider>
-          </div>
-
-          {/* Unmatched terminal lines from bank — draggable */}
-          {unmatchedTerminalLines.length > 0 && (
-            <div className="bg-card border rounded-lg overflow-hidden mt-4">
-              <div className="px-4 py-2 border-b bg-muted/30">
-                <h3 className="font-semibold text-sm text-destructive">
-                  Unmatched Bank Terminal Lines ({unmatchedTerminalLines.length})
-                  <span className="text-muted-foreground font-normal ml-2 text-xs">— drag to match manually</span>
-                </h3>
+                  exportCSV(rows, `speedpoints-${filterMonth}.csv`);
+                }}>
+                  <Download className="h-3.5 w-3.5 mr-1" />Export CSV
+                </Button>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead></TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Terminal</TableHead>
-                    <TableHead>Batch</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <TooltipProvider>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead rowSpan={2} className="align-bottom">Date</TableHead>
+                      {SP_TERMINALS.map(t => (
+                        <TableHead key={t} colSpan={bankLines.length > 0 ? 4 : 2} className="text-center border-l">{t}</TableHead>
+                      ))}
+                      <TableHead rowSpan={2} className="text-right align-bottom border-l">Total</TableHead>
+                    </TableRow>
+                    <TableRow>
+                      {SP_TERMINALS.map(t => (
+                        <React.Fragment key={t}>
+                          <TableHead className="text-center border-l text-xs text-muted-foreground">Batch#</TableHead>
+                          <TableHead className="text-right text-xs text-muted-foreground">Cashup</TableHead>
+                          {bankLines.length > 0 && (
+                            <>
+                              <TableHead className="text-right text-xs text-muted-foreground">Bank</TableHead>
+                              <TableHead className="text-right text-xs text-muted-foreground">Diff</TableHead>
+                            </>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {speedpointByDate.length === 0 ? (
+                      <TableRow><TableCell colSpan={2 + SP_TERMINALS.length * (bankLines.length > 0 ? 4 : 2)} className="text-center text-muted-foreground py-8">No speedpoint data for this month</TableCell></TableRow>
+                    ) : (
+                      <>
+                        {speedpointByDate.map((r, rowIdx) => {
+                          const matchData = speedpointMatches[rowIdx];
+                          const allMatched = bankLines.length > 0 && SP_TERMINALS.every(t => {
+                            const td = r.terminals[t];
+                            return !td || td.total === 0 || matchData[t]?.matched;
+                          });
+                          return (
+                            <TableRow key={r.date} className={allMatched ? 'bg-green-50 dark:bg-green-950/20' : 'hover:bg-muted/30'}>
+                              <TableCell className="text-sm font-mono">{format(new Date(r.date), 'dd/MM/yyyy')}</TableCell>
+                              {SP_TERMINALS.map(t => {
+                                const td = r.terminals[t];
+                                const m = matchData[t];
+                                const hasBreakdown = td && (td.shopAmount > 0 && td.optAmount > 0);
+                                return (
+                                  <React.Fragment key={t}>
+                                    <TableCell className="text-center text-sm text-muted-foreground border-l">{td?.batchNo || ''}</TableCell>
+                                    <TableCell className="text-right">
+                                      {td && td.total > 0 ? (
+                                        hasBreakdown ? (
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <span className="cursor-help underline decoration-dotted"><CurrencyDisplay value={td.total} /></span>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <div className="text-xs space-y-1">
+                                                <div>Shop: <CurrencyDisplay value={td.shopAmount} /></div>
+                                                <div>OPT: <CurrencyDisplay value={td.optAmount} /></div>
+                                              </div>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        ) : (
+                                          <CurrencyDisplay value={td.total} />
+                                        )
+                                      ) : (
+                                        <span className="text-muted-foreground">0</span>
+                                      )}
+                                    </TableCell>
+                                    {bankLines.length > 0 && (() => {
+                                      const dropKey = `${r.date}|${t}`;
+                                      const isDropTarget = td && td.total > 0 && !m.matched;
+                                      const isDragOver = dragOverTarget === dropKey;
+                                      const manualLines = manualMatches[dropKey] || [];
+                                      return (
+                                        <>
+                                          <TableCell
+                                            className={`text-right text-sm ${isDropTarget ? 'cursor-pointer' : ''} ${isDragOver ? 'bg-primary/20 ring-2 ring-primary ring-inset' : ''}`}
+                                            onDragOver={isDropTarget ? (e) => handleDragOver(e, dropKey) : undefined}
+                                            onDragLeave={isDropTarget ? handleDragLeave : undefined}
+                                            onDrop={isDropTarget ? (e) => handleDrop(e, dropKey) : undefined}
+                                          >
+                                            {m.bankAmount > 0 ? (
+                                              <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                  <span className={`${m.matched ? 'text-green-600 font-medium' : ''} ${m.manual ? 'underline decoration-dashed cursor-help' : ''}`}>
+                                                    <CurrencyDisplay value={m.bankAmount} />
+                                                  </span>
+                                                </TooltipTrigger>
+                                                {m.manual && (
+                                                  <TooltipContent>
+                                                    <div className="text-xs space-y-1">
+                                                      <div className="font-semibold mb-1">Manual matches:</div>
+                                                      {manualLines.map(ml => (
+                                                        <div key={ml.idx} className="flex items-center gap-2">
+                                                          <span>{ml.description} = <CurrencyDisplay value={ml.amount} /></span>
+                                                          <button onClick={() => handleRemoveManualMatch(dropKey, ml.idx)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
+                                                        </div>
+                                                      ))}
+                                                    </div>
+                                                  </TooltipContent>
+                                                )}
+                                              </Tooltip>
+                                            ) : td && td.total > 0 ? (
+                                              <span className={`text-xs ${isDragOver ? 'text-primary font-medium' : 'text-destructive'}`}>
+                                                {isDragOver ? '⬇ Drop here' : '—'}
+                                              </span>
+                                            ) : <span className="text-muted-foreground">—</span>}
+                                          </TableCell>
+                                          <TableCell className="text-right text-sm">
+                                            {m.bankAmount > 0 && !m.matched ? (
+                                              <span className="text-destructive font-semibold"><CurrencyDisplay value={m.diff} /></span>
+                                            ) : m.matched ? (
+                                              <span className="text-green-600 text-xs">✓</span>
+                                            ) : <span className="text-muted-foreground">—</span>}
+                                          </TableCell>
+                                        </>
+                                      );
+                                    })()}
+                                  </React.Fragment>
+                                );
+                              })}
+                              <TableCell className="text-right font-semibold border-l"><CurrencyDisplay value={r.total} /></TableCell>
+                            </TableRow>
+                          );
+                        })}
+                        <TableRow className="bg-secondary font-semibold border-t-2">
+                          <TableCell>TOTAL</TableCell>
+                          {SP_TERMINALS.map(t => (
+                            <React.Fragment key={t}>
+                              <TableCell className="border-l"></TableCell>
+                              <TableCell className="text-right"><CurrencyDisplay value={spColumnTotals[t]} highlight /></TableCell>
+                              {bankLines.length > 0 && (
+                                <>
+                                  <TableCell className="text-right"><CurrencyDisplay value={bankTerminalTotals[t]} /></TableCell>
+                                  <TableCell className={`text-right ${Math.abs(spColumnTotals[t] - bankTerminalTotals[t]) > 0.01 ? 'text-destructive' : 'text-green-600'}`}>
+                                    <CurrencyDisplay value={spColumnTotals[t] - bankTerminalTotals[t]} />
+                                  </TableCell>
+                                </>
+                              )}
+                            </React.Fragment>
+                          ))}
+                          <TableCell className="text-right border-l"><CurrencyDisplay value={spGrandTotal} highlight /></TableCell>
+                        </TableRow>
+                      </>
+                    )}
+                  </TableBody>
+                </Table>
+              </TooltipProvider>
+            </div>
+
+            {/* Unmatched terminal lines — right side panel */}
+            {unmatchedTerminalLines.length > 0 && (
+              <div className="bg-card border rounded-lg overflow-hidden w-80 flex-shrink-0 self-start sticky top-4">
+                <div className="px-3 py-2 border-b bg-destructive/10">
+                  <h3 className="font-semibold text-sm text-destructive">
+                    Unmatched ({unmatchedTerminalLines.length})
+                  </h3>
+                  <p className="text-xs text-muted-foreground">Drag to match</p>
+                </div>
+                <div className="max-h-[70vh] overflow-y-auto">
                   {unmatchedTerminalLines.map((l, i) => (
-                    <TableRow
+                    <div
                       key={i}
                       draggable
                       onDragStart={(e) => handleDragStart(e, l)}
-                      className="cursor-grab active:cursor-grabbing hover:bg-muted/30"
+                      className="cursor-grab active:cursor-grabbing hover:bg-muted/30 border-b last:border-b-0 px-3 py-2 text-xs flex flex-col gap-0.5"
                     >
-                      <TableCell className="text-center text-muted-foreground w-8">⠿</TableCell>
-                      <TableCell className="text-sm font-mono">{l.date}</TableCell>
-                      <TableCell className="text-sm">{l.terminal}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{l.batch}</TableCell>
-                      <TableCell className="text-sm max-w-[300px] truncate">{l.description}</TableCell>
-                      <TableCell className="text-right"><CurrencyDisplay value={l.amount} /></TableCell>
-                    </TableRow>
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-muted-foreground">{l.date}</span>
+                        <span className="font-semibold"><CurrencyDisplay value={l.amount} /></span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">⠿</span>
+                        <span className="truncate">{l.terminal} · B{l.batch}</span>
+                      </div>
+                    </div>
                   ))}
-                  <TableRow className="bg-secondary font-semibold">
-                    <TableCell colSpan={5}>TOTAL Unmatched</TableCell>
-                    <TableCell className="text-right"><CurrencyDisplay value={unmatchedTerminalLines.reduce((s, l) => s + l.amount, 0)} /></TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  <div className="px-3 py-2 bg-secondary font-semibold text-xs flex justify-between">
+                    <span>Total</span>
+                    <CurrencyDisplay value={unmatchedTerminalLines.reduce((s, l) => s + l.amount, 0)} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         {/* Accounts */}
