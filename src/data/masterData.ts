@@ -39,11 +39,11 @@ export const MANAGER_NAMES = ['JN', 'Jerry', 'Manager'];
 
 export const SPEEDPOINT_TERMINALS = [
   { name: 'Term 247608', shift: 'both' as const },
-  { name: 'Forecourt', shift: 'shop' as const },
-  { name: 'Forecourt 2', shift: 'opt' as const },
-  { name: 'Retail', shift: 'shop' as const },
+  { name: 'Forecourt 929661', shift: 'shop' as const },
+  { name: 'Forecourt 929661', shift: 'opt' as const },
+  { name: 'Retail 200660', shift: 'shop' as const },
   { name: 'V Plus', shift: 'opt' as const },
-  { name: 'Scan to pay', shift: 'shop' as const },
+  { name: 'Scan to pay', shift: 'both' as const },
 ];
 
 export const RECEIPT_TYPES = [
