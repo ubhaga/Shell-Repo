@@ -42,30 +42,41 @@ export function Reports() {
   );
   const receiptsTotal = receiptsReport.reduce((s, r) => s + r.amount, 0);
 
-  // Speedpoints report — pivoted by terminal, split Shop / OPT
-  const SHOP_TERMINALS = ['Term 247608', 'Forecourt 929661', 'Retail 200660', 'Scan to pay'];
-  const OPT_TERMINALS = ['Term 247608', 'Forecourt 929661', 'V Plus', 'Scan to pay'];
-  const ALL_TERMINALS = [...new Set([...SHOP_TERMINALS, ...OPT_TERMINALS])];
-
-  type SpRow = { date: string; shift: 'Shop' | 'OPT'; terminals: Record<string, { batchNo: string; amount: number }> ; total: number };
-  const speedpointRows: SpRow[] = monthCashups.flatMap(c => {
-    const shopRow: SpRow = { date: c.date, shift: 'Shop', terminals: {}, total: 0 };
+  // Speedpoints report — unified per date, grouped by terminal + batch
+  type SpUnifiedRow = {
+    date: string;
+    terminal: string;
+    batchNo: string;
+    shopAmount: number;
+    optAmount: number;
+    total: number;
+  };
+  const speedpointUnified: SpUnifiedRow[] = [];
+  monthCashups.forEach(c => {
+    // Build a map keyed by "terminal|batchNo"
+    const map = new Map<string, { shopAmount: number; optAmount: number }>();
     c.shop.speedpoints.forEach(sp => {
-      shopRow.terminals[sp.terminal] = { batchNo: sp.batchNo, amount: sp.shopAmount };
-      shopRow.total += sp.shopAmount;
+      const key = `${sp.terminal}|${sp.batchNo}`;
+      const existing = map.get(key) || { shopAmount: 0, optAmount: 0 };
+      existing.shopAmount += sp.shopAmount;
+      map.set(key, existing);
     });
-    const optRow: SpRow = { date: c.date, shift: 'OPT', terminals: {}, total: 0 };
     c.opt.speedpoints.forEach(sp => {
-      optRow.terminals[sp.terminal] = { batchNo: sp.batchNo, amount: sp.optAmount };
-      optRow.total += sp.optAmount;
+      const key = `${sp.terminal}|${sp.batchNo}`;
+      const existing = map.get(key) || { shopAmount: 0, optAmount: 0 };
+      existing.optAmount += sp.optAmount;
+      map.set(key, existing);
     });
-    return [shopRow, optRow];
+    // Convert map to rows, sorted by terminal then batch
+    const entries = Array.from(map.entries()).map(([key, val]) => {
+      const [terminal, batchNo] = key.split('|');
+      return { date: c.date, terminal, batchNo, shopAmount: val.shopAmount, optAmount: val.optAmount, total: val.shopAmount + val.optAmount };
+    }).sort((a, b) => a.terminal.localeCompare(b.terminal) || a.batchNo.localeCompare(b.batchNo));
+    speedpointUnified.push(...entries);
   });
-  const spShopTotal = speedpointRows.filter(r => r.shift === 'Shop').reduce((s, r) => s + r.total, 0);
-  const spOptTotal = speedpointRows.filter(r => r.shift === 'OPT').reduce((s, r) => s + r.total, 0);
+  const spShopTotal = speedpointUnified.reduce((s, r) => s + r.shopAmount, 0);
+  const spOptTotal = speedpointUnified.reduce((s, r) => s + r.optAmount, 0);
   const spGrandTotal = spShopTotal + spOptTotal;
-  const spTerminalTotals: Record<string, number> = {};
-  ALL_TERMINALS.forEach(t => { spTerminalTotals[t] = speedpointRows.reduce((s, r) => s + (r.terminals[t]?.amount || 0), 0); });
 
   // Accounts report — shop + OPT combined per day
   const accountsReport = monthCashups.flatMap(c => {
@@ -275,108 +286,74 @@ export function Reports() {
             <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
               <h3 className="font-semibold text-sm">Speedpoint Report — {monthLabel}</h3>
               <Button size="sm" variant="outline" onClick={() => {
-                const rows = speedpointRows.map(r => {
-                  const row: Record<string, string | number> = { Date: r.date, Shift: r.shift };
-                  ALL_TERMINALS.forEach(t => { row[`Batch# ${t}`] = r.terminals[t]?.batchNo || ''; row[t] = r.terminals[t]?.amount || 0; });
-                  row['Total'] = r.total;
-                  return row;
-                });
+                const rows = speedpointUnified.map(r => ({
+                  Date: r.date,
+                  Terminal: r.terminal,
+                  'Batch #': r.batchNo,
+                  'Shop Amount': r.shopAmount,
+                  'OPT Amount': r.optAmount,
+                  Total: r.total,
+                }));
                 exportCSV(rows, `speedpoints-${filterMonth}.csv`);
               }}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/30">
-                    <th className="px-2 py-2 text-left font-semibold text-muted-foreground border-r" rowSpan={2}>Date</th>
-                    {ALL_TERMINALS.map(t => (
-                      <th key={t} className="px-1 py-1 text-center font-semibold text-muted-foreground border-r" colSpan={2}>{t}</th>
-                    ))}
-                    <th className="px-2 py-2 text-right font-semibold text-muted-foreground" rowSpan={2}>Total</th>
-                  </tr>
-                  <tr className="border-b bg-muted/20">
-                    {ALL_TERMINALS.map(t => (
-                      <React.Fragment key={`sub-${t}`}>
-                        <th className="px-1 py-1 text-center text-xs text-muted-foreground">Batch #</th>
-                        <th className="px-1 py-1 text-right text-xs text-muted-foreground border-r">Amount</th>
-                      </React.Fragment>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {speedpointRows.length === 0 ? (
-                    <tr><td colSpan={2 + ALL_TERMINALS.length * 2} className="text-center text-muted-foreground py-8">No speedpoint data for this month</td></tr>
-                  ) : (
-                    <>
-                      {/* Group by date, shop first then opt */}
-                      {monthCashups.map((c, ci) => {
-                        const shopRow = speedpointRows.find(r => r.date === c.date && r.shift === 'Shop');
-                        const optRow = speedpointRows.find(r => r.date === c.date && r.shift === 'OPT');
-                        return (
-                          <React.Fragment key={c.date}>
-                            {/* Shop section header on first day */}
-                            {ci === 0 && (
-                              <tr className="bg-muted/50">
-                                <td colSpan={2 + ALL_TERMINALS.length * 2} className="px-2 py-1.5 font-semibold text-xs text-foreground uppercase tracking-wider">Shop Till</td>
-                              </tr>
-                            )}
-                            <tr className="border-b hover:bg-muted/30">
-                              <td className="px-2 py-1.5 border-r font-mono text-xs">{format(new Date(c.date), 'dd MMM')}</td>
-                              {ALL_TERMINALS.map(t => {
-                                const d = shopRow?.terminals[t];
-                                return (
-                                  <React.Fragment key={t}>
-                                    <td className="px-1 py-1.5 text-center text-xs text-muted-foreground">{d?.batchNo || ''}</td>
-                                    <td className="px-1 py-1.5 text-right text-xs border-r">{d && d.amount ? <CurrencyDisplay value={d.amount} /> : '-'}</td>
-                                  </React.Fragment>
-                                );
-                              })}
-                              <td className="px-2 py-1.5 text-right font-semibold text-xs"><CurrencyDisplay value={shopRow?.total || 0} /></td>
-                            </tr>
-                            {/* Insert OPT section header before first OPT row, after all shop rows */}
-                          </React.Fragment>
-                        );
-                      })}
-                      {/* OPT Section */}
-                      <tr className="bg-accent/50">
-                        <td colSpan={2 + ALL_TERMINALS.length * 2} className="px-2 py-1.5 font-semibold text-xs text-accent-foreground uppercase tracking-wider">OPT</td>
-                      </tr>
-                      {monthCashups.map(c => {
-                        const optRow = speedpointRows.find(r => r.date === c.date && r.shift === 'OPT');
-                        return (
-                          <tr key={`opt-${c.date}`} className="border-b hover:bg-muted/30">
-                            <td className="px-2 py-1.5 border-r font-mono text-xs">{format(new Date(c.date), 'dd MMM')}</td>
-                            {ALL_TERMINALS.map(t => {
-                              const d = optRow?.terminals[t];
-                              return (
-                                <React.Fragment key={t}>
-                                  <td className="px-1 py-1.5 text-center text-xs text-muted-foreground">{d?.batchNo || ''}</td>
-                                  <td className="px-1 py-1.5 text-right text-xs border-r">{d && d.amount ? <CurrencyDisplay value={d.amount} /> : '-'}</td>
-                                </React.Fragment>
-                              );
-                            })}
-                            <td className="px-2 py-1.5 text-right font-semibold text-xs"><CurrencyDisplay value={optRow?.total || 0} /></td>
-                          </tr>
-                        );
-                      })}
-                      {/* Totals */}
-                      <tr className="bg-secondary font-semibold border-t-2">
-                        <td className="px-2 py-2 border-r">TOTAL</td>
-                        {ALL_TERMINALS.map(t => (
-                          <React.Fragment key={`tot-${t}`}>
-                            <td className="px-1 py-2"></td>
-                            <td className="px-1 py-2 text-right border-r"><CurrencyDisplay value={spTerminalTotals[t]} highlight /></td>
-                          </React.Fragment>
-                        ))}
-                        <td className="px-2 py-2 text-right"><CurrencyDisplay value={spGrandTotal} highlight /></td>
-                      </tr>
-                    </>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Terminal</TableHead>
+                  <TableHead>Batch #</TableHead>
+                  <TableHead className="text-right">Shop Amount</TableHead>
+                  <TableHead className="text-right">OPT Amount</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {speedpointUnified.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No speedpoint data for this month</TableCell></TableRow>
+                ) : (
+                  <>
+                    {/* Group by date for visual separation */}
+                    {monthCashups.map(c => {
+                      const dateRows = speedpointUnified.filter(r => r.date === c.date);
+                      if (dateRows.length === 0) return null;
+                      const dateShopTotal = dateRows.reduce((s, r) => s + r.shopAmount, 0);
+                      const dateOptTotal = dateRows.reduce((s, r) => s + r.optAmount, 0);
+                      const dateTotal = dateRows.reduce((s, r) => s + r.total, 0);
+                      return (
+                        <React.Fragment key={c.date}>
+                          {dateRows.map((r, i) => (
+                            <TableRow key={`${r.date}-${r.terminal}-${r.batchNo}-${i}`} className="hover:bg-muted/30">
+                              <TableCell className="text-sm font-mono">{i === 0 ? format(new Date(r.date), 'dd MMM') : ''}</TableCell>
+                              <TableCell className="text-sm">{r.terminal}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">{r.batchNo}</TableCell>
+                              <TableCell className="text-right"><CurrencyDisplay value={r.shopAmount} /></TableCell>
+                              <TableCell className="text-right"><CurrencyDisplay value={r.optAmount} /></TableCell>
+                              <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.total} /></TableCell>
+                            </TableRow>
+                          ))}
+                          <TableRow className="bg-muted/20 border-b-2">
+                            <TableCell className="text-xs font-semibold">{format(new Date(c.date), 'dd MMM')} Total</TableCell>
+                            <TableCell colSpan={2}></TableCell>
+                            <TableCell className="text-right text-xs font-semibold"><CurrencyDisplay value={dateShopTotal} /></TableCell>
+                            <TableCell className="text-right text-xs font-semibold"><CurrencyDisplay value={dateOptTotal} /></TableCell>
+                            <TableCell className="text-right text-xs font-semibold"><CurrencyDisplay value={dateTotal} /></TableCell>
+                          </TableRow>
+                        </React.Fragment>
+                      );
+                    })}
+                    <TableRow className="bg-secondary font-semibold border-t-2">
+                      <TableCell colSpan={3}>GRAND TOTAL</TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={spShopTotal} highlight /></TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={spOptTotal} highlight /></TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={spGrandTotal} highlight /></TableCell>
+                    </TableRow>
+                  </>
+                )}
+              </TableBody>
+            </Table>
           </div>
         </TabsContent>
 
