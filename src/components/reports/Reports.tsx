@@ -103,41 +103,22 @@ export function Reports() {
     bankParsed.push({ terminal: l.matched_terminal, batch, amount: l.amount, date: l.transaction_date, description: l.description });
   });
 
-  // Normalize date: bank uses dd/MM/yyyy, cashup uses yyyy-MM-dd
-  const normalizeBankDate = (bankDate: string): string => {
-    const parts = bankDate.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (parts) return `${parts[3]}-${parts[2]}-${parts[1]}`;
-    return bankDate;
-  };
-
-  // Build lookup: key = "yyyy-MM-dd|terminal|batch" -> bank amount (sum if multiple)
+  // Build lookup: key = "terminal|batch" -> bank amount (bank dates don't match cashup dates)
   const bankLookup: Record<string, number> = {};
-  const bankMatchedSet = new Set<number>(); // track matched bank indices
-  bankParsed.forEach((bp, idx) => {
-    const normDate = normalizeBankDate(bp.date);
-    const key = `${normDate}|${bp.terminal}|${bp.batch}`;
+  bankParsed.forEach(bp => {
+    if (!bp.batch) return;
+    const key = `${bp.terminal}|${bp.batch}`;
     bankLookup[key] = (bankLookup[key] || 0) + bp.amount;
   });
 
-  // Match bank to cashup: per date, per terminal, by batch number
-  type MatchResult = { bankAmount: number; diff: number; matched: boolean };
-  const getMatch = (date: string, terminal: string, batchNo: string): MatchResult => {
-    const key = `${date}|${terminal}|${batchNo}`;
-    const bankAmt = bankLookup[key];
-    if (bankAmt !== undefined) {
-      return { bankAmount: bankAmt, diff: 0, matched: false }; // diff computed later
-    }
-    return { bankAmount: 0, diff: 0, matched: false };
-  };
-
-  // Build per-row match data for the speedpoint table
+  // Build per-row match data for the speedpoint table (match by terminal+batch only)
   type SpRowMatch = Record<string, { bankAmount: number; diff: number; matched: boolean }>;
   const speedpointMatches: SpRowMatch[] = speedpointByDate.map(r => {
     const rowMatch: SpRowMatch = {};
     SP_TERMINALS.forEach(t => {
       const td = r.terminals[t];
       if (!td || td.total === 0) { rowMatch[t] = { bankAmount: 0, diff: 0, matched: false }; return; }
-      const key = `${r.date}|${t}|${td.batchNo}`;
+      const key = `${t}|${td.batchNo}`;
       const bankAmt = bankLookup[key] ?? 0;
       const diff = td.total - bankAmt;
       rowMatch[t] = { bankAmount: bankAmt, diff, matched: bankAmt > 0 && Math.abs(diff) < 0.01 };
@@ -150,21 +131,21 @@ export function Reports() {
   SP_TERMINALS.forEach(t => { bankTerminalTotals[t] = bankParsed.filter(bp => bp.terminal === t).reduce((s, bp) => s + bp.amount, 0); });
   const bankMatchedGrandTotal = Object.values(bankTerminalTotals).reduce((s, v) => s + v, 0);
 
-  // Track which bank lines are matched (by date+terminal+batch matching a cashup row)
+  // Track which bank batches are matched to a cashup row
   const matchedBankKeys = new Set<string>();
   speedpointByDate.forEach(r => {
     SP_TERMINALS.forEach(t => {
       const td = r.terminals[t];
       if (td && td.total > 0 && td.batchNo) {
-        matchedBankKeys.add(`${r.date}|${t}|${td.batchNo}`);
+        matchedBankKeys.add(`${t}|${td.batchNo}`);
       }
     });
   });
 
-  // Unmatched: bank terminal lines whose date+terminal+batch doesn't match any cashup
+  // Unmatched: bank terminal lines whose terminal+batch doesn't match any cashup
   const unmatchedTerminalLines = bankParsed.filter(bp => {
-    const normDate = normalizeBankDate(bp.date);
-    return !matchedBankKeys.has(`${normDate}|${bp.terminal}|${bp.batch}`);
+    if (!bp.batch) return true;
+    return !matchedBankKeys.has(`${bp.terminal}|${bp.batch}`);
   });
 
   // Accounts report — shop + OPT combined per day
