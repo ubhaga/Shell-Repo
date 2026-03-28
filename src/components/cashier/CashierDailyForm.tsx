@@ -273,7 +273,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
       >
         {balanced ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
         <CurrencyDisplay value={diff} className="font-bold" />
-        <span className="text-xs">{balanced ? "BALANCED" : "SHORT/OVER"}</span>
+        <span className="text-xs">{balanced ? "BALANCED" : "SHORT/(OVER)"}</span>
       </div>
     );
   };
