@@ -43,9 +43,9 @@ export function Reports() {
   const receiptsTotal = receiptsReport.reduce((s, r) => s + r.amount, 0);
 
   // Speedpoints report — pivoted by terminal, split Shop / OPT
-  const SHOP_TERMINALS = ['Term 247608', 'Forecourt', 'Retail', 'Scan to pay'];
-  const OPT_TERMINALS = ['Term 247608', 'Forecourt 2', 'V Plus', 'Scan to pay'];
-  const ALL_TERMINALS = [...new Set([...SHOP_TERMINALS, ...OPT_TERMINALS])]; // 6 unique
+  const SHOP_TERMINALS = ['Term 247608', 'Forecourt 929661', 'Retail 200660', 'Scan to pay'];
+  const OPT_TERMINALS = ['Term 247608', 'Forecourt 929661', 'V Plus', 'Scan to pay'];
+  const ALL_TERMINALS = [...new Set([...SHOP_TERMINALS, ...OPT_TERMINALS])];
 
   type SpRow = { date: string; shift: 'Shop' | 'OPT'; terminals: Record<string, { batchNo: string; amount: number }> ; total: number };
   const speedpointRows: SpRow[] = monthCashups.flatMap(c => {
