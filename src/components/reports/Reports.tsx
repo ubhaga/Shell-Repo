@@ -460,8 +460,9 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
           <TabsTrigger value="bank">Bank</TabsTrigger>
         </TabsList>
         ) : (
-        <TabsList className="grid grid-cols-1 w-full max-w-xs">
+        <TabsList className="grid grid-cols-2 w-full max-w-md">
           <TabsTrigger value="speedpoints">Speedpoints</TabsTrigger>
+          <TabsTrigger value="creditors">Creditors</TabsTrigger>
         </TabsList>
         )}
 
