@@ -84,6 +84,22 @@ export function Reports() {
   SP_TERMINALS.forEach(t => { spColumnTotals[t] = speedpointByDate.reduce((s, r) => s + (r.terminals[t]?.total ?? 0), 0); });
   const spGrandTotal = speedpointByDate.reduce((s, r) => s + r.total, 0);
 
+  // Bank statement totals per terminal for reconciliation
+  const BANK_TERMINAL_MAP: Record<string, string> = {
+    'Term 247608': 'Term 247608',
+    'Forecourt 929661': 'Forecourt 929661',
+    'Retail 200660': 'Retail 200660',
+  };
+  const bankTerminalTotals: Record<string, number> = {};
+  SP_TERMINALS.forEach(t => { bankTerminalTotals[t] = 0; });
+  bankLines.forEach(l => {
+    if (l.matched_terminal && bankTerminalTotals.hasOwnProperty(l.matched_terminal)) {
+      bankTerminalTotals[l.matched_terminal] += l.amount;
+    }
+  });
+  const bankMatchedGrandTotal = Object.values(bankTerminalTotals).reduce((s, v) => s + v, 0);
+  const unmatchedBankLines = bankLines.filter(l => !l.matched_terminal);
+
   // Accounts report — shop + OPT combined per day
   const accountsReport = monthCashups.flatMap(c => {
     const shopRows = c.shop.accounts.map(a => ({
