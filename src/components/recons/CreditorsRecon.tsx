@@ -57,17 +57,51 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   // EFT invoices from manager daily entries for this month
   const monthManagers = managerEntries.filter(e => e.date.startsWith(filterMonth));
 
-  // Parse bank CR payments: lines starting with "CR " followed by supplier name
-  // Match bank description to supplier (case-insensitive partial match)
-  const matchSupplier = (desc: string): string | null => {
-    const upper = desc.toUpperCase().trim();
-    if (!upper.startsWith('CR ')) return null;
-    const crName = upper.slice(3).trim();
-    for (const s of suppliers) {
-      const sUpper = s.toUpperCase();
-      // Match either direction: bank may abbreviate supplier name or vice versa
-      if (crName.startsWith(sUpper) || sUpper.startsWith(crName)) return s;
+  // Parse bank payment descriptions and map them to EFT suppliers
+  const normalizeName = (value: string) =>
+    value.toUpperCase().replace(/[^A-Z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+
+  const supplierByNormalized = new Map(
+    suppliers.map((supplier) => [normalizeName(supplier), supplier])
+  );
+
+  const resolveSupplier = (preferredNames: string[]): string | null => {
+    for (const name of preferredNames) {
+      const found = supplierByNormalized.get(normalizeName(name));
+      if (found) return found;
     }
+    return null;
+  };
+
+  const matchSupplier = (desc: string): string | null => {
+    const raw = desc.toUpperCase().trim();
+    const normalized = normalizeName(desc);
+
+    const aliasRules: Array<{ patterns: RegExp[]; suppliers: string[] }> = [
+      { patterns: [/\bCR\s+WICKED\s+CONV(?:ENIENCE)?\b/, /\bWICKED\s+CONV\b/], suppliers: ['Wicked Convenience'] },
+      { patterns: [/\bCR\s+STATUS\s+HYGIENE\b/, /\bSTATUS\s+HYGIENE\b/], suppliers: ['Status Hygiene'] },
+      { patterns: [/\bSS898\b/, /\bSS998\b/], suppliers: ['Clippa Sales'] },
+      { patterns: [/\bSHELL\s+F2K\b/, /\bF2K\b/], suppliers: ['F2K'] },
+      { patterns: [/\bSHELL\s*DOWN\d+\b/, /\bSHELL\s+DOWNSTREAM\b/], suppliers: ['Shell Downstream'] },
+    ];
+
+    for (const rule of aliasRules) {
+      if (rule.patterns.some((pattern) => pattern.test(raw))) {
+        const supplier = resolveSupplier(rule.suppliers);
+        if (supplier) return supplier;
+      }
+    }
+
+    const crMatch = raw.match(/\bCR\s+(.+)$/);
+    const candidate = crMatch ? normalizeName(crMatch[1]) : normalized;
+
+    for (const supplier of suppliers) {
+      const supplierNormalized = normalizeName(supplier);
+      if (candidate.startsWith(supplierNormalized) || supplierNormalized.startsWith(candidate)) {
+        return supplier;
+      }
+    }
+
     return null;
   };
 
