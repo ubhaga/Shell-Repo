@@ -57,7 +57,7 @@ export function Reports() {
   const receiptsTotal = receiptsReport.reduce((s, r) => s + r.amount, 0);
 
   // Speedpoints report — one row per date, columns per terminal
-  const SP_TERMINALS = ['Term 247608', 'Forecourt 929661', 'Retail 200660', 'Scan to pay', 'V Plus'];
+  const SP_TERMINALS = ['Term 247608', 'Forecourt 929661', 'Retail 200660'];
   type SpDateRow = {
     date: string;
     terminals: Record<string, { batchNo: string; shopAmount: number; optAmount: number; total: number }>;
@@ -92,13 +92,46 @@ export function Reports() {
   };
   const bankTerminalTotals: Record<string, number> = {};
   SP_TERMINALS.forEach(t => { bankTerminalTotals[t] = 0; });
+  // Build per-date per-terminal bank totals for line-by-line matching
+  const bankByDateTerminal: Record<string, Record<string, number>> = {};
   bankLines.forEach(l => {
-    if (l.matched_terminal && bankTerminalTotals.hasOwnProperty(l.matched_terminal)) {
+    if (l.matched_terminal && SP_TERMINALS.includes(l.matched_terminal)) {
       bankTerminalTotals[l.matched_terminal] += l.amount;
+      const key = l.transaction_date;
+      if (!bankByDateTerminal[key]) bankByDateTerminal[key] = {};
+      bankByDateTerminal[key][l.matched_terminal] = (bankByDateTerminal[key][l.matched_terminal] || 0) + l.amount;
     }
   });
   const bankMatchedGrandTotal = Object.values(bankTerminalTotals).reduce((s, v) => s + v, 0);
-  const unmatchedBankLines = bankLines.filter(l => !l.matched_terminal);
+
+  // Build reconciliation rows: per cashup date per terminal, match cashup vs bank
+  type ReconRow = { date: string; terminal: string; cashupAmount: number; bankAmount: number; diff: number; matched: boolean };
+  const reconRows: ReconRow[] = [];
+  speedpointByDate.forEach(r => {
+    const dateStr = format(new Date(r.date), 'dd/MM/yyyy');
+    // Try multiple date format keys for bank matching
+    const dateKeys = [r.date, dateStr, format(new Date(r.date), 'yyyy-MM-dd')];
+    SP_TERMINALS.forEach(t => {
+      const cashupAmt = r.terminals[t]?.total ?? 0;
+      if (cashupAmt === 0) return;
+      let bankAmt = 0;
+      for (const dk of dateKeys) {
+        if (bankByDateTerminal[dk]?.[t]) { bankAmt = bankByDateTerminal[dk][t]; break; }
+      }
+      const diff = cashupAmt - bankAmt;
+      reconRows.push({ date: r.date, terminal: t, cashupAmount: cashupAmt, bankAmount: bankAmt, diff, matched: Math.abs(diff) < 0.01 });
+    });
+  });
+  // Unmatched terminal lines: bank lines with a terminal but no corresponding cashup entry
+  const unmatchedTerminalLines = bankLines.filter(l => {
+    if (!l.matched_terminal || !SP_TERMINALS.includes(l.matched_terminal)) return false;
+    // Check if any cashup date maps to this bank line date+terminal
+    return !speedpointByDate.some(r => {
+      const dateStr = format(new Date(r.date), 'dd/MM/yyyy');
+      const dateKeys = [r.date, dateStr, format(new Date(r.date), 'yyyy-MM-dd')];
+      return dateKeys.includes(l.transaction_date) && (r.terminals[l.matched_terminal]?.total ?? 0) > 0;
+    });
+  });
 
   // Accounts report — shop + OPT combined per day
   const accountsReport = monthCashups.flatMap(c => {
@@ -438,31 +471,79 @@ export function Reports() {
               </Table>
             </TooltipProvider>
           </div>
-          {/* Unmatched bank lines */}
-          {unmatchedBankLines.length > 0 && (
+
+          {/* Line-by-line reconciliation */}
+          {bankLines.length > 0 && reconRows.length > 0 && (
             <div className="bg-card border rounded-lg overflow-hidden mt-4">
               <div className="px-4 py-2 border-b bg-muted/30">
-                <h3 className="font-semibold text-sm text-destructive">Unmatched Bank Statement Lines ({unmatchedBankLines.length})</h3>
+                <h3 className="font-semibold text-sm">Line-by-Line Reconciliation</h3>
               </div>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
+                    <TableHead>Terminal</TableHead>
+                    <TableHead className="text-right">Cashup</TableHead>
+                    <TableHead className="text-right">Bank</TableHead>
+                    <TableHead className="text-right">Difference</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reconRows.map((r, i) => (
+                    <TableRow key={i} className={r.matched ? 'bg-green-50 dark:bg-green-950/20' : 'hover:bg-muted/30'}>
+                      <TableCell className="text-sm font-mono">{format(new Date(r.date), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell className="text-sm">{r.terminal}</TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={r.cashupAmount} /></TableCell>
+                      <TableCell className="text-right">
+                        {r.bankAmount > 0 ? <CurrencyDisplay value={r.bankAmount} /> : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className={`text-right ${r.matched ? 'text-green-600' : 'text-destructive font-semibold'}`}>
+                        {r.bankAmount > 0 ? <CurrencyDisplay value={r.diff} /> : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell>
+                        {r.matched ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400">✓ Matched</span>
+                        ) : r.bankAmount > 0 ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">Partial</span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400">No Bank</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {/* Unmatched terminal lines from bank (bank has terminal but no cashup match) */}
+          {unmatchedTerminalLines.length > 0 && (
+            <div className="bg-card border rounded-lg overflow-hidden mt-4">
+              <div className="px-4 py-2 border-b bg-muted/30">
+                <h3 className="font-semibold text-sm text-destructive">Unmatched Terminal Lines ({unmatchedTerminalLines.length})</h3>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Terminal</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {unmatchedBankLines.map((l, i) => (
+                  {unmatchedTerminalLines.map((l, i) => (
                     <TableRow key={i}>
                       <TableCell className="text-sm font-mono">{l.transaction_date}</TableCell>
-                      <TableCell className="text-sm max-w-[400px] truncate">{l.description}</TableCell>
+                      <TableCell className="text-sm">{l.matched_terminal}</TableCell>
+                      <TableCell className="text-sm max-w-[300px] truncate">{l.description}</TableCell>
                       <TableCell className="text-right"><CurrencyDisplay value={l.amount} /></TableCell>
                     </TableRow>
                   ))}
                   <TableRow className="bg-secondary font-semibold">
-                    <TableCell colSpan={2}>TOTAL Unmatched</TableCell>
-                    <TableCell className="text-right"><CurrencyDisplay value={unmatchedBankLines.reduce((s, l) => s + l.amount, 0)} /></TableCell>
+                    <TableCell colSpan={3}>TOTAL Unmatched Terminal</TableCell>
+                    <TableCell className="text-right"><CurrencyDisplay value={unmatchedTerminalLines.reduce((s, l) => s + l.amount, 0)} /></TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
