@@ -7,10 +7,10 @@ import { Upload, Trash2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
-const TERMINAL_PATTERNS: { pattern: string; terminal: string }[] = [
-  { pattern: '247608', terminal: 'Term 247608' },
-  { pattern: '929661', terminal: 'Forecourt 929661' },
-  { pattern: '200660', terminal: 'Retail 200660' },
+const TERMINAL_PATTERNS: { pattern: RegExp; terminal: string }[] = [
+  { pattern: /247608/, terminal: 'Term 247608' },
+  { pattern: /929661/, terminal: 'Forecourt 929661' },
+  { pattern: /200660/, terminal: 'Retail 200660' },
 ];
 
 interface BankLine {
@@ -46,7 +46,7 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
 
   const matchTerminal = (desc: string): string => {
     for (const { pattern, terminal } of TERMINAL_PATTERNS) {
-      if (desc.includes(pattern)) return terminal;
+      if (pattern.test(desc)) return terminal;
     }
     return '';
   };
@@ -74,24 +74,33 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
         return result;
       };
 
-      const headers = parseCSVRow(csvLines[0]).map(h => h.toLowerCase().replace(/"/g, '').trim());
+      // Auto-detect header row by scanning for a row containing 'date' and ('amount' or 'description')
+      let headerRowIdx = -1;
+      for (let i = 0; i < Math.min(csvLines.length, 20); i++) {
+        const lower = csvLines[i].toLowerCase();
+        if (lower.includes('date') && (lower.includes('amount') || lower.includes('description') || lower.includes('balance'))) {
+          headerRowIdx = i;
+          break;
+        }
+      }
+      if (headerRowIdx === -1) {
+        toast.error('Could not find header row in CSV. Expected a row with Date, Amount/Description columns.');
+        setLoading(false);
+        return;
+      }
+
+      const headers = parseCSVRow(csvLines[headerRowIdx]).map(h => h.toLowerCase().replace(/"/g, '').trim()).filter(Boolean);
       
       // Flexible column detection
-      const dateIdx = headers.findIndex(h => h.includes('date') || h.includes('posting') || h === 'trans date' || h === 'value date');
-      const descIdx = headers.findIndex(h => h.includes('description') || h.includes('narrative') || h.includes('detail') || h.includes('reference') || h.includes('particulars') || h.includes('payee'));
-      
-      // Try amount, then debit/credit separately
+      const dateIdx = headers.findIndex(h => h.includes('date'));
+      const descIdx = headers.findIndex(h => h.includes('description') || h.includes('narrative') || h.includes('detail') || h.includes('reference') || h.includes('particulars'));
       let amountIdx = headers.findIndex(h => h === 'amount' || h === 'transaction amount' || h === 'value');
       const debitIdx = headers.findIndex(h => h.includes('debit') || h === 'dr');
       const creditIdx = headers.findIndex(h => h.includes('credit') || h === 'cr');
       const useDebitCredit = amountIdx === -1 && (debitIdx !== -1 || creditIdx !== -1);
-      if (amountIdx === -1 && !useDebitCredit) {
-        // Fallback: find any numeric-looking column that isn't the date
-        amountIdx = headers.findIndex((h, i) => i !== dateIdx && i !== descIdx && (h.includes('amount') || h.includes('balance') || h.includes('money')));
-      }
 
-      if (dateIdx === -1 || descIdx === -1 || (amountIdx === -1 && !useDebitCredit)) {
-        toast.error(`Could not auto-detect columns. Found headers: ${headers.join(', ')}. Need Date, Description, and Amount/Debit/Credit columns.`);
+      if (dateIdx === -1 || (descIdx === -1 && amountIdx === -1 && !useDebitCredit)) {
+        toast.error(`Could not auto-detect columns. Found headers: ${headers.join(', ')}.`);
         setLoading(false);
         return;
       }
@@ -102,15 +111,15 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
       const newRows: Omit<BankLine, 'id' | 'created_at'>[] = [];
       let duplicates = 0;
 
-      for (let i = 1; i < csvLines.length; i++) {
+      for (let i = headerRowIdx + 1; i < csvLines.length; i++) {
         const fields = parseCSVRow(csvLines[i]);
-        const maxIdx = Math.max(dateIdx, descIdx, useDebitCredit ? Math.max(debitIdx, creditIdx) : amountIdx);
+        const maxIdx = Math.max(dateIdx, descIdx !== -1 ? descIdx : 0, useDebitCredit ? Math.max(debitIdx, creditIdx) : amountIdx);
         if (fields.length <= maxIdx) continue;
 
         const rawLine = csvLines[i];
         if (existingRaw.has(rawLine)) { duplicates++; continue; }
 
-        const desc = fields[descIdx];
+        const desc = descIdx !== -1 ? fields[descIdx] : fields.slice(Math.max(dateIdx, amountIdx) + 1).join(' ').trim();
         let amt: number;
         if (useDebitCredit) {
           const debit = debitIdx !== -1 ? parseFloat(fields[debitIdx].replace(/[^0-9.\-]/g, '')) || 0 : 0;
