@@ -17,6 +17,17 @@ export function Reports() {
   const monthCashups = cashups.filter(c => c.month === filterMonth);
   const monthManagers = managerEntries.filter(e => e.date.startsWith(filterMonth));
 
+  // Load bank statement lines for reconciliation
+  const [bankLines, setBankLines] = useState<{ matched_terminal: string; amount: number; description: string; transaction_date: string }[]>([]);
+  const loadBankLines = useCallback(async () => {
+    const { data } = await supabase
+      .from('bank_statement_lines')
+      .select('matched_terminal, amount, description, transaction_date')
+      .eq('month', filterMonth);
+    setBankLines((data ?? []) as typeof bankLines);
+  }, [filterMonth]);
+  useEffect(() => { loadBankLines(); }, [loadBankLines]);
+
   // Payout report
   const payoutReport = monthCashups.flatMap(c =>
     c.shop.payouts.map(p => ({
