@@ -64,6 +64,8 @@ export function Reports() {
 
   // Speedpoints report — one row per date, columns per terminal
   const SP_TERMINALS = ['Term 247608', 'Forecourt 929661', 'Retail 200660'];
+  const [selectedTerminal, setSelectedTerminal] = useState<string>('all');
+  const visibleTerminals = selectedTerminal === 'all' ? SP_TERMINALS : [selectedTerminal];
   type SpDateRow = {
     date: string;
     terminals: Record<string, { batchNo: string; shopAmount: number; optAmount: number; total: number }>;
