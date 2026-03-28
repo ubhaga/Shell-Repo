@@ -111,15 +111,15 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
       const newRows: Omit<BankLine, 'id' | 'created_at'>[] = [];
       let duplicates = 0;
 
-      for (let i = 1; i < csvLines.length; i++) {
+      for (let i = headerRowIdx + 1; i < csvLines.length; i++) {
         const fields = parseCSVRow(csvLines[i]);
-        const maxIdx = Math.max(dateIdx, descIdx, useDebitCredit ? Math.max(debitIdx, creditIdx) : amountIdx);
+        const maxIdx = Math.max(dateIdx, descIdx !== -1 ? descIdx : 0, useDebitCredit ? Math.max(debitIdx, creditIdx) : amountIdx);
         if (fields.length <= maxIdx) continue;
 
         const rawLine = csvLines[i];
         if (existingRaw.has(rawLine)) { duplicates++; continue; }
 
-        const desc = fields[descIdx];
+        const desc = descIdx !== -1 ? fields[descIdx] : fields.slice(Math.max(dateIdx, amountIdx) + 1).join(' ').trim();
         let amt: number;
         if (useDebitCredit) {
           const debit = debitIdx !== -1 ? parseFloat(fields[debitIdx].replace(/[^0-9.\-]/g, '')) || 0 : 0;
