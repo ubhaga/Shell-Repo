@@ -120,16 +120,22 @@ export function Reports() {
   Object.values(manualMatches).forEach(arr => arr.forEach(bp => manuallyMatchedIdxs.add(bp.idx)));
 
   // Build per-row match data including manual matches
+  // Each bank amount is consumed by the first cashup row that claims it
   type SpRowMatch = Record<string, { bankAmount: number; diff: number; matched: boolean; manual: boolean }>;
+  const consumedBankKeys = new Set<string>();
   const speedpointMatches: SpRowMatch[] = speedpointByDate.map(r => {
     const rowMatch: SpRowMatch = {};
     SP_TERMINALS.forEach(t => {
       const td = r.terminals[t];
       if (!td || td.total === 0) { rowMatch[t] = { bankAmount: 0, diff: 0, matched: false, manual: false }; return; }
-      // Auto match by terminal+batch
+      // Auto match by terminal+batch — only if not already consumed by a prior row
       const key = `${t}|${td.batchNo}`;
-      let bankAmt = bankLookup[key] ?? 0;
+      let bankAmt = 0;
       let isManual = false;
+      if (!consumedBankKeys.has(key)) {
+        bankAmt = bankLookup[key] ?? 0;
+        if (bankAmt > 0) consumedBankKeys.add(key);
+      }
       // Add manual matches for this cell
       const manualKey = `${r.date}|${t}`;
       const manualLines = manualMatches[manualKey] || [];
@@ -148,23 +154,19 @@ export function Reports() {
   SP_TERMINALS.forEach(t => { bankTerminalTotals[t] = bankParsed.filter(bp => bp.terminal === t).reduce((s, bp) => s + bp.amount, 0); });
   const bankMatchedGrandTotal = Object.values(bankTerminalTotals).reduce((s, v) => s + v, 0);
 
-  // Track which bank batches are auto-matched to a cashup row
-  const matchedBankKeys = new Set<string>();
-  speedpointByDate.forEach(r => {
-    SP_TERMINALS.forEach(t => {
-      const td = r.terminals[t];
-      if (td && td.total > 0 && td.batchNo) {
-        matchedBankKeys.add(`${t}|${td.batchNo}`);
-      }
-    });
-  });
-
   // Unmatched: bank lines not auto-matched and not manually matched
+  // Use consumedBankKeys from matching above instead of re-deriving
   const unmatchedTerminalLines = bankParsed.filter(bp => {
     if (manuallyMatchedIdxs.has(bp.idx)) return false;
     if (!bp.batch) return true;
-    return !matchedBankKeys.has(`${bp.terminal}|${bp.batch}`);
+    return !consumedBankKeys.has(`${bp.terminal}|${bp.batch}`);
   });
+
+  // Auto-scroll during drag
+  const scrollIntervalRef = useRef<number | null>(null);
+  const clearScrollInterval = () => {
+    if (scrollIntervalRef.current) { clearInterval(scrollIntervalRef.current); scrollIntervalRef.current = null; }
+  };
 
   // Drag-and-drop handlers
   const handleDragStart = (e: React.DragEvent, bp: BankParsedLine) => {
@@ -181,6 +183,31 @@ export function Reports() {
   const handleDragLeave = () => {
     setDragOverTarget(null);
   };
+
+  // Global drag-over handler for auto-scrolling near edges
+  useEffect(() => {
+    const onDragOver = (e: DragEvent) => {
+      const EDGE = 80;
+      const SPEED = 12;
+      clearScrollInterval();
+      if (e.clientY < EDGE) {
+        scrollIntervalRef.current = window.setInterval(() => window.scrollBy(0, -SPEED), 16);
+      } else if (e.clientY > window.innerHeight - EDGE) {
+        scrollIntervalRef.current = window.setInterval(() => window.scrollBy(0, SPEED), 16);
+      }
+    };
+    const onDragEnd = () => clearScrollInterval();
+    const onDrop = () => clearScrollInterval();
+    window.addEventListener('dragover', onDragOver);
+    window.addEventListener('dragend', onDragEnd);
+    window.addEventListener('drop', onDrop);
+    return () => {
+      clearScrollInterval();
+      window.removeEventListener('dragover', onDragOver);
+      window.removeEventListener('dragend', onDragEnd);
+      window.removeEventListener('drop', onDrop);
+    };
+  }, []);
 
   const handleDrop = (e: React.DragEvent, targetKey: string) => {
     e.preventDefault();
