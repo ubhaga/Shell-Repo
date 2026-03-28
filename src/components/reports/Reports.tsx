@@ -57,7 +57,7 @@ export function Reports() {
   const receiptsTotal = receiptsReport.reduce((s, r) => s + r.amount, 0);
 
   // Speedpoints report — one row per date, columns per terminal
-  const SP_TERMINALS = ['Term 247608', 'Forecourt 929661', 'Retail 200660', 'Scan to pay', 'V Plus'];
+  const SP_TERMINALS = ['Term 247608', 'Forecourt 929661', 'Retail 200660'];
   type SpDateRow = {
     date: string;
     terminals: Record<string, { batchNo: string; shopAmount: number; optAmount: number; total: number }>;
@@ -92,13 +92,46 @@ export function Reports() {
   };
   const bankTerminalTotals: Record<string, number> = {};
   SP_TERMINALS.forEach(t => { bankTerminalTotals[t] = 0; });
+  // Build per-date per-terminal bank totals for line-by-line matching
+  const bankByDateTerminal: Record<string, Record<string, number>> = {};
   bankLines.forEach(l => {
-    if (l.matched_terminal && bankTerminalTotals.hasOwnProperty(l.matched_terminal)) {
+    if (l.matched_terminal && SP_TERMINALS.includes(l.matched_terminal)) {
       bankTerminalTotals[l.matched_terminal] += l.amount;
+      const key = l.transaction_date;
+      if (!bankByDateTerminal[key]) bankByDateTerminal[key] = {};
+      bankByDateTerminal[key][l.matched_terminal] = (bankByDateTerminal[key][l.matched_terminal] || 0) + l.amount;
     }
   });
   const bankMatchedGrandTotal = Object.values(bankTerminalTotals).reduce((s, v) => s + v, 0);
-  const unmatchedBankLines = bankLines.filter(l => !l.matched_terminal);
+
+  // Build reconciliation rows: per cashup date per terminal, match cashup vs bank
+  type ReconRow = { date: string; terminal: string; cashupAmount: number; bankAmount: number; diff: number; matched: boolean };
+  const reconRows: ReconRow[] = [];
+  speedpointByDate.forEach(r => {
+    const dateStr = format(new Date(r.date), 'dd/MM/yyyy');
+    // Try multiple date format keys for bank matching
+    const dateKeys = [r.date, dateStr, format(new Date(r.date), 'yyyy-MM-dd')];
+    SP_TERMINALS.forEach(t => {
+      const cashupAmt = r.terminals[t]?.total ?? 0;
+      if (cashupAmt === 0) return;
+      let bankAmt = 0;
+      for (const dk of dateKeys) {
+        if (bankByDateTerminal[dk]?.[t]) { bankAmt = bankByDateTerminal[dk][t]; break; }
+      }
+      const diff = cashupAmt - bankAmt;
+      reconRows.push({ date: r.date, terminal: t, cashupAmount: cashupAmt, bankAmount: bankAmt, diff, matched: Math.abs(diff) < 0.01 });
+    });
+  });
+  // Unmatched terminal lines: bank lines with a terminal but no corresponding cashup entry
+  const unmatchedTerminalLines = bankLines.filter(l => {
+    if (!l.matched_terminal || !SP_TERMINALS.includes(l.matched_terminal)) return false;
+    // Check if any cashup date maps to this bank line date+terminal
+    return !speedpointByDate.some(r => {
+      const dateStr = format(new Date(r.date), 'dd/MM/yyyy');
+      const dateKeys = [r.date, dateStr, format(new Date(r.date), 'yyyy-MM-dd')];
+      return dateKeys.includes(l.transaction_date) && (r.terminals[l.matched_terminal]?.total ?? 0) > 0;
+    });
+  });
 
   // Accounts report — shop + OPT combined per day
   const accountsReport = monthCashups.flatMap(c => {
