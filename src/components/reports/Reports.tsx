@@ -432,6 +432,36 @@ export function Reports() {
               </Table>
             </TooltipProvider>
           </div>
+          {/* Unmatched bank lines */}
+          {unmatchedBankLines.length > 0 && (
+            <div className="bg-card border rounded-lg overflow-hidden mt-4">
+              <div className="px-4 py-2 border-b bg-muted/30">
+                <h3 className="font-semibold text-sm text-destructive">Unmatched Bank Statement Lines ({unmatchedBankLines.length})</h3>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {unmatchedBankLines.map((l, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="text-sm font-mono">{l.transaction_date}</TableCell>
+                      <TableCell className="text-sm max-w-[400px] truncate">{l.description}</TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={l.amount} /></TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-secondary font-semibold">
+                    <TableCell colSpan={2}>TOTAL Unmatched</TableCell>
+                    <TableCell className="text-right"><CurrencyDisplay value={unmatchedBankLines.reduce((s, l) => s + l.amount, 0)} /></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </TabsContent>
 
         {/* Accounts */}
