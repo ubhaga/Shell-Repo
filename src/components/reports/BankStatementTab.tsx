@@ -233,11 +233,12 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
             <TableHead>Description</TableHead>
             <TableHead className="text-right">Amount</TableHead>
             <TableHead>Matched Terminal</TableHead>
+            <TableHead className="w-10"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {lines.length === 0 ? (
-            <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No bank statement uploaded for this month. Upload a CSV to get started.</TableCell></TableRow>
+            <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No bank statement uploaded for this month. Upload a CSV to get started.</TableCell></TableRow>
           ) : (
             <>
               {lines.map(l => (
@@ -252,12 +253,26 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
                       <span className="text-muted-foreground text-xs">—</span>
                     )}
                   </TableCell>
+                  <TableCell className="p-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={async () => {
+                        await supabase.from('bank_statement_lines').delete().eq('id', l.id);
+                        setLines(prev => prev.filter(x => x.id !== l.id));
+                        toast.success('Line deleted');
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
               <TableRow className="bg-secondary font-semibold">
                 <TableCell colSpan={2}>TOTAL ({lines.length} lines)</TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={grandTotal} highlight /></TableCell>
-                <TableCell></TableCell>
+                <TableCell colSpan={2}></TableCell>
               </TableRow>
             </>
           )}
