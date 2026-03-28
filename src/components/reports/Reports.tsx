@@ -17,41 +17,59 @@ export function Reports() {
   const monthCashups = cashups.filter(c => c.month === filterMonth);
   const monthManagers = managerEntries.filter(e => e.date.startsWith(filterMonth));
 
+  // Compute previous month string
+  const prevMonth = (() => {
+    const d = new Date(filterMonth + '-01');
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 7);
+  })();
+  const prevMonthCashups = cashups.filter(c => c.month === prevMonth);
+
   // Load bank statement lines for reconciliation
   const [bankLines, setBankLines] = useState<{ matched_terminal: string; amount: number; description: string; transaction_date: string }[]>([]);
+  const [prevBankLines, setPrevBankLines] = useState<{ matched_terminal: string; amount: number; description: string; transaction_date: string }[]>([]);
   const loadBankLines = useCallback(async () => {
-    const { data } = await supabase
-      .from('bank_statement_lines')
-      .select('matched_terminal, amount, description, transaction_date')
-      .eq('month', filterMonth);
-    setBankLines((data ?? []) as typeof bankLines);
-  }, [filterMonth]);
+    const [cur, prev] = await Promise.all([
+      supabase.from('bank_statement_lines').select('matched_terminal, amount, description, transaction_date').eq('month', filterMonth),
+      supabase.from('bank_statement_lines').select('matched_terminal, amount, description, transaction_date').eq('month', prevMonth),
+    ]);
+    setBankLines((cur.data ?? []) as typeof bankLines);
+    setPrevBankLines((prev.data ?? []) as typeof prevBankLines);
+  }, [filterMonth, prevMonth]);
   useEffect(() => { loadBankLines(); }, [loadBankLines]);
 
   // Manual match state: key = "cashupDate|terminal", value = array of manually matched bank lines
   type BankParsedLine = { terminal: string; batch: string; amount: number; date: string; description: string; idx: number };
   const [manualMatches, setManualMatches] = useState<Record<string, BankParsedLine[]>>({});
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
-  useEffect(() => { loadBankLines(); }, [loadBankLines]);
 
-  // Load saved manual matches from DB
+  // Load saved manual matches from DB (current + previous month for OB rows)
+  const [prevManualMatches, setPrevManualMatches] = useState<Record<string, BankParsedLine[]>>({});
   const loadManualMatches = useCallback(async () => {
     const { data } = await supabase
       .from('speedpoint_manual_matches')
       .select('*')
-      .eq('month', filterMonth);
+      .in('month', [filterMonth, prevMonth]);
     if (data && data.length > 0) {
       const loaded: Record<string, BankParsedLine[]> = {};
-      (data as { cashup_date: string; terminal: string; bank_line_idx: number; bank_amount: number; bank_description: string; bank_date: string; bank_terminal: string; bank_batch: string }[]).forEach(row => {
+      const prevLoaded: Record<string, BankParsedLine[]> = {};
+      (data as { month: string; cashup_date: string; terminal: string; bank_line_idx: number; bank_amount: number; bank_description: string; bank_date: string; bank_terminal: string; bank_batch: string }[]).forEach(row => {
         const key = `${row.cashup_date}|${row.terminal}`;
-        if (!loaded[key]) loaded[key] = [];
-        loaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx });
+        if (row.month === filterMonth) {
+          if (!loaded[key]) loaded[key] = [];
+          loaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx });
+        } else {
+          if (!prevLoaded[key]) prevLoaded[key] = [];
+          prevLoaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx });
+        }
       });
       setManualMatches(loaded);
+      setPrevManualMatches(prevLoaded);
     } else {
       setManualMatches({});
+      setPrevManualMatches({});
     }
-  }, [filterMonth]);
+  }, [filterMonth, prevMonth]);
   useEffect(() => { loadManualMatches(); }, [loadManualMatches]);
 
   // Payout report
@@ -176,6 +194,75 @@ export function Reports() {
       rowMatch[t] = { bankAmount: bankAmt, diff, matched: bankAmt > 0 && Math.abs(diff) < 0.01, manual: isManual };
     });
     return rowMatch;
+  });
+
+  // ── Opening Balance: previous month's unmatched batches ──
+  // Parse previous month bank lines
+  const prevBankParsed: BankParsedLine[] = [];
+  prevBankLines.forEach((l, idx) => {
+    if (!l.matched_terminal || !SP_TERMINALS.includes(l.matched_terminal)) return;
+    const termNum = TERMINAL_NUM_MAP[l.matched_terminal] || '';
+    const batchMatch = l.description.match(new RegExp(`${termNum}\\s+(\\d+)`));
+    const batch = batchMatch ? batchMatch[1] : '';
+    prevBankParsed.push({ terminal: l.matched_terminal, batch, amount: l.amount, date: l.transaction_date, description: l.description, idx: idx + 100000 });
+  });
+  const prevBankLookup: Record<string, number> = {};
+  prevBankParsed.forEach(bp => { if (bp.batch) { const k = `${bp.terminal}|${bp.batch}`; prevBankLookup[k] = (prevBankLookup[k] || 0) + bp.amount; } });
+  const prevManuallyMatchedIdxs = new Set<number>();
+  Object.values(prevManualMatches).forEach(arr => arr.forEach(bp => prevManuallyMatchedIdxs.add(bp.idx)));
+
+  // Build previous month speedpoint data
+  const prevSpeedpointByDate = prevMonthCashups.map(c => {
+    const termMap: SpDateRow['terminals'] = {};
+    SP_TERMINALS.forEach(t => { termMap[t] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 }; });
+    c.shop.speedpoints.forEach(sp => {
+      if (!termMap[sp.terminal]) termMap[sp.terminal] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 };
+      termMap[sp.terminal].batchNo = sp.batchNo || termMap[sp.terminal].batchNo;
+      termMap[sp.terminal].shopAmount += sp.shopAmount;
+    });
+    c.opt.speedpoints.forEach(sp => {
+      if (!termMap[sp.terminal]) termMap[sp.terminal] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 };
+      termMap[sp.terminal].batchNo = sp.batchNo || termMap[sp.terminal].batchNo;
+      termMap[sp.terminal].optAmount += sp.optAmount;
+    });
+    SP_TERMINALS.forEach(t => { const v = termMap[t]; if (v) v.total = v.shopAmount + v.optAmount; });
+    return { date: c.date, terminals: termMap };
+  });
+
+  // Find unmatched batches from previous month
+  type OBRow = { date: string; terminal: string; batchNo: string; cashupAmount: number; bankAmount: number; diff: number; manualBankAmount: number };
+  const openingBalanceRows: OBRow[] = [];
+  const prevConsumedKeys = new Set<string>();
+  prevSpeedpointByDate.forEach(r => {
+    SP_TERMINALS.forEach(t => {
+      const td = r.terminals[t];
+      if (!td || td.total === 0) return;
+      const batchKey = `${t}|${td.batchNo}`;
+      if (prevConsumedKeys.has(batchKey)) return;
+      prevConsumedKeys.add(batchKey);
+      const autoBankAmt = prevBankLookup[batchKey] ?? 0;
+      // Check manual matches from previous month
+      const prevManualKey = `${r.date}|${t}`;
+      const prevManualLines = prevManualMatches[prevManualKey] || [];
+      const prevManualAmt = prevManualLines.reduce((s, ml) => s + ml.amount, 0);
+      const totalBank = autoBankAmt + prevManualAmt;
+      const diff = td.total - totalBank;
+      if (Math.abs(diff) > 0.01) {
+        // Check if this OB row has manual matches in the current month
+        const obKey = `OB-${r.date}|${t}`;
+        const obManualLines = manualMatches[obKey] || [];
+        const obManualAmt = obManualLines.reduce((s, ml) => s + ml.amount, 0);
+        openingBalanceRows.push({
+          date: r.date,
+          terminal: t,
+          batchNo: td.batchNo,
+          cashupAmount: diff, // The outstanding amount carried forward
+          bankAmount: obManualAmt,
+          diff: diff - obManualAmt,
+          manualBankAmount: obManualAmt,
+        });
+      }
+    });
   });
 
   // Bank totals per terminal
@@ -548,6 +635,112 @@ export function Reports() {
                       <TableRow><TableCell colSpan={2 + visibleTerminals.length * (bankLines.length > 0 ? 4 : 2)} className="text-center text-muted-foreground py-8">No speedpoint data for this month</TableCell></TableRow>
                     ) : (
                       <>
+                        {/* Opening Balance rows — previous month unmatched batches */}
+                        {openingBalanceRows.length > 0 && (
+                          <>
+                            <TableRow className="bg-amber-50 dark:bg-amber-950/30 border-b-2">
+                              <TableCell colSpan={2 + visibleTerminals.length * (bankLines.length > 0 ? 4 : 2)} className="font-semibold text-sm text-amber-800 dark:text-amber-300 py-1">
+                                Opening Balance — Outstanding from {format(new Date(prevMonth + '-01'), 'MMMM yyyy')}
+                              </TableCell>
+                            </TableRow>
+                            {openingBalanceRows
+                              .filter(ob => visibleTerminals.includes(ob.terminal))
+                              .map((ob, obIdx) => {
+                                const obDropKey = `OB-${ob.date}|${ob.terminal}`;
+                                const obManualLines = manualMatches[obDropKey] || [];
+                                const isDragOver = dragOverTarget === obDropKey;
+                                const isMatched = Math.abs(ob.diff) < 0.01;
+                                return (
+                                  <TableRow key={`ob-${obIdx}`} className={`${isMatched ? 'bg-green-50 dark:bg-green-950/20' : 'bg-amber-50/50 dark:bg-amber-950/10'} hover:bg-muted/30`}>
+                                    <TableCell className="text-sm font-mono text-muted-foreground">{format(new Date(ob.date), 'dd/MM/yyyy')}</TableCell>
+                                    {visibleTerminals.map(t => {
+                                      if (t !== ob.terminal) {
+                                        return (
+                                          <React.Fragment key={t}>
+                                            <TableCell className="border-l"></TableCell>
+                                            <TableCell></TableCell>
+                                            {bankLines.length > 0 && (<><TableCell></TableCell><TableCell></TableCell></>)}
+                                          </React.Fragment>
+                                        );
+                                      }
+                                      return (
+                                        <React.Fragment key={t}>
+                                          <TableCell className="text-center text-sm text-muted-foreground border-l">{ob.batchNo}</TableCell>
+                                          <TableCell className="text-right"><CurrencyDisplay value={ob.cashupAmount} /></TableCell>
+                                          {bankLines.length > 0 && (
+                                            <>
+                                              <TableCell
+                                                className={`text-right text-sm ${!isMatched ? 'cursor-pointer' : ''} ${isDragOver ? 'bg-primary/20 ring-2 ring-primary ring-inset' : ''}`}
+                                                onDragOver={!isMatched ? (e) => handleDragOver(e, obDropKey) : undefined}
+                                                onDragLeave={!isMatched ? handleDragLeave : undefined}
+                                                onDrop={!isMatched ? (e) => handleDrop(e, obDropKey) : undefined}
+                                              >
+                                                {ob.bankAmount > 0 ? (
+                                                  <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                      <span className={`${isMatched ? 'text-green-600 font-medium' : ''} underline decoration-dashed cursor-help`}>
+                                                        <CurrencyDisplay value={ob.bankAmount} />
+                                                      </span>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                      <div className="text-xs space-y-1">
+                                                        <div className="font-semibold mb-1">Manual matches:</div>
+                                                        {obManualLines.map(ml => (
+                                                          <div key={ml.idx} className="flex items-center gap-2">
+                                                            <span>{ml.description} = <CurrencyDisplay value={ml.amount} /></span>
+                                                            <button onClick={() => handleRemoveManualMatch(obDropKey, ml.idx)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
+                                                          </div>
+                                                        ))}
+                                                      </div>
+                                                    </TooltipContent>
+                                                  </Tooltip>
+                                                ) : (
+                                                  <span className={`text-xs ${isDragOver ? 'text-primary font-medium' : 'text-destructive'}`}>
+                                                    {isDragOver ? '⬇ Drop here' : '—'}
+                                                  </span>
+                                                )}
+                                              </TableCell>
+                                              <TableCell className="text-right text-sm">
+                                                {isMatched ? (
+                                                  <span className="text-green-600 text-xs">✓</span>
+                                                ) : (
+                                                  <span className="text-destructive font-semibold"><CurrencyDisplay value={ob.diff} /></span>
+                                                )}
+                                              </TableCell>
+                                            </>
+                                          )}
+                                        </React.Fragment>
+                                      );
+                                    })}
+                                    <TableCell className="text-right border-l"><CurrencyDisplay value={ob.cashupAmount} /></TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            {/* OB subtotal */}
+                            <TableRow className="bg-amber-100/50 dark:bg-amber-950/20 border-b-2 font-semibold">
+                              <TableCell className="text-sm">OB Total</TableCell>
+                              {visibleTerminals.map(t => {
+                                const termOBRows = openingBalanceRows.filter(ob => ob.terminal === t);
+                                const obCashup = termOBRows.reduce((s, ob) => s + ob.cashupAmount, 0);
+                                const obBank = termOBRows.reduce((s, ob) => s + ob.bankAmount, 0);
+                                const obDiff = obCashup - obBank;
+                                return (
+                                  <React.Fragment key={t}>
+                                    <TableCell className="border-l"></TableCell>
+                                    <TableCell className="text-right"><CurrencyDisplay value={obCashup} /></TableCell>
+                                    {bankLines.length > 0 && (
+                                      <>
+                                        <TableCell className="text-right"><CurrencyDisplay value={obBank} /></TableCell>
+                                        <TableCell className={`text-right ${Math.abs(obDiff) > 0.01 ? 'text-destructive' : 'text-green-600'}`}><CurrencyDisplay value={obDiff} /></TableCell>
+                                      </>
+                                    )}
+                                  </React.Fragment>
+                                );
+                              })}
+                              <TableCell className="text-right border-l"><CurrencyDisplay value={openingBalanceRows.filter(ob => visibleTerminals.includes(ob.terminal)).reduce((s, ob) => s + ob.cashupAmount, 0)} /></TableCell>
+                            </TableRow>
+                          </>
+                        )}
                         {speedpointByDate.map((r, rowIdx) => {
                           const matchData = speedpointMatches[rowIdx];
                           const allMatched = bankLines.length > 0 && visibleTerminals.every(t => {
@@ -643,10 +836,13 @@ export function Reports() {
                           );
                         })}
                         <TableRow className="bg-secondary font-semibold border-t-2">
-                          <TableCell>TOTAL</TableCell>
+                          <TableCell>TOTAL (incl. OB)</TableCell>
                           {visibleTerminals.map(t => {
-                            const cashupColTotal = spColumnTotals[t] ?? 0;
-                            const bankColTotal = speedpointMatches.reduce((s, rm) => s + (rm[t]?.bankAmount ?? 0), 0);
+                            const obRows = openingBalanceRows.filter(ob => ob.terminal === t);
+                            const obCashup = obRows.reduce((s, ob) => s + ob.cashupAmount, 0);
+                            const obBank = obRows.reduce((s, ob) => s + ob.bankAmount, 0);
+                            const cashupColTotal = (spColumnTotals[t] ?? 0) + obCashup;
+                            const bankColTotal = speedpointMatches.reduce((s, rm) => s + (rm[t]?.bankAmount ?? 0), 0) + obBank;
                             const diffColTotal = cashupColTotal - bankColTotal;
                             return (
                               <React.Fragment key={t}>
@@ -663,7 +859,7 @@ export function Reports() {
                               </React.Fragment>
                             );
                           })}
-                          <TableCell className="text-right border-l"><CurrencyDisplay value={selectedTerminal === 'all' ? spGrandTotal : visibleTerminals.reduce((s, t) => s + (spColumnTotals[t] ?? 0), 0)} highlight /></TableCell>
+                          <TableCell className="text-right border-l"><CurrencyDisplay value={(selectedTerminal === 'all' ? spGrandTotal : visibleTerminals.reduce((s, t) => s + (spColumnTotals[t] ?? 0), 0)) + openingBalanceRows.filter(ob => visibleTerminals.includes(ob.terminal)).reduce((s, ob) => s + ob.cashupAmount, 0)} highlight /></TableCell>
                         </TableRow>
                       </>
                     )}
