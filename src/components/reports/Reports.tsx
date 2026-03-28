@@ -166,6 +166,12 @@ export function Reports() {
     return !matchedBankKeys.has(`${bp.terminal}|${bp.batch}`);
   });
 
+  // Auto-scroll during drag
+  const scrollIntervalRef = useRef<number | null>(null);
+  const clearScrollInterval = () => {
+    if (scrollIntervalRef.current) { clearInterval(scrollIntervalRef.current); scrollIntervalRef.current = null; }
+  };
+
   // Drag-and-drop handlers
   const handleDragStart = (e: React.DragEvent, bp: BankParsedLine) => {
     e.dataTransfer.setData('application/json', JSON.stringify(bp));
@@ -181,6 +187,31 @@ export function Reports() {
   const handleDragLeave = () => {
     setDragOverTarget(null);
   };
+
+  // Global drag-over handler for auto-scrolling near edges
+  useEffect(() => {
+    const onDragOver = (e: DragEvent) => {
+      const EDGE = 80;
+      const SPEED = 12;
+      clearScrollInterval();
+      if (e.clientY < EDGE) {
+        scrollIntervalRef.current = window.setInterval(() => window.scrollBy(0, -SPEED), 16);
+      } else if (e.clientY > window.innerHeight - EDGE) {
+        scrollIntervalRef.current = window.setInterval(() => window.scrollBy(0, SPEED), 16);
+      }
+    };
+    const onDragEnd = () => clearScrollInterval();
+    const onDrop = () => clearScrollInterval();
+    window.addEventListener('dragover', onDragOver);
+    window.addEventListener('dragend', onDragEnd);
+    window.addEventListener('drop', onDrop);
+    return () => {
+      clearScrollInterval();
+      window.removeEventListener('dragover', onDragOver);
+      window.removeEventListener('dragend', onDragEnd);
+      window.removeEventListener('drop', onDrop);
+    };
+  }, []);
 
   const handleDrop = (e: React.DragEvent, targetKey: string) => {
     e.preventDefault();
