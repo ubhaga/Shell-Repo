@@ -46,7 +46,7 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
 
   const matchTerminal = (desc: string): string => {
     for (const { pattern, terminal } of TERMINAL_PATTERNS) {
-      if (desc.includes(pattern)) return terminal;
+      if (pattern.test(desc)) return terminal;
     }
     return '';
   };
