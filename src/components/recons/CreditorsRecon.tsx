@@ -120,7 +120,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   type WeekData = { invoices: number; payments: number };
   const supplierWeekly: Record<string, WeekData[]> = {};
 
-  suppliers.forEach(supplier => {
+  [...suppliers, ...fuelSuppliers].forEach(supplier => {
     const weeks: WeekData[] = sundays.map(() => ({ invoices: 0, payments: 0 }));
 
     // Add EFT invoices
@@ -141,8 +141,6 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
       if (matched !== supplier) return;
       const lineDate = parseBankDate(line.transaction_date);
       if (!lineDate) return;
-      // Amount is negative in bank (it's a debit from the bank = payment to supplier)
-      // CR lines are typically negative amounts
       const paymentAmount = Math.abs(line.amount);
       const weekIdx = sundays.findIndex(sun => lineDate <= sun);
       const idx = weekIdx >= 0 ? weekIdx : sundays.length - 1;
