@@ -1081,6 +1081,11 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
           </div>
         </TabsContent>
 
+        {/* Creditors */}
+        <TabsContent value="creditors">
+          <CreditorsRecon filterMonth={filterMonth} />
+        </TabsContent>
+
         {/* Bank Statement */}
         <TabsContent value="bank">
           <BankStatementTab filterMonth={filterMonth} monthLabel={monthLabel} />
