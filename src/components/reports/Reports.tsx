@@ -83,7 +83,7 @@ export function Reports() {
   const receiptsTotal = receiptsReport.reduce((s, r) => s + r.amount, 0);
 
   // Speedpoints report — one row per date, columns per terminal
-  const SP_TERMINALS = ['Term 247608', 'Forecourt 929661', 'Retail 200660'];
+  const SP_TERMINALS = ['Term 247608', 'Forecourt 929661', 'Retail 200660', 'Scan to pay'];
   const [selectedTerminal, setSelectedTerminal] = useState<string>('all');
   const visibleTerminals = selectedTerminal === 'all' ? SP_TERMINALS : [selectedTerminal];
   type SpDateRow = {
