@@ -154,22 +154,12 @@ export function Reports() {
   SP_TERMINALS.forEach(t => { bankTerminalTotals[t] = bankParsed.filter(bp => bp.terminal === t).reduce((s, bp) => s + bp.amount, 0); });
   const bankMatchedGrandTotal = Object.values(bankTerminalTotals).reduce((s, v) => s + v, 0);
 
-  // Track which bank batches are auto-matched to a cashup row
-  const matchedBankKeys = new Set<string>();
-  speedpointByDate.forEach(r => {
-    SP_TERMINALS.forEach(t => {
-      const td = r.terminals[t];
-      if (td && td.total > 0 && td.batchNo) {
-        matchedBankKeys.add(`${t}|${td.batchNo}`);
-      }
-    });
-  });
-
   // Unmatched: bank lines not auto-matched and not manually matched
+  // Use consumedBankKeys from matching above instead of re-deriving
   const unmatchedTerminalLines = bankParsed.filter(bp => {
     if (manuallyMatchedIdxs.has(bp.idx)) return false;
     if (!bp.batch) return true;
-    return !matchedBankKeys.has(`${bp.terminal}|${bp.batch}`);
+    return !consumedBankKeys.has(`${bp.terminal}|${bp.batch}`);
   });
 
   // Auto-scroll during drag
