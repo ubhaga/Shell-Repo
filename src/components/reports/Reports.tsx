@@ -836,10 +836,13 @@ export function Reports() {
                           );
                         })}
                         <TableRow className="bg-secondary font-semibold border-t-2">
-                          <TableCell>TOTAL</TableCell>
+                          <TableCell>TOTAL (incl. OB)</TableCell>
                           {visibleTerminals.map(t => {
-                            const cashupColTotal = spColumnTotals[t] ?? 0;
-                            const bankColTotal = speedpointMatches.reduce((s, rm) => s + (rm[t]?.bankAmount ?? 0), 0);
+                            const obRows = openingBalanceRows.filter(ob => ob.terminal === t);
+                            const obCashup = obRows.reduce((s, ob) => s + ob.cashupAmount, 0);
+                            const obBank = obRows.reduce((s, ob) => s + ob.bankAmount, 0);
+                            const cashupColTotal = (spColumnTotals[t] ?? 0) + obCashup;
+                            const bankColTotal = speedpointMatches.reduce((s, rm) => s + (rm[t]?.bankAmount ?? 0), 0) + obBank;
                             const diffColTotal = cashupColTotal - bankColTotal;
                             return (
                               <React.Fragment key={t}>
@@ -856,7 +859,7 @@ export function Reports() {
                               </React.Fragment>
                             );
                           })}
-                          <TableCell className="text-right border-l"><CurrencyDisplay value={selectedTerminal === 'all' ? spGrandTotal : visibleTerminals.reduce((s, t) => s + (spColumnTotals[t] ?? 0), 0)} highlight /></TableCell>
+                          <TableCell className="text-right border-l"><CurrencyDisplay value={(selectedTerminal === 'all' ? spGrandTotal : visibleTerminals.reduce((s, t) => s + (spColumnTotals[t] ?? 0), 0)) + openingBalanceRows.filter(ob => visibleTerminals.includes(ob.terminal)).reduce((s, ob) => s + ob.cashupAmount, 0)} highlight /></TableCell>
                         </TableRow>
                       </>
                     )}
