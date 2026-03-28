@@ -28,6 +28,12 @@ export function Reports() {
   }, [filterMonth]);
   useEffect(() => { loadBankLines(); }, [loadBankLines]);
 
+  // Manual match state: key = "cashupDate|terminal", value = array of manually matched bank lines
+  type BankParsedLine = { terminal: string; batch: string; amount: number; date: string; description: string; idx: number };
+  const [manualMatches, setManualMatches] = useState<Record<string, BankParsedLine[]>>({});
+  const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
+  useEffect(() => { loadBankLines(); }, [loadBankLines]);
+
   // Payout report
   const payoutReport = monthCashups.flatMap(c =>
     c.shop.payouts.map(p => ({
