@@ -83,7 +83,7 @@ function DailyDashboard({ selectedDate }: Props) {
   const invMatch = managerEntry ? Math.abs(invTotal - managerEntry.branchDayEndTotal) < 0.50 : false;
   const vatMatch = managerEntry ? Math.abs(invVat - managerEntry.branchDayEndVat) < 1.00 : false;
 
-  const shopBalanced = Math.abs(shopDiff) < 0.01;
+  const shopBalanced = Math.abs(shopDiff) < 20;
   const optBalanced = Math.abs(optDiff) < 0.01;
   const allGreen = shopBalanced && optBalanced && (!managerEntry || (invMatch && vatMatch));
 
@@ -136,7 +136,7 @@ function DailyDashboard({ selectedDate }: Props) {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatusCard label="Shop Till Balance" value={<CurrencyDisplay value={shopDiff} />} status={!cashup ? 'pending' : Math.abs(shopDiff) < 0.01 ? 'green' : 'red'} detail={!cashup ? 'No data' : Math.abs(shopDiff) < 0.01 ? 'Balanced ✓' : 'Short/(Over)'} />
+        <StatusCard label="Shop Till Balance" value={<CurrencyDisplay value={shopDiff} />} status={!cashup ? 'pending' : Math.abs(shopDiff) < 20 ? 'green' : 'red'} detail={!cashup ? 'No data' : Math.abs(shopDiff) < 20 ? 'Within tolerance ✓' : 'Short/(Over)'} />
         <StatusCard label="OPT Balance" value={<CurrencyDisplay value={optDiff} />} status={!cashup ? 'pending' : optBalanced ? 'green' : 'red'} detail={cashup ? (optBalanced ? 'Balanced ✓' : 'Short/(Over)') : 'No data'} />
         <StatusCard label="Invoice vs Branch" value={managerEntry ? (invMatch ? 'MATCH' : `Diff R${Math.abs(invTotal - managerEntry.branchDayEndTotal).toFixed(2)}`) : 'Pending'} status={!managerEntry ? 'pending' : invMatch ? 'green' : 'red'} detail="Invoices captured vs branch" />
         <StatusCard label="VAT Reconciliation" value={managerEntry ? (vatMatch ? 'MATCH' : `Diff R${Math.abs(invVat - managerEntry.branchDayEndVat).toFixed(2)}`) : 'Pending'} status={!managerEntry ? 'pending' : vatMatch ? 'green' : 'red'} detail="VAT component verification" />
