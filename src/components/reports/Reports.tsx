@@ -10,6 +10,7 @@ import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { BankStatementTab } from './BankStatementTab';
 import { CreditorsRecon } from '@/components/recons/CreditorsRecon';
+import { AirtimeRecon } from '@/components/recons/AirtimeRecon';
 
 export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   const { cashups, managerEntries } = useCashupStore();
@@ -460,9 +461,10 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
           <TabsTrigger value="bank">Bank</TabsTrigger>
         </TabsList>
         ) : (
-        <TabsList className="grid grid-cols-2 w-full max-w-md">
+        <TabsList className="grid grid-cols-3 w-full max-w-lg">
           <TabsTrigger value="speedpoints">Speedpoints</TabsTrigger>
           <TabsTrigger value="creditors">Creditors</TabsTrigger>
+          <TabsTrigger value="airtime">Airtime</TabsTrigger>
         </TabsList>
         )}
 
@@ -1084,6 +1086,11 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
         {/* Creditors */}
         <TabsContent value="creditors">
           <CreditorsRecon filterMonth={filterMonth} />
+        </TabsContent>
+
+        {/* Airtime */}
+        <TabsContent value="airtime">
+          <AirtimeRecon filterMonth={filterMonth} />
         </TabsContent>
 
         {/* Bank Statement */}
