@@ -73,7 +73,7 @@ export function Reports() {
   };
   const speedpointByDate: SpDateRow[] = monthCashups.map(c => {
     const termMap: SpDateRow['terminals'] = {};
-    visibleTerminals.forEach(t => { termMap[t] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 }; });
+    SP_TERMINALS.forEach(t => { termMap[t] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 }; });
     c.shop.speedpoints.forEach(sp => {
       if (!termMap[sp.terminal]) termMap[sp.terminal] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 };
       termMap[sp.terminal].batchNo = sp.batchNo || termMap[sp.terminal].batchNo;
@@ -85,7 +85,7 @@ export function Reports() {
       termMap[sp.terminal].optAmount += sp.optAmount;
     });
     let rowTotal = 0;
-    visibleTerminals.forEach(t => {
+    SP_TERMINALS.forEach(t => {
       const v = termMap[t];
       if (v) { v.total = v.shopAmount + v.optAmount; rowTotal += v.total; }
     });
@@ -96,12 +96,12 @@ export function Reports() {
     return { date: c.date, terminals: termMap, total: rowTotal };
   });
   const spColumnTotals: Record<string, number> = {};
-  visibleTerminals.forEach(t => { spColumnTotals[t] = speedpointByDate.reduce((s, r) => s + (r.terminals[t]?.total ?? 0), 0); });
+  SP_TERMINALS.forEach(t => { spColumnTotals[t] = speedpointByDate.reduce((s, r) => s + (r.terminals[t]?.total ?? 0), 0); });
   const spGrandTotal = speedpointByDate.reduce((s, r) => s + r.total, 0);
 
   // Extract terminal number from SP_TERMINALS name (e.g., 'Term 247608' -> '247608')
   const TERMINAL_NUM_MAP: Record<string, string> = {};
-  visibleTerminals.forEach(t => {
+  SP_TERMINALS.forEach(t => {
     const match = t.match(/(\d{6})/);
     if (match) TERMINAL_NUM_MAP[t] = match[1];
   });
@@ -134,7 +134,7 @@ export function Reports() {
   const consumedBankKeys = new Set<string>();
   const speedpointMatches: SpRowMatch[] = speedpointByDate.map(r => {
     const rowMatch: SpRowMatch = {};
-    visibleTerminals.forEach(t => {
+    SP_TERMINALS.forEach(t => {
       const td = r.terminals[t];
       if (!td || td.total === 0) { rowMatch[t] = { bankAmount: 0, diff: 0, matched: false, manual: false }; return; }
       // Auto match by terminal+batch — only if not already consumed by a prior row
@@ -160,7 +160,7 @@ export function Reports() {
 
   // Bank totals per terminal
   const bankTerminalTotals: Record<string, number> = {};
-  visibleTerminals.forEach(t => { bankTerminalTotals[t] = bankParsed.filter(bp => bp.terminal === t).reduce((s, bp) => s + bp.amount, 0); });
+  SP_TERMINALS.forEach(t => { bankTerminalTotals[t] = bankParsed.filter(bp => bp.terminal === t).reduce((s, bp) => s + bp.amount, 0); });
   const bankMatchedGrandTotal = Object.values(bankTerminalTotals).reduce((s, v) => s + v, 0);
 
   // Unmatched: bank lines not auto-matched and not manually matched
