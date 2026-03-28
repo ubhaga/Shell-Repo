@@ -238,7 +238,7 @@ export function Reports() {
     };
   }, []);
 
-  const handleDrop = (e: React.DragEvent, targetKey: string) => {
+  const handleDrop = async (e: React.DragEvent, targetKey: string) => {
     e.preventDefault();
     setDragOverTarget(null);
     try {
@@ -247,16 +247,36 @@ export function Reports() {
         ...prev,
         [targetKey]: [...(prev[targetKey] || []), bp],
       }));
+      // Save to DB
+      const [cashupDate, terminal] = targetKey.split('|');
+      await supabase.from('speedpoint_manual_matches').insert({
+        month: filterMonth,
+        cashup_date: cashupDate,
+        terminal,
+        bank_line_idx: bp.idx,
+        bank_amount: bp.amount,
+        bank_description: bp.description,
+        bank_date: bp.date,
+        bank_terminal: bp.terminal,
+        bank_batch: bp.batch,
+      } as never);
     } catch {}
   };
 
-  const handleRemoveManualMatch = (targetKey: string, bpIdx: number) => {
+  const handleRemoveManualMatch = async (targetKey: string, bpIdx: number) => {
     setManualMatches(prev => {
       const updated = { ...prev };
       updated[targetKey] = (updated[targetKey] || []).filter(bp => bp.idx !== bpIdx);
       if (updated[targetKey].length === 0) delete updated[targetKey];
       return updated;
     });
+    // Delete from DB
+    const [cashupDate, terminal] = targetKey.split('|');
+    await supabase.from('speedpoint_manual_matches').delete()
+      .eq('month', filterMonth)
+      .eq('cashup_date', cashupDate)
+      .eq('terminal', terminal)
+      .eq('bank_line_idx', bpIdx);
   };
 
   // Accounts report — shop + OPT combined per day
