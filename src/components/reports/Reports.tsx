@@ -73,7 +73,7 @@ export function Reports() {
   };
   const speedpointByDate: SpDateRow[] = monthCashups.map(c => {
     const termMap: SpDateRow['terminals'] = {};
-    SP_TERMINALS.forEach(t => { termMap[t] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 }; });
+    visibleTerminals.forEach(t => { termMap[t] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 }; });
     c.shop.speedpoints.forEach(sp => {
       if (!termMap[sp.terminal]) termMap[sp.terminal] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 };
       termMap[sp.terminal].batchNo = sp.batchNo || termMap[sp.terminal].batchNo;
@@ -85,7 +85,7 @@ export function Reports() {
       termMap[sp.terminal].optAmount += sp.optAmount;
     });
     let rowTotal = 0;
-    SP_TERMINALS.forEach(t => {
+    visibleTerminals.forEach(t => {
       const v = termMap[t];
       if (v) { v.total = v.shopAmount + v.optAmount; rowTotal += v.total; }
     });
@@ -96,12 +96,12 @@ export function Reports() {
     return { date: c.date, terminals: termMap, total: rowTotal };
   });
   const spColumnTotals: Record<string, number> = {};
-  SP_TERMINALS.forEach(t => { spColumnTotals[t] = speedpointByDate.reduce((s, r) => s + (r.terminals[t]?.total ?? 0), 0); });
+  visibleTerminals.forEach(t => { spColumnTotals[t] = speedpointByDate.reduce((s, r) => s + (r.terminals[t]?.total ?? 0), 0); });
   const spGrandTotal = speedpointByDate.reduce((s, r) => s + r.total, 0);
 
   // Extract terminal number from SP_TERMINALS name (e.g., 'Term 247608' -> '247608')
   const TERMINAL_NUM_MAP: Record<string, string> = {};
-  SP_TERMINALS.forEach(t => {
+  visibleTerminals.forEach(t => {
     const match = t.match(/(\d{6})/);
     if (match) TERMINAL_NUM_MAP[t] = match[1];
   });
@@ -134,7 +134,7 @@ export function Reports() {
   const consumedBankKeys = new Set<string>();
   const speedpointMatches: SpRowMatch[] = speedpointByDate.map(r => {
     const rowMatch: SpRowMatch = {};
-    SP_TERMINALS.forEach(t => {
+    visibleTerminals.forEach(t => {
       const td = r.terminals[t];
       if (!td || td.total === 0) { rowMatch[t] = { bankAmount: 0, diff: 0, matched: false, manual: false }; return; }
       // Auto match by terminal+batch — only if not already consumed by a prior row
@@ -160,7 +160,7 @@ export function Reports() {
 
   // Bank totals per terminal
   const bankTerminalTotals: Record<string, number> = {};
-  SP_TERMINALS.forEach(t => { bankTerminalTotals[t] = bankParsed.filter(bp => bp.terminal === t).reduce((s, bp) => s + bp.amount, 0); });
+  visibleTerminals.forEach(t => { bankTerminalTotals[t] = bankParsed.filter(bp => bp.terminal === t).reduce((s, bp) => s + bp.amount, 0); });
   const bankMatchedGrandTotal = Object.values(bankTerminalTotals).reduce((s, v) => s + v, 0);
 
   // Unmatched: bank lines not auto-matched and not manually matched
@@ -458,14 +458,14 @@ export function Reports() {
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
                     <button onClick={() => setSelectedTerminal('all')} className={`px-2 py-1 text-xs rounded ${selectedTerminal === 'all' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}>All</button>
-                    {SP_TERMINALS.map(t => (
+                    {visibleTerminals.map(t => (
                       <button key={t} onClick={() => setSelectedTerminal(t)} className={`px-2 py-1 text-xs rounded ${selectedTerminal === t ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}>{t}</button>
                     ))}
                   </div>
                   <Button size="sm" variant="outline" onClick={() => {
                     const rows = speedpointByDate.map(r => {
                       const row: Record<string, string | number> = { Date: r.date };
-                      SP_TERMINALS.forEach(t => {
+                      visibleTerminals.forEach(t => {
                         row[`Batch# ${t}`] = r.terminals[t]?.batchNo ?? '';
                         row[t] = r.terminals[t]?.total ?? 0;
                       });
@@ -483,13 +483,13 @@ export function Reports() {
                   <TableHeader>
                     <TableRow>
                       <TableHead rowSpan={2} className="align-bottom">Date</TableHead>
-                      {SP_TERMINALS.map(t => (
+                      {visibleTerminals.map(t => (
                         <TableHead key={t} colSpan={bankLines.length > 0 ? 4 : 2} className="text-center border-l">{t}</TableHead>
                       ))}
                       <TableHead rowSpan={2} className="text-right align-bottom border-l">Total</TableHead>
                     </TableRow>
                     <TableRow>
-                      {SP_TERMINALS.map(t => (
+                      {visibleTerminals.map(t => (
                         <React.Fragment key={t}>
                           <TableHead className="text-center border-l text-xs text-muted-foreground">Batch#</TableHead>
                           <TableHead className="text-right text-xs text-muted-foreground">Cashup</TableHead>
@@ -505,19 +505,19 @@ export function Reports() {
                   </TableHeader>
                   <TableBody>
                     {speedpointByDate.length === 0 ? (
-                      <TableRow><TableCell colSpan={2 + SP_TERMINALS.length * (bankLines.length > 0 ? 4 : 2)} className="text-center text-muted-foreground py-8">No speedpoint data for this month</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={2 + visibleTerminals.length * (bankLines.length > 0 ? 4 : 2)} className="text-center text-muted-foreground py-8">No speedpoint data for this month</TableCell></TableRow>
                     ) : (
                       <>
                         {speedpointByDate.map((r, rowIdx) => {
                           const matchData = speedpointMatches[rowIdx];
-                          const allMatched = bankLines.length > 0 && SP_TERMINALS.every(t => {
+                          const allMatched = bankLines.length > 0 && visibleTerminals.every(t => {
                             const td = r.terminals[t];
                             return !td || td.total === 0 || matchData[t]?.matched;
                           });
                           return (
                             <TableRow key={r.date} className={allMatched ? 'bg-green-50 dark:bg-green-950/20' : 'hover:bg-muted/30'}>
                               <TableCell className="text-sm font-mono">{format(new Date(r.date), 'dd/MM/yyyy')}</TableCell>
-                              {SP_TERMINALS.map(t => {
+                              {visibleTerminals.map(t => {
                                 const td = r.terminals[t];
                                 const m = matchData[t];
                                 const hasBreakdown = td && (td.shopAmount > 0 && td.optAmount > 0);
@@ -604,7 +604,7 @@ export function Reports() {
                         })}
                         <TableRow className="bg-secondary font-semibold border-t-2">
                           <TableCell>TOTAL</TableCell>
-                          {SP_TERMINALS.map(t => (
+                          {visibleTerminals.map(t => (
                             <React.Fragment key={t}>
                               <TableCell className="border-l"></TableCell>
                               <TableCell className="text-right"><CurrencyDisplay value={spColumnTotals[t]} highlight /></TableCell>
