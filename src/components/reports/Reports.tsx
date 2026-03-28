@@ -597,13 +597,15 @@ export function Reports() {
                   <TableHead className="text-right">Shop SP</TableHead>
                   <TableHead className="text-right">OPT SP</TableHead>
                   <TableHead className="text-right">Total SP</TableHead>
+                  <TableHead className="text-right">Scan to Pay</TableHead>
+                  <TableHead className="text-right">V Plus</TableHead>
                   <TableHead className="text-right">Accounts</TableHead>
                   <TableHead className="text-right">Total MOP</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {mopReport.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No data for this month</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No data for this month</TableCell></TableRow>
                 ) : (
                   <>
                     {mopReport.map((r, i) => (
@@ -613,6 +615,8 @@ export function Reports() {
                         <TableCell className="text-right"><CurrencyDisplay value={r.shopSpeedpoint} /></TableCell>
                         <TableCell className="text-right"><CurrencyDisplay value={r.optSpeedpoint} /></TableCell>
                         <TableCell className="text-right"><CurrencyDisplay value={r.totalSpeedpoint} /></TableCell>
+                        <TableCell className="text-right"><CurrencyDisplay value={r.scanToPay} /></TableCell>
+                        <TableCell className="text-right"><CurrencyDisplay value={r.vPlus} /></TableCell>
                         <TableCell className="text-right"><CurrencyDisplay value={r.accounts} /></TableCell>
                         <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.total} highlight /></TableCell>
                       </TableRow>
@@ -623,6 +627,8 @@ export function Reports() {
                       <TableCell className="text-right"><CurrencyDisplay value={mopReport.reduce((s, r) => s + r.shopSpeedpoint, 0)} highlight /></TableCell>
                       <TableCell className="text-right"><CurrencyDisplay value={mopReport.reduce((s, r) => s + r.optSpeedpoint, 0)} highlight /></TableCell>
                       <TableCell className="text-right"><CurrencyDisplay value={mopReport.reduce((s, r) => s + r.totalSpeedpoint, 0)} highlight /></TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={mopReport.reduce((s, r) => s + r.scanToPay, 0)} highlight /></TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={mopReport.reduce((s, r) => s + r.vPlus, 0)} highlight /></TableCell>
                       <TableCell className="text-right"><CurrencyDisplay value={mopReport.reduce((s, r) => s + r.accounts, 0)} highlight /></TableCell>
                       <TableCell className="text-right"><CurrencyDisplay value={mopReport.reduce((s, r) => s + r.total, 0)} highlight /></TableCell>
                     </TableRow>
