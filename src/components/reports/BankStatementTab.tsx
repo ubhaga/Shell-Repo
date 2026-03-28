@@ -7,10 +7,10 @@ import { Upload, Trash2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
-const TERMINAL_PATTERNS: { pattern: string; terminal: string }[] = [
-  { pattern: '247608', terminal: 'Term 247608' },
-  { pattern: '929661', terminal: 'Forecourt 929661' },
-  { pattern: '200660', terminal: 'Retail 200660' },
+const TERMINAL_PATTERNS: { pattern: RegExp; terminal: string }[] = [
+  { pattern: /247608/, terminal: 'Term 247608' },
+  { pattern: /929661/, terminal: 'Forecourt 929661' },
+  { pattern: /200660/, terminal: 'Retail 200660' },
 ];
 
 interface BankLine {
