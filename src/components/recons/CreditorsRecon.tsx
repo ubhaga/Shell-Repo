@@ -52,7 +52,11 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   // If month doesn't end on Sunday, add monthEnd as final period
   if (getDay(monthEnd) !== 0) sundays.push(monthEnd);
 
-  const suppliers = [...eftSuppliers].filter(s => s.toUpperCase() !== 'DAWN CONSULTANTS').sort();
+  const FUEL_CREDITORS = ['Shell Downstream', 'F2K'];
+  const isFuelCreditor = (s: string) => FUEL_CREDITORS.some(fc => fc.toUpperCase() === s.toUpperCase());
+  const allSuppliers = [...eftSuppliers].filter(s => s.toUpperCase() !== 'DAWN CONSULTANTS').sort();
+  const suppliers = allSuppliers.filter(s => !isFuelCreditor(s));
+  const fuelSuppliers = allSuppliers.filter(s => isFuelCreditor(s));
 
   // EFT invoices from manager daily entries for this month
   const monthManagers = managerEntries.filter(e => e.date.startsWith(filterMonth));
@@ -116,7 +120,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   type WeekData = { invoices: number; payments: number };
   const supplierWeekly: Record<string, WeekData[]> = {};
 
-  suppliers.forEach(supplier => {
+  [...suppliers, ...fuelSuppliers].forEach(supplier => {
     const weeks: WeekData[] = sundays.map(() => ({ invoices: 0, payments: 0 }));
 
     // Add EFT invoices
@@ -137,8 +141,6 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
       if (matched !== supplier) return;
       const lineDate = parseBankDate(line.transaction_date);
       if (!lineDate) return;
-      // Amount is negative in bank (it's a debit from the bank = payment to supplier)
-      // CR lines are typically negative amounts
       const paymentAmount = Math.abs(line.amount);
       const weekIdx = sundays.findIndex(sun => lineDate <= sun);
       const idx = weekIdx >= 0 ? weekIdx : sundays.length - 1;
@@ -178,19 +180,11 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
       : format(sun, 'dd MMM')
   );
 
-  return (
+  const renderTable = (title: string, supplierList: string[]) => (
     <div className="bg-card border rounded-lg overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
-        <h3 className="font-semibold text-sm">
-          Creditors Reconciliation — {format(monthStart, 'MMMM yyyy')}
-        </h3>
-        {hasEdits && (
-          <Button size="sm" onClick={handleSaveOB} disabled={saving}>
-            <Save className="h-3.5 w-3.5 mr-1" />Save Opening Balances
-          </Button>
-        )}
+        <h3 className="font-semibold text-sm">{title}</h3>
       </div>
-
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -207,7 +201,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {suppliers.map(supplier => {
+            {supplierList.map(supplier => {
               const ob = editingOB[supplier] !== undefined
                 ? parseFloat(editingOB[supplier]) || 0
                 : (openingBalances[supplier] ?? 0);
@@ -246,18 +240,16 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
                 </TableRow>
               );
             })}
-            {/* Totals row */}
             <TableRow className="bg-secondary font-semibold">
               <TableCell className="sticky left-0 bg-secondary z-10 text-xs">TOTAL</TableCell>
               <TableCell className="text-right text-xs">
-                <CurrencyDisplay value={suppliers.reduce((s, sup) => s + (openingBalances[sup] ?? 0), 0)} highlight />
+                <CurrencyDisplay value={supplierList.reduce((s, sup) => s + (openingBalances[sup] ?? 0), 0)} highlight />
               </TableCell>
               {sundays.map((_, wi) => {
-                const totalInv = suppliers.reduce((s, sup) => s + supplierWeekly[sup][wi].invoices, 0);
-                const totalPay = suppliers.reduce((s, sup) => s + supplierWeekly[sup][wi].payments, 0);
-                // Running total balance
+                const totalInv = supplierList.reduce((s, sup) => s + supplierWeekly[sup][wi].invoices, 0);
+                const totalPay = supplierList.reduce((s, sup) => s + supplierWeekly[sup][wi].payments, 0);
                 let totalBal = 0;
-                suppliers.forEach(sup => {
+                supplierList.forEach(sup => {
                   let bal = openingBalances[sup] ?? 0;
                   for (let w = 0; w <= wi; w++) {
                     bal += supplierWeekly[sup][w].invoices - supplierWeekly[sup][w].payments;
@@ -276,6 +268,20 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
           </TableBody>
         </Table>
       </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-end">
+        {hasEdits && (
+          <Button size="sm" onClick={handleSaveOB} disabled={saving}>
+            <Save className="h-3.5 w-3.5 mr-1" />Save Opening Balances
+          </Button>
+        )}
+      </div>
+      {renderTable(`Creditors Reconciliation — ${format(monthStart, 'MMMM yyyy')}`, suppliers)}
+      {fuelSuppliers.length > 0 && renderTable(`Fuel Creditors — ${format(monthStart, 'MMMM yyyy')}`, fuelSuppliers)}
     </div>
   );
 }
