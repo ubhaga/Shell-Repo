@@ -644,20 +644,25 @@ export function Reports() {
                         })}
                         <TableRow className="bg-secondary font-semibold border-t-2">
                           <TableCell>TOTAL</TableCell>
-                          {visibleTerminals.map(t => (
-                            <React.Fragment key={t}>
-                              <TableCell className="border-l"></TableCell>
-                              <TableCell className="text-right"><CurrencyDisplay value={spColumnTotals[t]} highlight /></TableCell>
-                              {bankLines.length > 0 && (
-                                <>
-                                  <TableCell className="text-right"><CurrencyDisplay value={bankTerminalTotals[t]} /></TableCell>
-                                  <TableCell className={`text-right ${Math.abs(spColumnTotals[t] - bankTerminalTotals[t]) > 0.01 ? 'text-destructive' : 'text-green-600'}`}>
-                                    <CurrencyDisplay value={spColumnTotals[t] - bankTerminalTotals[t]} />
-                                  </TableCell>
-                                </>
-                              )}
-                            </React.Fragment>
-                          ))}
+                          {visibleTerminals.map(t => {
+                            const cashupColTotal = spColumnTotals[t] ?? 0;
+                            const bankColTotal = speedpointMatches.reduce((s, rm) => s + (rm[t]?.bankAmount ?? 0), 0);
+                            const diffColTotal = cashupColTotal - bankColTotal;
+                            return (
+                              <React.Fragment key={t}>
+                                <TableCell className="border-l"></TableCell>
+                                <TableCell className="text-right"><CurrencyDisplay value={cashupColTotal} highlight /></TableCell>
+                                {bankLines.length > 0 && (
+                                  <>
+                                    <TableCell className="text-right"><CurrencyDisplay value={bankColTotal} /></TableCell>
+                                    <TableCell className={`text-right ${Math.abs(diffColTotal) > 0.01 ? 'text-destructive' : 'text-green-600'}`}>
+                                      <CurrencyDisplay value={diffColTotal} />
+                                    </TableCell>
+                                  </>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
                           <TableCell className="text-right border-l"><CurrencyDisplay value={selectedTerminal === 'all' ? spGrandTotal : visibleTerminals.reduce((s, t) => s + (spColumnTotals[t] ?? 0), 0)} highlight /></TableCell>
                         </TableRow>
                       </>
