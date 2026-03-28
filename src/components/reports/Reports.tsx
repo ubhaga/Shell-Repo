@@ -405,7 +405,7 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
       + c.opt.speedpoints.filter(sp => sp.terminal === 'V Plus').reduce((s, sp) => s + sp.optAmount, 0);
     const shopAcc = c.shop.accounts.reduce((s, a) => s + a.amount, 0);
     const optAcc = c.opt.accounts.reduce((s, a) => s + a.amount, 0);
-    const cash = c.shop.cashConnectTotal;
+    const cash = c.shop.cashDepositedBanking + c.shop.easyPay + c.shop.coins;
     return {
       date: c.date,
       cash,
