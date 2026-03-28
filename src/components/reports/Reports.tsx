@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useCashupStore } from '@/store/cashupStore';
+import { supabase } from '@/integrations/supabase/client';
 import { CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,6 +16,17 @@ export function Reports() {
 
   const monthCashups = cashups.filter(c => c.month === filterMonth);
   const monthManagers = managerEntries.filter(e => e.date.startsWith(filterMonth));
+
+  // Load bank statement lines for reconciliation
+  const [bankLines, setBankLines] = useState<{ matched_terminal: string; amount: number; description: string; transaction_date: string }[]>([]);
+  const loadBankLines = useCallback(async () => {
+    const { data } = await supabase
+      .from('bank_statement_lines')
+      .select('matched_terminal, amount, description, transaction_date')
+      .eq('month', filterMonth);
+    setBankLines((data ?? []) as typeof bankLines);
+  }, [filterMonth]);
+  useEffect(() => { loadBankLines(); }, [loadBankLines]);
 
   // Payout report
   const payoutReport = monthCashups.flatMap(c =>
@@ -72,6 +84,22 @@ export function Reports() {
   SP_TERMINALS.forEach(t => { spColumnTotals[t] = speedpointByDate.reduce((s, r) => s + (r.terminals[t]?.total ?? 0), 0); });
   const spGrandTotal = speedpointByDate.reduce((s, r) => s + r.total, 0);
 
+  // Bank statement totals per terminal for reconciliation
+  const BANK_TERMINAL_MAP: Record<string, string> = {
+    'Term 247608': 'Term 247608',
+    'Forecourt 929661': 'Forecourt 929661',
+    'Retail 200660': 'Retail 200660',
+  };
+  const bankTerminalTotals: Record<string, number> = {};
+  SP_TERMINALS.forEach(t => { bankTerminalTotals[t] = 0; });
+  bankLines.forEach(l => {
+    if (l.matched_terminal && bankTerminalTotals.hasOwnProperty(l.matched_terminal)) {
+      bankTerminalTotals[l.matched_terminal] += l.amount;
+    }
+  });
+  const bankMatchedGrandTotal = Object.values(bankTerminalTotals).reduce((s, v) => s + v, 0);
+  const unmatchedBankLines = bankLines.filter(l => !l.matched_terminal);
+
   // Accounts report — shop + OPT combined per day
   const accountsReport = monthCashups.flatMap(c => {
     const shopRows = c.shop.accounts.map(a => ({
@@ -102,11 +130,15 @@ export function Reports() {
 
   // MOP report — Cash (CC) uses cashConnectTotal from section 5 MOP Cash
   const mopReport = monthCashups.map(c => {
-    const shopSP = c.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0);
-    const optSP = c.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0);
+    const spTerminals = ['Term 247608', 'Forecourt 929661', 'Retail 200660'];
+    const shopSP = c.shop.speedpoints.filter(sp => spTerminals.includes(sp.terminal)).reduce((s, sp) => s + sp.shopAmount, 0);
+    const optSP = c.opt.speedpoints.filter(sp => spTerminals.includes(sp.terminal)).reduce((s, sp) => s + sp.optAmount, 0);
+    const scanToPay = c.shop.speedpoints.filter(sp => sp.terminal === 'Scan to pay').reduce((s, sp) => s + sp.shopAmount, 0)
+      + c.opt.speedpoints.filter(sp => sp.terminal === 'Scan to pay').reduce((s, sp) => s + sp.optAmount, 0);
+    const vPlus = c.shop.speedpoints.filter(sp => sp.terminal === 'V Plus').reduce((s, sp) => s + sp.shopAmount, 0)
+      + c.opt.speedpoints.filter(sp => sp.terminal === 'V Plus').reduce((s, sp) => s + sp.optAmount, 0);
     const shopAcc = c.shop.accounts.reduce((s, a) => s + a.amount, 0);
     const optAcc = c.opt.accounts.reduce((s, a) => s + a.amount, 0);
-    // cashConnectTotal = cashDepositedBanking + easyPay + coins (the auto-calculated total in section 5)
     const cash = c.shop.cashConnectTotal;
     return {
       date: c.date,
@@ -114,8 +146,10 @@ export function Reports() {
       shopSpeedpoint: shopSP,
       optSpeedpoint: optSP,
       totalSpeedpoint: shopSP + optSP,
+      scanToPay,
+      vPlus,
       accounts: shopAcc + optAcc,
-      total: cash + shopSP + optSP + shopAcc + optAcc,
+      total: cash + shopSP + optSP + scanToPay + vPlus + shopAcc + optAcc,
     };
   });
 
@@ -356,7 +390,7 @@ export function Reports() {
                         </TableRow>
                       ))}
                       <TableRow className="bg-secondary font-semibold border-t-2">
-                        <TableCell>TOTAL</TableCell>
+                        <TableCell>TOTAL (Cashup)</TableCell>
                         {SP_TERMINALS.map(t => (
                           <React.Fragment key={t}>
                             <TableCell className="border-l"></TableCell>
@@ -365,12 +399,75 @@ export function Reports() {
                         ))}
                         <TableCell className="text-right border-l"><CurrencyDisplay value={spGrandTotal} highlight /></TableCell>
                       </TableRow>
+                      {bankLines.length > 0 && (
+                        <>
+                          <TableRow className="bg-muted/50 font-semibold">
+                            <TableCell>Bank Statement</TableCell>
+                            {SP_TERMINALS.map(t => (
+                              <React.Fragment key={t}>
+                                <TableCell className="border-l"></TableCell>
+                                <TableCell className="text-right">
+                                  {bankTerminalTotals[t] ? <CurrencyDisplay value={bankTerminalTotals[t]} /> : <span className="text-muted-foreground">—</span>}
+                                </TableCell>
+                              </React.Fragment>
+                            ))}
+                            <TableCell className="text-right border-l"><CurrencyDisplay value={bankMatchedGrandTotal} /></TableCell>
+                          </TableRow>
+                          <TableRow className="font-semibold">
+                            <TableCell>Difference</TableCell>
+                            {SP_TERMINALS.map(t => {
+                              const diff = spColumnTotals[t] - bankTerminalTotals[t];
+                              return (
+                                <React.Fragment key={t}>
+                                  <TableCell className="border-l"></TableCell>
+                                  <TableCell className={`text-right ${Math.abs(diff) > 0.01 ? 'text-destructive' : 'text-green-600'}`}>
+                                    {bankTerminalTotals[t] ? <CurrencyDisplay value={diff} /> : <span className="text-muted-foreground">—</span>}
+                                  </TableCell>
+                                </React.Fragment>
+                              );
+                            })}
+                            <TableCell className={`text-right border-l ${Math.abs(spGrandTotal - bankMatchedGrandTotal) > 0.01 ? 'text-destructive' : 'text-green-600'}`}>
+                              <CurrencyDisplay value={spGrandTotal - bankMatchedGrandTotal} />
+                            </TableCell>
+                          </TableRow>
+                        </>
+                      )}
                     </>
                   )}
                 </TableBody>
               </Table>
             </TooltipProvider>
           </div>
+          {/* Unmatched bank lines */}
+          {unmatchedBankLines.length > 0 && (
+            <div className="bg-card border rounded-lg overflow-hidden mt-4">
+              <div className="px-4 py-2 border-b bg-muted/30">
+                <h3 className="font-semibold text-sm text-destructive">Unmatched Bank Statement Lines ({unmatchedBankLines.length})</h3>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {unmatchedBankLines.map((l, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="text-sm font-mono">{l.transaction_date}</TableCell>
+                      <TableCell className="text-sm max-w-[400px] truncate">{l.description}</TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={l.amount} /></TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-secondary font-semibold">
+                    <TableCell colSpan={2}>TOTAL Unmatched</TableCell>
+                    <TableCell className="text-right"><CurrencyDisplay value={unmatchedBankLines.reduce((s, l) => s + l.amount, 0)} /></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </TabsContent>
 
         {/* Accounts */}
@@ -500,13 +597,15 @@ export function Reports() {
                   <TableHead className="text-right">Shop SP</TableHead>
                   <TableHead className="text-right">OPT SP</TableHead>
                   <TableHead className="text-right">Total SP</TableHead>
+                  <TableHead className="text-right">Scan to Pay</TableHead>
+                  <TableHead className="text-right">V Plus</TableHead>
                   <TableHead className="text-right">Accounts</TableHead>
                   <TableHead className="text-right">Total MOP</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {mopReport.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No data for this month</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No data for this month</TableCell></TableRow>
                 ) : (
                   <>
                     {mopReport.map((r, i) => (
@@ -516,6 +615,8 @@ export function Reports() {
                         <TableCell className="text-right"><CurrencyDisplay value={r.shopSpeedpoint} /></TableCell>
                         <TableCell className="text-right"><CurrencyDisplay value={r.optSpeedpoint} /></TableCell>
                         <TableCell className="text-right"><CurrencyDisplay value={r.totalSpeedpoint} /></TableCell>
+                        <TableCell className="text-right"><CurrencyDisplay value={r.scanToPay} /></TableCell>
+                        <TableCell className="text-right"><CurrencyDisplay value={r.vPlus} /></TableCell>
                         <TableCell className="text-right"><CurrencyDisplay value={r.accounts} /></TableCell>
                         <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.total} highlight /></TableCell>
                       </TableRow>
@@ -526,6 +627,8 @@ export function Reports() {
                       <TableCell className="text-right"><CurrencyDisplay value={mopReport.reduce((s, r) => s + r.shopSpeedpoint, 0)} highlight /></TableCell>
                       <TableCell className="text-right"><CurrencyDisplay value={mopReport.reduce((s, r) => s + r.optSpeedpoint, 0)} highlight /></TableCell>
                       <TableCell className="text-right"><CurrencyDisplay value={mopReport.reduce((s, r) => s + r.totalSpeedpoint, 0)} highlight /></TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={mopReport.reduce((s, r) => s + r.scanToPay, 0)} highlight /></TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={mopReport.reduce((s, r) => s + r.vPlus, 0)} highlight /></TableCell>
                       <TableCell className="text-right"><CurrencyDisplay value={mopReport.reduce((s, r) => s + r.accounts, 0)} highlight /></TableCell>
                       <TableCell className="text-right"><CurrencyDisplay value={mopReport.reduce((s, r) => s + r.total, 0)} highlight /></TableCell>
                     </TableRow>
