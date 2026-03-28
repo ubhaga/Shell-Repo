@@ -248,6 +248,48 @@ export type Database = {
         }
         Relationships: []
       }
+      speedpoint_manual_matches: {
+        Row: {
+          bank_amount: number
+          bank_batch: string
+          bank_date: string
+          bank_description: string
+          bank_line_idx: number
+          bank_terminal: string
+          cashup_date: string
+          created_at: string
+          id: string
+          month: string
+          terminal: string
+        }
+        Insert: {
+          bank_amount?: number
+          bank_batch?: string
+          bank_date?: string
+          bank_description?: string
+          bank_line_idx: number
+          bank_terminal?: string
+          cashup_date: string
+          created_at?: string
+          id?: string
+          month: string
+          terminal: string
+        }
+        Update: {
+          bank_amount?: number
+          bank_batch?: string
+          bank_date?: string
+          bank_description?: string
+          bank_line_idx?: number
+          bank_terminal?: string
+          cashup_date?: string
+          created_at?: string
+          id?: string
+          month?: string
+          terminal?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

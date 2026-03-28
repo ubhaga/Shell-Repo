@@ -34,6 +34,26 @@ export function Reports() {
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
   useEffect(() => { loadBankLines(); }, [loadBankLines]);
 
+  // Load saved manual matches from DB
+  const loadManualMatches = useCallback(async () => {
+    const { data } = await supabase
+      .from('speedpoint_manual_matches')
+      .select('*')
+      .eq('month', filterMonth);
+    if (data && data.length > 0) {
+      const loaded: Record<string, BankParsedLine[]> = {};
+      (data as { cashup_date: string; terminal: string; bank_line_idx: number; bank_amount: number; bank_description: string; bank_date: string; bank_terminal: string; bank_batch: string }[]).forEach(row => {
+        const key = `${row.cashup_date}|${row.terminal}`;
+        if (!loaded[key]) loaded[key] = [];
+        loaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx });
+      });
+      setManualMatches(loaded);
+    } else {
+      setManualMatches({});
+    }
+  }, [filterMonth]);
+  useEffect(() => { loadManualMatches(); }, [loadManualMatches]);
+
   // Payout report
   const payoutReport = monthCashups.flatMap(c =>
     c.shop.payouts.map(p => ({
@@ -218,7 +238,7 @@ export function Reports() {
     };
   }, []);
 
-  const handleDrop = (e: React.DragEvent, targetKey: string) => {
+  const handleDrop = async (e: React.DragEvent, targetKey: string) => {
     e.preventDefault();
     setDragOverTarget(null);
     try {
@@ -227,16 +247,36 @@ export function Reports() {
         ...prev,
         [targetKey]: [...(prev[targetKey] || []), bp],
       }));
+      // Save to DB
+      const [cashupDate, terminal] = targetKey.split('|');
+      await supabase.from('speedpoint_manual_matches').insert({
+        month: filterMonth,
+        cashup_date: cashupDate,
+        terminal,
+        bank_line_idx: bp.idx,
+        bank_amount: bp.amount,
+        bank_description: bp.description,
+        bank_date: bp.date,
+        bank_terminal: bp.terminal,
+        bank_batch: bp.batch,
+      } as never);
     } catch {}
   };
 
-  const handleRemoveManualMatch = (targetKey: string, bpIdx: number) => {
+  const handleRemoveManualMatch = async (targetKey: string, bpIdx: number) => {
     setManualMatches(prev => {
       const updated = { ...prev };
       updated[targetKey] = (updated[targetKey] || []).filter(bp => bp.idx !== bpIdx);
       if (updated[targetKey].length === 0) delete updated[targetKey];
       return updated;
     });
+    // Delete from DB
+    const [cashupDate, terminal] = targetKey.split('|');
+    await supabase.from('speedpoint_manual_matches').delete()
+      .eq('month', filterMonth)
+      .eq('cashup_date', cashupDate)
+      .eq('terminal', terminal)
+      .eq('bank_line_idx', bpIdx);
   };
 
   // Accounts report — shop + OPT combined per day
@@ -604,20 +644,25 @@ export function Reports() {
                         })}
                         <TableRow className="bg-secondary font-semibold border-t-2">
                           <TableCell>TOTAL</TableCell>
-                          {visibleTerminals.map(t => (
-                            <React.Fragment key={t}>
-                              <TableCell className="border-l"></TableCell>
-                              <TableCell className="text-right"><CurrencyDisplay value={spColumnTotals[t]} highlight /></TableCell>
-                              {bankLines.length > 0 && (
-                                <>
-                                  <TableCell className="text-right"><CurrencyDisplay value={bankTerminalTotals[t]} /></TableCell>
-                                  <TableCell className={`text-right ${Math.abs(spColumnTotals[t] - bankTerminalTotals[t]) > 0.01 ? 'text-destructive' : 'text-green-600'}`}>
-                                    <CurrencyDisplay value={spColumnTotals[t] - bankTerminalTotals[t]} />
-                                  </TableCell>
-                                </>
-                              )}
-                            </React.Fragment>
-                          ))}
+                          {visibleTerminals.map(t => {
+                            const cashupColTotal = spColumnTotals[t] ?? 0;
+                            const bankColTotal = speedpointMatches.reduce((s, rm) => s + (rm[t]?.bankAmount ?? 0), 0);
+                            const diffColTotal = cashupColTotal - bankColTotal;
+                            return (
+                              <React.Fragment key={t}>
+                                <TableCell className="border-l"></TableCell>
+                                <TableCell className="text-right"><CurrencyDisplay value={cashupColTotal} highlight /></TableCell>
+                                {bankLines.length > 0 && (
+                                  <>
+                                    <TableCell className="text-right"><CurrencyDisplay value={bankColTotal} /></TableCell>
+                                    <TableCell className={`text-right ${Math.abs(diffColTotal) > 0.01 ? 'text-destructive' : 'text-green-600'}`}>
+                                      <CurrencyDisplay value={diffColTotal} />
+                                    </TableCell>
+                                  </>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
                           <TableCell className="text-right border-l"><CurrencyDisplay value={selectedTerminal === 'all' ? spGrandTotal : visibleTerminals.reduce((s, t) => s + (spColumnTotals[t] ?? 0), 0)} highlight /></TableCell>
                         </TableRow>
                       </>
