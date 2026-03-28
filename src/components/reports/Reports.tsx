@@ -43,41 +43,33 @@ export function Reports() {
   );
   const receiptsTotal = receiptsReport.reduce((s, r) => s + r.amount, 0);
 
-  // Speedpoints report — unified per date, grouped by terminal + batch
-  type SpUnifiedRow = {
+  // Speedpoints report — one row per date, columns per terminal
+  const SP_TERMINALS = ['Term 247608', 'Forecourt 929661', 'Retail 200660', 'Scan to pay', 'V Plus'];
+  type SpDateRow = {
     date: string;
-    terminal: string;
-    batchNo: string;
-    shopAmount: number;
-    optAmount: number;
+    terminals: Record<string, { batchNo: string; shopAmount: number; optAmount: number; total: number }>;
     total: number;
   };
-  const speedpointUnified: SpUnifiedRow[] = [];
-  monthCashups.forEach(c => {
-    // Build a map keyed by "terminal|batchNo"
-    const map = new Map<string, { shopAmount: number; optAmount: number }>();
+  const speedpointByDate: SpDateRow[] = monthCashups.map(c => {
+    const termMap: SpDateRow['terminals'] = {};
+    SP_TERMINALS.forEach(t => { termMap[t] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 }; });
     c.shop.speedpoints.forEach(sp => {
-      const key = `${sp.terminal}|${sp.batchNo}`;
-      const existing = map.get(key) || { shopAmount: 0, optAmount: 0 };
-      existing.shopAmount += sp.shopAmount;
-      map.set(key, existing);
+      if (!termMap[sp.terminal]) termMap[sp.terminal] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 };
+      termMap[sp.terminal].batchNo = sp.batchNo || termMap[sp.terminal].batchNo;
+      termMap[sp.terminal].shopAmount += sp.shopAmount;
     });
     c.opt.speedpoints.forEach(sp => {
-      const key = `${sp.terminal}|${sp.batchNo}`;
-      const existing = map.get(key) || { shopAmount: 0, optAmount: 0 };
-      existing.optAmount += sp.optAmount;
-      map.set(key, existing);
+      if (!termMap[sp.terminal]) termMap[sp.terminal] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 };
+      termMap[sp.terminal].batchNo = sp.batchNo || termMap[sp.terminal].batchNo;
+      termMap[sp.terminal].optAmount += sp.optAmount;
     });
-    // Convert map to rows, sorted by terminal then batch
-    const entries = Array.from(map.entries()).map(([key, val]) => {
-      const [terminal, batchNo] = key.split('|');
-      return { date: c.date, terminal, batchNo, shopAmount: val.shopAmount, optAmount: val.optAmount, total: val.shopAmount + val.optAmount };
-    }).sort((a, b) => a.terminal.localeCompare(b.terminal) || a.batchNo.localeCompare(b.batchNo));
-    speedpointUnified.push(...entries);
+    let rowTotal = 0;
+    Object.values(termMap).forEach(v => { v.total = v.shopAmount + v.optAmount; rowTotal += v.total; });
+    return { date: c.date, terminals: termMap, total: rowTotal };
   });
-  const spShopTotal = speedpointUnified.reduce((s, r) => s + r.shopAmount, 0);
-  const spOptTotal = speedpointUnified.reduce((s, r) => s + r.optAmount, 0);
-  const spGrandTotal = spShopTotal + spOptTotal;
+  const spColumnTotals: Record<string, number> = {};
+  SP_TERMINALS.forEach(t => { spColumnTotals[t] = speedpointByDate.reduce((s, r) => s + (r.terminals[t]?.total ?? 0), 0); });
+  const spGrandTotal = speedpointByDate.reduce((s, r) => s + r.total, 0);
 
   // Accounts report — shop + OPT combined per day
   const accountsReport = monthCashups.flatMap(c => {
