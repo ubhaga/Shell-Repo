@@ -136,17 +136,8 @@ function DailyDashboard({ selectedDate }: Props) {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-     <StatusCard label="Shop Till Balance" value={<CurrencyDisplay value={shopDiff} />}  status={shopDiff > 0
-      ? 'red'
-      : shopDiff < 0
-      ? 'orange'
-      : 'green'
-  }
-  detail={ !cashup? 'No data'
-      : shopDiff === 0
-      ? 'Balanced ✓'
-      : 'Short/(Over)'}
-       <StatusCard label="OPT Balance" value={<CurrencyDisplay value={optDiff} />} status={!cashup ? 'pending' : optBalanced ? 'green' : 'red'} detail={cashup ? (optBalanced ? 'Balanced ✓' : 'Short/(Over)') : 'No data'} />
+        <StatusCard label="Shop Till Balance" value={<CurrencyDisplay value={shopDiff} />} status={!cashup ? 'pending' : Math.abs(shopDiff) < 0.01 ? 'green' : 'red'} detail={!cashup ? 'No data' : Math.abs(shopDiff) < 0.01 ? 'Balanced ✓' : 'Short/(Over)'} />
+        <StatusCard label="OPT Balance" value={<CurrencyDisplay value={optDiff} />} status={!cashup ? 'pending' : optBalanced ? 'green' : 'red'} detail={cashup ? (optBalanced ? 'Balanced ✓' : 'Short/(Over)') : 'No data'} />
         <StatusCard label="Invoice vs Branch" value={managerEntry ? (invMatch ? 'MATCH' : `Diff R${Math.abs(invTotal - managerEntry.branchDayEndTotal).toFixed(2)}`) : 'Pending'} status={!managerEntry ? 'pending' : invMatch ? 'green' : 'red'} detail="Invoices captured vs branch" />
         <StatusCard label="VAT Reconciliation" value={managerEntry ? (vatMatch ? 'MATCH' : `Diff R${Math.abs(invVat - managerEntry.branchDayEndVat).toFixed(2)}`) : 'Pending'} status={!managerEntry ? 'pending' : vatMatch ? 'green' : 'red'} detail="VAT component verification" />
       </div>
