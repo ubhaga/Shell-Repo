@@ -85,7 +85,14 @@ export function Reports() {
       termMap[sp.terminal].optAmount += sp.optAmount;
     });
     let rowTotal = 0;
-    Object.values(termMap).forEach(v => { v.total = v.shopAmount + v.optAmount; rowTotal += v.total; });
+    SP_TERMINALS.forEach(t => {
+      const v = termMap[t];
+      if (v) { v.total = v.shopAmount + v.optAmount; rowTotal += v.total; }
+    });
+    // Also compute totals for non-SP terminals but don't add to rowTotal
+    Object.entries(termMap).forEach(([k, v]) => {
+      if (!SP_TERMINALS.includes(k)) { v.total = v.shopAmount + v.optAmount; }
+    });
     return { date: c.date, terminals: termMap, total: rowTotal };
   });
   const spColumnTotals: Record<string, number> = {};
