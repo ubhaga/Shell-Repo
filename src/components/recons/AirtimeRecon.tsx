@@ -12,7 +12,6 @@ interface AirtimeReconProps {
 export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   const { cashups } = useCashupStore();
 
-  // Bank lines for BLD payments
   const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
 
   const loadBankLines = useCallback(async () => {
@@ -25,21 +24,17 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
 
   useEffect(() => { loadBankLines(); }, [loadBankLines]);
 
-  // Opening balances (hardcoded for now)
-  const BLD_OPENING = -18988.34; // creditor (negative = we owe them)
-  const EASYPAY_OPENING = 14392.59; // debtor (positive = they owe us)
+  const BLD_OPENING = -18988.34;
+  const EASYPAY_OPENING = 14392.59;
 
-  // Days in the month
   const monthStart = startOfMonth(new Date(filterMonth + '-01'));
   const monthEnd = endOfMonth(monthStart);
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Month cashups indexed by date
   const cashupByDate = new Map(
     cashups.filter(c => c.month === filterMonth).map(c => [c.date, c])
   );
 
-  // BLD payments from bank: match "BLD DO" in description
   const parseBankDate = (dateStr: string): string | null => {
     try {
       const parts = dateStr.split('/');
@@ -61,25 +56,34 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     }
   });
 
-  // Build daily rows
   type DayRow = {
     date: string;
-    bldPayment: number;
-    easypayCollection: number; // MOP Cash - EasyPay from cashier daily
+    bldInvoice: number;      // Receipts → Blue Label
+    bldPayment: number;      // Bank statement → BLD DO
+    easypayInvoice: number;  // Receipts → Easypay
+    easypayCollection: number; // MOP Cash → EasyPay
   };
 
   const dailyRows: DayRow[] = days.map(day => {
     const dateStr = format(day, 'yyyy-MM-dd');
     const cashup = cashupByDate.get(dateStr);
 
+    const bldInvoice = cashup
+      ? cashup.shop.receipts.filter(r => r.type === 'Blue Label').reduce((s, r) => s + r.amount, 0)
+      : 0;
+    const easypayInvoice = cashup
+      ? cashup.shop.receipts.filter(r => r.type === 'Easypay').reduce((s, r) => s + r.amount, 0)
+      : 0;
+
     return {
       date: dateStr,
+      bldInvoice,
       bldPayment: bldPaymentsByDate.get(dateStr) ?? 0,
+      easypayInvoice,
       easypayCollection: cashup?.shop.easyPay ?? 0,
     };
   });
 
-  // Running balances
   let bldBalance = BLD_OPENING;
   let easypayBalance = EASYPAY_OPENING;
 
@@ -95,55 +99,72 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[80px]">Date</TableHead>
-                <TableHead colSpan={2} className="text-center border-l bg-red-50/50 dark:bg-red-950/20">
+                <TableHead className="min-w-[80px]" rowSpan={2}>Date</TableHead>
+                <TableHead colSpan={3} className="text-center border-l bg-destructive/5">
                   BLD (Creditor)
                 </TableHead>
-                <TableHead colSpan={2} className="text-center border-l bg-green-50/50 dark:bg-green-950/20">
+                <TableHead colSpan={3} className="text-center border-l bg-primary/5">
                   Easypay (Debtor)
                 </TableHead>
               </TableRow>
               <TableRow>
-                <TableHead></TableHead>
-                <TableHead className="text-right text-xs border-l text-red-600 min-w-[90px]">Payment</TableHead>
+                <TableHead className="text-right text-xs border-l min-w-[90px]">+ Invoice</TableHead>
+                <TableHead className="text-right text-xs min-w-[90px]">− Payment</TableHead>
                 <TableHead className="text-right text-xs font-semibold min-w-[100px]">Balance</TableHead>
-                <TableHead className="text-right text-xs border-l text-green-600 min-w-[90px]">Collection</TableHead>
+                <TableHead className="text-right text-xs border-l min-w-[90px]">+ Invoice</TableHead>
+                <TableHead className="text-right text-xs min-w-[90px]">− Collection</TableHead>
                 <TableHead className="text-right text-xs font-semibold min-w-[100px]">Balance</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* Opening Balance row */}
+              {/* Opening Balance */}
               <TableRow className="bg-muted/40 font-semibold">
                 <TableCell className="text-xs">Opening Balance</TableCell>
                 <TableCell className="border-l"></TableCell>
+                <TableCell></TableCell>
                 <TableCell className="text-right text-xs">
                   <CurrencyDisplay value={BLD_OPENING} />
                 </TableCell>
                 <TableCell className="border-l"></TableCell>
+                <TableCell></TableCell>
                 <TableCell className="text-right text-xs">
                   <CurrencyDisplay value={EASYPAY_OPENING} />
                 </TableCell>
               </TableRow>
               {dailyRows.map(row => {
-                // BLD: creditor — payments reduce the debt (add to balance since balance is negative)
-                bldBalance += row.bldPayment;
-                // Easypay: debtor — collections reduce what they owe (subtract from balance)
-                easypayBalance -= row.easypayCollection;
+                // BLD creditor: invoices increase debt, payments reduce it
+                bldBalance = bldBalance - row.bldInvoice + row.bldPayment;
+                // Easypay debtor: invoices increase what they owe, collections reduce it
+                easypayBalance = easypayBalance + row.easypayInvoice - row.easypayCollection;
+
+                const hasData = row.bldInvoice > 0 || row.bldPayment > 0 || row.easypayInvoice > 0 || row.easypayCollection > 0;
 
                 return (
-                  <TableRow key={row.date}>
+                  <TableRow key={row.date} className={!hasData ? 'opacity-50' : ''}>
                     <TableCell className="text-xs">{format(new Date(row.date), 'dd MMM (EEE)')}</TableCell>
+                    {/* BLD */}
                     <TableCell className="text-right text-xs border-l">
+                      {row.bldInvoice > 0
+                        ? <CurrencyDisplay value={row.bldInvoice} />
+                        : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-right text-xs">
                       {row.bldPayment > 0
-                        ? <span className="text-red-600"><CurrencyDisplay value={row.bldPayment} /></span>
+                        ? <span className="text-destructive"><CurrencyDisplay value={row.bldPayment} /></span>
                         : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-right text-xs font-semibold">
                       <CurrencyDisplay value={bldBalance} />
                     </TableCell>
+                    {/* Easypay */}
                     <TableCell className="text-right text-xs border-l">
+                      {row.easypayInvoice > 0
+                        ? <CurrencyDisplay value={row.easypayInvoice} />
+                        : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-right text-xs">
                       {row.easypayCollection > 0
-                        ? <span className="text-green-600"><CurrencyDisplay value={row.easypayCollection} /></span>
+                        ? <span className="text-destructive"><CurrencyDisplay value={row.easypayCollection} /></span>
                         : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-right text-xs font-semibold">
@@ -152,16 +173,22 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                   </TableRow>
                 );
               })}
-              {/* Closing row */}
+              {/* Closing */}
               <TableRow className="bg-secondary font-semibold">
                 <TableCell className="text-xs">Closing Balance</TableCell>
                 <TableCell className="text-right text-xs border-l">
+                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.bldInvoice, 0)} highlight />
+                </TableCell>
+                <TableCell className="text-right text-xs">
                   <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.bldPayment, 0)} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs font-bold">
                   <CurrencyDisplay value={bldBalance} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs border-l">
+                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.easypayInvoice, 0)} highlight />
+                </TableCell>
+                <TableCell className="text-right text-xs">
                   <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.easypayCollection, 0)} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs font-bold">
