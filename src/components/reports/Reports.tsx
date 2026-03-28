@@ -149,13 +149,14 @@ export function Reports() {
       </div>
 
       <Tabs defaultValue="payouts">
-        <TabsList className="grid grid-cols-6 w-full">
+        <TabsList className="grid grid-cols-7 w-full">
           <TabsTrigger value="payouts">Payouts</TabsTrigger>
           <TabsTrigger value="receipts">Receipts</TabsTrigger>
           <TabsTrigger value="speedpoints">Speedpoints</TabsTrigger>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="mop">MOP</TabsTrigger>
+          <TabsTrigger value="bank">Bank</TabsTrigger>
         </TabsList>
 
         {/* Payouts */}
