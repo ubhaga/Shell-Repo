@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { BankStatementTab } from './BankStatementTab';
+import { CreditorsRecon } from '@/components/recons/CreditorsRecon';
 
 export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   const { cashups, managerEntries } = useCashupStore();
