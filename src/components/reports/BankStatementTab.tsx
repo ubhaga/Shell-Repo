@@ -96,20 +96,6 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
         return;
       }
 
-      // Parse CSV rows (handle quoted fields)
-      const parseCSVRow = (row: string): string[] => {
-        const result: string[] = [];
-        let current = '';
-        let inQuotes = false;
-        for (const char of row) {
-          if (char === '"') { inQuotes = !inQuotes; }
-          else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
-          else { current += char; }
-        }
-        result.push(current.trim());
-        return result;
-      };
-
       // Get existing raw_lines to detect duplicates
       const existingRaw = new Set(lines.map(l => l.raw_line));
 
@@ -118,14 +104,23 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
 
       for (let i = 1; i < csvLines.length; i++) {
         const fields = parseCSVRow(csvLines[i]);
-        if (fields.length <= Math.max(dateIdx, descIdx, amountIdx)) continue;
+        const maxIdx = Math.max(dateIdx, descIdx, useDebitCredit ? Math.max(debitIdx, creditIdx) : amountIdx);
+        if (fields.length <= maxIdx) continue;
 
         const rawLine = csvLines[i];
         if (existingRaw.has(rawLine)) { duplicates++; continue; }
 
         const desc = fields[descIdx];
-        const amt = parseFloat(fields[amountIdx].replace(/[^0-9.\-]/g, ''));
-        if (isNaN(amt)) continue;
+        let amt: number;
+        if (useDebitCredit) {
+          const debit = debitIdx !== -1 ? parseFloat(fields[debitIdx].replace(/[^0-9.\-]/g, '')) || 0 : 0;
+          const credit = creditIdx !== -1 ? parseFloat(fields[creditIdx].replace(/[^0-9.\-]/g, '')) || 0 : 0;
+          amt = credit - debit; // credits positive, debits negative
+          if (debit === 0 && credit === 0) continue;
+        } else {
+          amt = parseFloat(fields[amountIdx].replace(/[^0-9.\-]/g, ''));
+          if (isNaN(amt)) continue;
+        }
 
         newRows.push({
           month: filterMonth,
