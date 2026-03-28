@@ -34,6 +34,26 @@ export function Reports() {
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
   useEffect(() => { loadBankLines(); }, [loadBankLines]);
 
+  // Load saved manual matches from DB
+  const loadManualMatches = useCallback(async () => {
+    const { data } = await supabase
+      .from('speedpoint_manual_matches')
+      .select('*')
+      .eq('month', filterMonth);
+    if (data && data.length > 0) {
+      const loaded: Record<string, BankParsedLine[]> = {};
+      (data as { cashup_date: string; terminal: string; bank_line_idx: number; bank_amount: number; bank_description: string; bank_date: string; bank_terminal: string; bank_batch: string }[]).forEach(row => {
+        const key = `${row.cashup_date}|${row.terminal}`;
+        if (!loaded[key]) loaded[key] = [];
+        loaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx });
+      });
+      setManualMatches(loaded);
+    } else {
+      setManualMatches({});
+    }
+  }, [filterMonth]);
+  useEffect(() => { loadManualMatches(); }, [loadManualMatches]);
+
   // Payout report
   const payoutReport = monthCashups.flatMap(c =>
     c.shop.payouts.map(p => ({
