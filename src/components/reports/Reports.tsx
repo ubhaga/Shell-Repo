@@ -17,41 +17,59 @@ export function Reports() {
   const monthCashups = cashups.filter(c => c.month === filterMonth);
   const monthManagers = managerEntries.filter(e => e.date.startsWith(filterMonth));
 
+  // Compute previous month string
+  const prevMonth = (() => {
+    const d = new Date(filterMonth + '-01');
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 7);
+  })();
+  const prevMonthCashups = cashups.filter(c => c.month === prevMonth);
+
   // Load bank statement lines for reconciliation
   const [bankLines, setBankLines] = useState<{ matched_terminal: string; amount: number; description: string; transaction_date: string }[]>([]);
+  const [prevBankLines, setPrevBankLines] = useState<{ matched_terminal: string; amount: number; description: string; transaction_date: string }[]>([]);
   const loadBankLines = useCallback(async () => {
-    const { data } = await supabase
-      .from('bank_statement_lines')
-      .select('matched_terminal, amount, description, transaction_date')
-      .eq('month', filterMonth);
-    setBankLines((data ?? []) as typeof bankLines);
-  }, [filterMonth]);
+    const [cur, prev] = await Promise.all([
+      supabase.from('bank_statement_lines').select('matched_terminal, amount, description, transaction_date').eq('month', filterMonth),
+      supabase.from('bank_statement_lines').select('matched_terminal, amount, description, transaction_date').eq('month', prevMonth),
+    ]);
+    setBankLines((cur.data ?? []) as typeof bankLines);
+    setPrevBankLines((prev.data ?? []) as typeof prevBankLines);
+  }, [filterMonth, prevMonth]);
   useEffect(() => { loadBankLines(); }, [loadBankLines]);
 
   // Manual match state: key = "cashupDate|terminal", value = array of manually matched bank lines
   type BankParsedLine = { terminal: string; batch: string; amount: number; date: string; description: string; idx: number };
   const [manualMatches, setManualMatches] = useState<Record<string, BankParsedLine[]>>({});
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
-  useEffect(() => { loadBankLines(); }, [loadBankLines]);
 
-  // Load saved manual matches from DB
+  // Load saved manual matches from DB (current + previous month for OB rows)
+  const [prevManualMatches, setPrevManualMatches] = useState<Record<string, BankParsedLine[]>>({});
   const loadManualMatches = useCallback(async () => {
     const { data } = await supabase
       .from('speedpoint_manual_matches')
       .select('*')
-      .eq('month', filterMonth);
+      .in('month', [filterMonth, prevMonth]);
     if (data && data.length > 0) {
       const loaded: Record<string, BankParsedLine[]> = {};
-      (data as { cashup_date: string; terminal: string; bank_line_idx: number; bank_amount: number; bank_description: string; bank_date: string; bank_terminal: string; bank_batch: string }[]).forEach(row => {
+      const prevLoaded: Record<string, BankParsedLine[]> = {};
+      (data as { month: string; cashup_date: string; terminal: string; bank_line_idx: number; bank_amount: number; bank_description: string; bank_date: string; bank_terminal: string; bank_batch: string }[]).forEach(row => {
         const key = `${row.cashup_date}|${row.terminal}`;
-        if (!loaded[key]) loaded[key] = [];
-        loaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx });
+        if (row.month === filterMonth) {
+          if (!loaded[key]) loaded[key] = [];
+          loaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx });
+        } else {
+          if (!prevLoaded[key]) prevLoaded[key] = [];
+          prevLoaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx });
+        }
       });
       setManualMatches(loaded);
+      setPrevManualMatches(prevLoaded);
     } else {
       setManualMatches({});
+      setPrevManualMatches({});
     }
-  }, [filterMonth]);
+  }, [filterMonth, prevMonth]);
   useEffect(() => { loadManualMatches(); }, [loadManualMatches]);
 
   // Payout report
