@@ -24,7 +24,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
 
   useEffect(() => { loadBankLines(); }, [loadBankLines]);
 
-  const BLD_OPENING = -18988.34;
+  const BLD_OPENING = -11906.34;
   const EASYPAY_OPENING = 14392.59;
 
   const monthStart = startOfMonth(new Date(filterMonth + '-01'));
