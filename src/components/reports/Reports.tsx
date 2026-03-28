@@ -535,6 +535,11 @@ export function Reports() {
             </Table>
           </div>
         </TabsContent>
+
+        {/* Bank Statement */}
+        <TabsContent value="bank">
+          <BankStatementTab filterMonth={filterMonth} monthLabel={monthLabel} />
+        </TabsContent>
       </Tabs>
     </div>
   );
