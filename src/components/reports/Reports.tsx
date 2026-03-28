@@ -4,6 +4,7 @@ import { CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -42,41 +43,33 @@ export function Reports() {
   );
   const receiptsTotal = receiptsReport.reduce((s, r) => s + r.amount, 0);
 
-  // Speedpoints report — unified per date, grouped by terminal + batch
-  type SpUnifiedRow = {
+  // Speedpoints report — one row per date, columns per terminal
+  const SP_TERMINALS = ['Term 247608', 'Forecourt 929661', 'Retail 200660', 'Scan to pay', 'V Plus'];
+  type SpDateRow = {
     date: string;
-    terminal: string;
-    batchNo: string;
-    shopAmount: number;
-    optAmount: number;
+    terminals: Record<string, { batchNo: string; shopAmount: number; optAmount: number; total: number }>;
     total: number;
   };
-  const speedpointUnified: SpUnifiedRow[] = [];
-  monthCashups.forEach(c => {
-    // Build a map keyed by "terminal|batchNo"
-    const map = new Map<string, { shopAmount: number; optAmount: number }>();
+  const speedpointByDate: SpDateRow[] = monthCashups.map(c => {
+    const termMap: SpDateRow['terminals'] = {};
+    SP_TERMINALS.forEach(t => { termMap[t] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 }; });
     c.shop.speedpoints.forEach(sp => {
-      const key = `${sp.terminal}|${sp.batchNo}`;
-      const existing = map.get(key) || { shopAmount: 0, optAmount: 0 };
-      existing.shopAmount += sp.shopAmount;
-      map.set(key, existing);
+      if (!termMap[sp.terminal]) termMap[sp.terminal] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 };
+      termMap[sp.terminal].batchNo = sp.batchNo || termMap[sp.terminal].batchNo;
+      termMap[sp.terminal].shopAmount += sp.shopAmount;
     });
     c.opt.speedpoints.forEach(sp => {
-      const key = `${sp.terminal}|${sp.batchNo}`;
-      const existing = map.get(key) || { shopAmount: 0, optAmount: 0 };
-      existing.optAmount += sp.optAmount;
-      map.set(key, existing);
+      if (!termMap[sp.terminal]) termMap[sp.terminal] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 };
+      termMap[sp.terminal].batchNo = sp.batchNo || termMap[sp.terminal].batchNo;
+      termMap[sp.terminal].optAmount += sp.optAmount;
     });
-    // Convert map to rows, sorted by terminal then batch
-    const entries = Array.from(map.entries()).map(([key, val]) => {
-      const [terminal, batchNo] = key.split('|');
-      return { date: c.date, terminal, batchNo, shopAmount: val.shopAmount, optAmount: val.optAmount, total: val.shopAmount + val.optAmount };
-    }).sort((a, b) => a.terminal.localeCompare(b.terminal) || a.batchNo.localeCompare(b.batchNo));
-    speedpointUnified.push(...entries);
+    let rowTotal = 0;
+    Object.values(termMap).forEach(v => { v.total = v.shopAmount + v.optAmount; rowTotal += v.total; });
+    return { date: c.date, terminals: termMap, total: rowTotal };
   });
-  const spShopTotal = speedpointUnified.reduce((s, r) => s + r.shopAmount, 0);
-  const spOptTotal = speedpointUnified.reduce((s, r) => s + r.optAmount, 0);
-  const spGrandTotal = spShopTotal + spOptTotal;
+  const spColumnTotals: Record<string, number> = {};
+  SP_TERMINALS.forEach(t => { spColumnTotals[t] = speedpointByDate.reduce((s, r) => s + (r.terminals[t]?.total ?? 0), 0); });
+  const spGrandTotal = speedpointByDate.reduce((s, r) => s + r.total, 0);
 
   // Accounts report — shop + OPT combined per day
   const accountsReport = monthCashups.flatMap(c => {
@@ -286,74 +279,95 @@ export function Reports() {
             <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
               <h3 className="font-semibold text-sm">Speedpoint Report — {monthLabel}</h3>
               <Button size="sm" variant="outline" onClick={() => {
-                const rows = speedpointUnified.map(r => ({
-                  Date: r.date,
-                  Terminal: r.terminal,
-                  'Batch #': r.batchNo,
-                  'Shop Amount': r.shopAmount,
-                  'OPT Amount': r.optAmount,
-                  Total: r.total,
-                }));
+                const rows = speedpointByDate.map(r => {
+                  const row: Record<string, string | number> = { Date: r.date };
+                  SP_TERMINALS.forEach(t => {
+                    row[`Batch# ${t}`] = r.terminals[t]?.batchNo ?? '';
+                    row[t] = r.terminals[t]?.total ?? 0;
+                  });
+                  row.Total = r.total;
+                  return row;
+                });
                 exportCSV(rows, `speedpoints-${filterMonth}.csv`);
               }}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
             </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Terminal</TableHead>
-                  <TableHead>Batch #</TableHead>
-                  <TableHead className="text-right">Shop Amount</TableHead>
-                  <TableHead className="text-right">OPT Amount</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {speedpointUnified.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No speedpoint data for this month</TableCell></TableRow>
-                ) : (
-                  <>
-                    {/* Group by date for visual separation */}
-                    {monthCashups.map(c => {
-                      const dateRows = speedpointUnified.filter(r => r.date === c.date);
-                      if (dateRows.length === 0) return null;
-                      const dateShopTotal = dateRows.reduce((s, r) => s + r.shopAmount, 0);
-                      const dateOptTotal = dateRows.reduce((s, r) => s + r.optAmount, 0);
-                      const dateTotal = dateRows.reduce((s, r) => s + r.total, 0);
-                      return (
-                        <React.Fragment key={c.date}>
-                          {dateRows.map((r, i) => (
-                            <TableRow key={`${r.date}-${r.terminal}-${r.batchNo}-${i}`} className="hover:bg-muted/30">
-                              <TableCell className="text-sm font-mono">{i === 0 ? format(new Date(r.date), 'dd MMM') : ''}</TableCell>
-                              <TableCell className="text-sm">{r.terminal}</TableCell>
-                              <TableCell className="text-sm text-muted-foreground">{r.batchNo}</TableCell>
-                              <TableCell className="text-right"><CurrencyDisplay value={r.shopAmount} /></TableCell>
-                              <TableCell className="text-right"><CurrencyDisplay value={r.optAmount} /></TableCell>
-                              <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.total} /></TableCell>
-                            </TableRow>
-                          ))}
-                          <TableRow className="bg-muted/20 border-b-2">
-                            <TableCell className="text-xs font-semibold">{format(new Date(c.date), 'dd MMM')} Total</TableCell>
-                            <TableCell colSpan={2}></TableCell>
-                            <TableCell className="text-right text-xs font-semibold"><CurrencyDisplay value={dateShopTotal} /></TableCell>
-                            <TableCell className="text-right text-xs font-semibold"><CurrencyDisplay value={dateOptTotal} /></TableCell>
-                            <TableCell className="text-right text-xs font-semibold"><CurrencyDisplay value={dateTotal} /></TableCell>
-                          </TableRow>
-                        </React.Fragment>
-                      );
-                    })}
-                    <TableRow className="bg-secondary font-semibold border-t-2">
-                      <TableCell colSpan={3}>GRAND TOTAL</TableCell>
-                      <TableCell className="text-right"><CurrencyDisplay value={spShopTotal} highlight /></TableCell>
-                      <TableCell className="text-right"><CurrencyDisplay value={spOptTotal} highlight /></TableCell>
-                      <TableCell className="text-right"><CurrencyDisplay value={spGrandTotal} highlight /></TableCell>
-                    </TableRow>
-                  </>
-                )}
-              </TableBody>
-            </Table>
+            <TooltipProvider>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead rowSpan={2} className="align-bottom">Date</TableHead>
+                    {SP_TERMINALS.map(t => (
+                      <TableHead key={t} colSpan={2} className="text-center border-l">{t}</TableHead>
+                    ))}
+                    <TableHead rowSpan={2} className="text-right align-bottom border-l">Total</TableHead>
+                  </TableRow>
+                  <TableRow>
+                    {SP_TERMINALS.map(t => (
+                      <React.Fragment key={t}>
+                        <TableHead className="text-center border-l text-xs text-muted-foreground">Batch#</TableHead>
+                        <TableHead className="text-right text-xs text-muted-foreground">Amount</TableHead>
+                      </React.Fragment>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {speedpointByDate.length === 0 ? (
+                    <TableRow><TableCell colSpan={2 + SP_TERMINALS.length * 2} className="text-center text-muted-foreground py-8">No speedpoint data for this month</TableCell></TableRow>
+                  ) : (
+                    <>
+                      {speedpointByDate.map(r => (
+                        <TableRow key={r.date} className="hover:bg-muted/30">
+                          <TableCell className="text-sm font-mono">{format(new Date(r.date), 'dd/MM/yyyy')}</TableCell>
+                          {SP_TERMINALS.map(t => {
+                            const td = r.terminals[t];
+                            const hasBreakdown = td && (td.shopAmount > 0 && td.optAmount > 0);
+                            return (
+                              <React.Fragment key={t}>
+                                <TableCell className="text-center text-sm text-muted-foreground border-l">{td?.batchNo || ''}</TableCell>
+                                <TableCell className="text-right">
+                                  {td && td.total > 0 ? (
+                                    hasBreakdown ? (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <span className="cursor-help underline decoration-dotted"><CurrencyDisplay value={td.total} /></span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <div className="text-xs space-y-1">
+                                            <div>Shop: <CurrencyDisplay value={td.shopAmount} /></div>
+                                            <div>OPT: <CurrencyDisplay value={td.optAmount} /></div>
+                                          </div>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    ) : (
+                                      <CurrencyDisplay value={td.total} />
+                                    )
+                                  ) : (
+                                    <span className="text-muted-foreground">0</span>
+                                  )}
+                                </TableCell>
+                              </React.Fragment>
+                            );
+                          })}
+                          <TableCell className="text-right font-semibold border-l"><CurrencyDisplay value={r.total} /></TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="bg-secondary font-semibold border-t-2">
+                        <TableCell>TOTAL</TableCell>
+                        {SP_TERMINALS.map(t => (
+                          <React.Fragment key={t}>
+                            <TableCell className="border-l"></TableCell>
+                            <TableCell className="text-right"><CurrencyDisplay value={spColumnTotals[t]} highlight /></TableCell>
+                          </React.Fragment>
+                        ))}
+                        <TableCell className="text-right border-l"><CurrencyDisplay value={spGrandTotal} highlight /></TableCell>
+                      </TableRow>
+                    </>
+                  )}
+                </TableBody>
+              </Table>
+            </TooltipProvider>
           </div>
         </TabsContent>
 
