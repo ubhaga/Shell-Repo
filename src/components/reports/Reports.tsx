@@ -635,6 +635,112 @@ export function Reports() {
                       <TableRow><TableCell colSpan={2 + visibleTerminals.length * (bankLines.length > 0 ? 4 : 2)} className="text-center text-muted-foreground py-8">No speedpoint data for this month</TableCell></TableRow>
                     ) : (
                       <>
+                        {/* Opening Balance rows — previous month unmatched batches */}
+                        {openingBalanceRows.length > 0 && (
+                          <>
+                            <TableRow className="bg-amber-50 dark:bg-amber-950/30 border-b-2">
+                              <TableCell colSpan={2 + visibleTerminals.length * (bankLines.length > 0 ? 4 : 2)} className="font-semibold text-sm text-amber-800 dark:text-amber-300 py-1">
+                                Opening Balance — Outstanding from {format(new Date(prevMonth + '-01'), 'MMMM yyyy')}
+                              </TableCell>
+                            </TableRow>
+                            {openingBalanceRows
+                              .filter(ob => visibleTerminals.includes(ob.terminal))
+                              .map((ob, obIdx) => {
+                                const obDropKey = `OB-${ob.date}|${ob.terminal}`;
+                                const obManualLines = manualMatches[obDropKey] || [];
+                                const isDragOver = dragOverTarget === obDropKey;
+                                const isMatched = Math.abs(ob.diff) < 0.01;
+                                return (
+                                  <TableRow key={`ob-${obIdx}`} className={`${isMatched ? 'bg-green-50 dark:bg-green-950/20' : 'bg-amber-50/50 dark:bg-amber-950/10'} hover:bg-muted/30`}>
+                                    <TableCell className="text-sm font-mono text-muted-foreground">{format(new Date(ob.date), 'dd/MM/yyyy')}</TableCell>
+                                    {visibleTerminals.map(t => {
+                                      if (t !== ob.terminal) {
+                                        return (
+                                          <React.Fragment key={t}>
+                                            <TableCell className="border-l"></TableCell>
+                                            <TableCell></TableCell>
+                                            {bankLines.length > 0 && (<><TableCell></TableCell><TableCell></TableCell></>)}
+                                          </React.Fragment>
+                                        );
+                                      }
+                                      return (
+                                        <React.Fragment key={t}>
+                                          <TableCell className="text-center text-sm text-muted-foreground border-l">{ob.batchNo}</TableCell>
+                                          <TableCell className="text-right"><CurrencyDisplay value={ob.cashupAmount} /></TableCell>
+                                          {bankLines.length > 0 && (
+                                            <>
+                                              <TableCell
+                                                className={`text-right text-sm ${!isMatched ? 'cursor-pointer' : ''} ${isDragOver ? 'bg-primary/20 ring-2 ring-primary ring-inset' : ''}`}
+                                                onDragOver={!isMatched ? (e) => handleDragOver(e, obDropKey) : undefined}
+                                                onDragLeave={!isMatched ? handleDragLeave : undefined}
+                                                onDrop={!isMatched ? (e) => handleDrop(e, obDropKey) : undefined}
+                                              >
+                                                {ob.bankAmount > 0 ? (
+                                                  <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                      <span className={`${isMatched ? 'text-green-600 font-medium' : ''} underline decoration-dashed cursor-help`}>
+                                                        <CurrencyDisplay value={ob.bankAmount} />
+                                                      </span>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                      <div className="text-xs space-y-1">
+                                                        <div className="font-semibold mb-1">Manual matches:</div>
+                                                        {obManualLines.map(ml => (
+                                                          <div key={ml.idx} className="flex items-center gap-2">
+                                                            <span>{ml.description} = <CurrencyDisplay value={ml.amount} /></span>
+                                                            <button onClick={() => handleRemoveManualMatch(obDropKey, ml.idx)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
+                                                          </div>
+                                                        ))}
+                                                      </div>
+                                                    </TooltipContent>
+                                                  </Tooltip>
+                                                ) : (
+                                                  <span className={`text-xs ${isDragOver ? 'text-primary font-medium' : 'text-destructive'}`}>
+                                                    {isDragOver ? '⬇ Drop here' : '—'}
+                                                  </span>
+                                                )}
+                                              </TableCell>
+                                              <TableCell className="text-right text-sm">
+                                                {isMatched ? (
+                                                  <span className="text-green-600 text-xs">✓</span>
+                                                ) : (
+                                                  <span className="text-destructive font-semibold"><CurrencyDisplay value={ob.diff} /></span>
+                                                )}
+                                              </TableCell>
+                                            </>
+                                          )}
+                                        </React.Fragment>
+                                      );
+                                    })}
+                                    <TableCell className="text-right border-l"><CurrencyDisplay value={ob.cashupAmount} /></TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            {/* OB subtotal */}
+                            <TableRow className="bg-amber-100/50 dark:bg-amber-950/20 border-b-2 font-semibold">
+                              <TableCell className="text-sm">OB Total</TableCell>
+                              {visibleTerminals.map(t => {
+                                const termOBRows = openingBalanceRows.filter(ob => ob.terminal === t);
+                                const obCashup = termOBRows.reduce((s, ob) => s + ob.cashupAmount, 0);
+                                const obBank = termOBRows.reduce((s, ob) => s + ob.bankAmount, 0);
+                                const obDiff = obCashup - obBank;
+                                return (
+                                  <React.Fragment key={t}>
+                                    <TableCell className="border-l"></TableCell>
+                                    <TableCell className="text-right"><CurrencyDisplay value={obCashup} /></TableCell>
+                                    {bankLines.length > 0 && (
+                                      <>
+                                        <TableCell className="text-right"><CurrencyDisplay value={obBank} /></TableCell>
+                                        <TableCell className={`text-right ${Math.abs(obDiff) > 0.01 ? 'text-destructive' : 'text-green-600'}`}><CurrencyDisplay value={obDiff} /></TableCell>
+                                      </>
+                                    )}
+                                  </React.Fragment>
+                                );
+                              })}
+                              <TableCell className="text-right border-l"><CurrencyDisplay value={openingBalanceRows.filter(ob => visibleTerminals.includes(ob.terminal)).reduce((s, ob) => s + ob.cashupAmount, 0)} /></TableCell>
+                            </TableRow>
+                          </>
+                        )}
                         {speedpointByDate.map((r, rowIdx) => {
                           const matchData = speedpointMatches[rowIdx];
                           const allMatched = bankLines.length > 0 && visibleTerminals.every(t => {
