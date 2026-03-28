@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Download } from 'lucide-react';
 import { format } from 'date-fns';
+import { BankStatementTab } from './BankStatementTab';
 
 export function Reports() {
   const { cashups, managerEntries } = useCashupStore();
@@ -148,13 +149,14 @@ export function Reports() {
       </div>
 
       <Tabs defaultValue="payouts">
-        <TabsList className="grid grid-cols-6 w-full">
+        <TabsList className="grid grid-cols-7 w-full">
           <TabsTrigger value="payouts">Payouts</TabsTrigger>
           <TabsTrigger value="receipts">Receipts</TabsTrigger>
           <TabsTrigger value="speedpoints">Speedpoints</TabsTrigger>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="mop">MOP</TabsTrigger>
+          <TabsTrigger value="bank">Bank</TabsTrigger>
         </TabsList>
 
         {/* Payouts */}
@@ -532,6 +534,11 @@ export function Reports() {
               </TableBody>
             </Table>
           </div>
+        </TabsContent>
+
+        {/* Bank Statement */}
+        <TabsContent value="bank">
+          <BankStatementTab filterMonth={filterMonth} monthLabel={monthLabel} />
         </TabsContent>
       </Tabs>
     </div>

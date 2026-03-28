@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      bank_statement_lines: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          matched_terminal: string
+          month: string
+          raw_line: string
+          transaction_date: string
+          upload_date: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          matched_terminal?: string
+          month: string
+          raw_line?: string
+          transaction_date?: string
+          upload_date?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          matched_terminal?: string
+          month?: string
+          raw_line?: string
+          transaction_date?: string
+          upload_date?: string
+        }
+        Relationships: []
+      }
       daily_cashups: {
         Row: {
           cashier_name: string
