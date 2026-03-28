@@ -6,7 +6,8 @@ import { CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save, ChevronDown, ChevronRight } from 'lucide-react';
+import { Save } from 'lucide-react';
+import { CreditorsTable } from './CreditorsTable';
 import { format, startOfMonth, endOfMonth, addDays, getDay, parse } from 'date-fns';
 import { toast } from 'sonner';
 
