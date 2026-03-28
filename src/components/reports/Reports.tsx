@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useCashupStore } from '@/store/cashupStore';
 import { supabase } from '@/integrations/supabase/client';
 import { CurrencyDisplay } from '@/components/ui/CashupUI';
@@ -26,6 +26,12 @@ export function Reports() {
       .eq('month', filterMonth);
     setBankLines((data ?? []) as typeof bankLines);
   }, [filterMonth]);
+  useEffect(() => { loadBankLines(); }, [loadBankLines]);
+
+  // Manual match state: key = "cashupDate|terminal", value = array of manually matched bank lines
+  type BankParsedLine = { terminal: string; batch: string; amount: number; date: string; description: string; idx: number };
+  const [manualMatches, setManualMatches] = useState<Record<string, BankParsedLine[]>>({});
+  const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
   useEffect(() => { loadBankLines(); }, [loadBankLines]);
 
   // Payout report
@@ -91,19 +97,17 @@ export function Reports() {
     if (match) TERMINAL_NUM_MAP[t] = match[1];
   });
 
-  // Parse bank lines: extract batch number from description and build lookup by date+terminal+batch
-  type BankParsed = { terminal: string; batch: string; amount: number; date: string; description: string };
-  const bankParsed: BankParsed[] = [];
-  bankLines.forEach(l => {
+  // Parse bank lines: extract batch number from description and build lookup by terminal+batch
+  const bankParsed: BankParsedLine[] = [];
+  bankLines.forEach((l, idx) => {
     if (!l.matched_terminal || !SP_TERMINALS.includes(l.matched_terminal)) return;
-    // Extract batch from description like "SPEEDPOINT247608 532"
     const termNum = TERMINAL_NUM_MAP[l.matched_terminal] || '';
     const batchMatch = l.description.match(new RegExp(`${termNum}\\s+(\\d+)`));
     const batch = batchMatch ? batchMatch[1] : '';
-    bankParsed.push({ terminal: l.matched_terminal, batch, amount: l.amount, date: l.transaction_date, description: l.description });
+    bankParsed.push({ terminal: l.matched_terminal, batch, amount: l.amount, date: l.transaction_date, description: l.description, idx });
   });
 
-  // Build lookup: key = "terminal|batch" -> bank amount (bank dates don't match cashup dates)
+  // Build auto-match lookup: key = "terminal|batch" -> bank amount
   const bankLookup: Record<string, number> = {};
   bankParsed.forEach(bp => {
     if (!bp.batch) return;
@@ -111,17 +115,30 @@ export function Reports() {
     bankLookup[key] = (bankLookup[key] || 0) + bp.amount;
   });
 
-  // Build per-row match data for the speedpoint table (match by terminal+batch only)
-  type SpRowMatch = Record<string, { bankAmount: number; diff: number; matched: boolean }>;
+  // Collect all manually matched bank line indices
+  const manuallyMatchedIdxs = new Set<number>();
+  Object.values(manualMatches).forEach(arr => arr.forEach(bp => manuallyMatchedIdxs.add(bp.idx)));
+
+  // Build per-row match data including manual matches
+  type SpRowMatch = Record<string, { bankAmount: number; diff: number; matched: boolean; manual: boolean }>;
   const speedpointMatches: SpRowMatch[] = speedpointByDate.map(r => {
     const rowMatch: SpRowMatch = {};
     SP_TERMINALS.forEach(t => {
       const td = r.terminals[t];
-      if (!td || td.total === 0) { rowMatch[t] = { bankAmount: 0, diff: 0, matched: false }; return; }
+      if (!td || td.total === 0) { rowMatch[t] = { bankAmount: 0, diff: 0, matched: false, manual: false }; return; }
+      // Auto match by terminal+batch
       const key = `${t}|${td.batchNo}`;
-      const bankAmt = bankLookup[key] ?? 0;
+      let bankAmt = bankLookup[key] ?? 0;
+      let isManual = false;
+      // Add manual matches for this cell
+      const manualKey = `${r.date}|${t}`;
+      const manualLines = manualMatches[manualKey] || [];
+      if (manualLines.length > 0) {
+        bankAmt += manualLines.reduce((s, ml) => s + ml.amount, 0);
+        isManual = true;
+      }
       const diff = td.total - bankAmt;
-      rowMatch[t] = { bankAmount: bankAmt, diff, matched: bankAmt > 0 && Math.abs(diff) < 0.01 };
+      rowMatch[t] = { bankAmount: bankAmt, diff, matched: bankAmt > 0 && Math.abs(diff) < 0.01, manual: isManual };
     });
     return rowMatch;
   });
@@ -131,7 +148,7 @@ export function Reports() {
   SP_TERMINALS.forEach(t => { bankTerminalTotals[t] = bankParsed.filter(bp => bp.terminal === t).reduce((s, bp) => s + bp.amount, 0); });
   const bankMatchedGrandTotal = Object.values(bankTerminalTotals).reduce((s, v) => s + v, 0);
 
-  // Track which bank batches are matched to a cashup row
+  // Track which bank batches are auto-matched to a cashup row
   const matchedBankKeys = new Set<string>();
   speedpointByDate.forEach(r => {
     SP_TERMINALS.forEach(t => {
@@ -142,11 +159,49 @@ export function Reports() {
     });
   });
 
-  // Unmatched: bank terminal lines whose terminal+batch doesn't match any cashup
+  // Unmatched: bank lines not auto-matched and not manually matched
   const unmatchedTerminalLines = bankParsed.filter(bp => {
+    if (manuallyMatchedIdxs.has(bp.idx)) return false;
     if (!bp.batch) return true;
     return !matchedBankKeys.has(`${bp.terminal}|${bp.batch}`);
   });
+
+  // Drag-and-drop handlers
+  const handleDragStart = (e: React.DragEvent, bp: BankParsedLine) => {
+    e.dataTransfer.setData('application/json', JSON.stringify(bp));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, targetKey: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverTarget(targetKey);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverTarget(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetKey: string) => {
+    e.preventDefault();
+    setDragOverTarget(null);
+    try {
+      const bp: BankParsedLine = JSON.parse(e.dataTransfer.getData('application/json'));
+      setManualMatches(prev => ({
+        ...prev,
+        [targetKey]: [...(prev[targetKey] || []), bp],
+      }));
+    } catch {}
+  };
+
+  const handleRemoveManualMatch = (targetKey: string, bpIdx: number) => {
+    setManualMatches(prev => {
+      const updated = { ...prev };
+      updated[targetKey] = (updated[targetKey] || []).filter(bp => bp.idx !== bpIdx);
+      if (updated[targetKey].length === 0) delete updated[targetKey];
+      return updated;
+    });
+  };
 
   // Accounts report — shop + OPT combined per day
   const accountsReport = monthCashups.flatMap(c => {
@@ -445,24 +500,56 @@ export function Reports() {
                                       <span className="text-muted-foreground">0</span>
                                     )}
                                   </TableCell>
-                                  {bankLines.length > 0 && (
-                                    <>
-                                      <TableCell className="text-right text-sm">
-                                        {m.bankAmount > 0 ? (
-                                          <span className={m.matched ? 'text-green-600 font-medium' : ''}><CurrencyDisplay value={m.bankAmount} /></span>
-                                        ) : td && td.total > 0 ? (
-                                          <span className="text-destructive text-xs">—</span>
-                                        ) : <span className="text-muted-foreground">—</span>}
-                                      </TableCell>
-                                      <TableCell className="text-right text-sm">
-                                        {m.bankAmount > 0 && !m.matched ? (
-                                          <span className="text-destructive font-semibold"><CurrencyDisplay value={m.diff} /></span>
-                                        ) : m.matched ? (
-                                          <span className="text-green-600 text-xs">✓</span>
-                                        ) : <span className="text-muted-foreground">—</span>}
-                                      </TableCell>
-                                    </>
-                                  )}
+                                  {bankLines.length > 0 && (() => {
+                                    const dropKey = `${r.date}|${t}`;
+                                    const isDropTarget = td && td.total > 0 && !m.matched;
+                                    const isDragOver = dragOverTarget === dropKey;
+                                    const manualLines = manualMatches[dropKey] || [];
+                                    return (
+                                      <>
+                                        <TableCell
+                                          className={`text-right text-sm ${isDropTarget ? 'cursor-pointer' : ''} ${isDragOver ? 'bg-primary/20 ring-2 ring-primary ring-inset' : ''}`}
+                                          onDragOver={isDropTarget ? (e) => handleDragOver(e, dropKey) : undefined}
+                                          onDragLeave={isDropTarget ? handleDragLeave : undefined}
+                                          onDrop={isDropTarget ? (e) => handleDrop(e, dropKey) : undefined}
+                                        >
+                                          {m.bankAmount > 0 ? (
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <span className={`${m.matched ? 'text-green-600 font-medium' : ''} ${m.manual ? 'underline decoration-dashed cursor-help' : ''}`}>
+                                                  <CurrencyDisplay value={m.bankAmount} />
+                                                </span>
+                                              </TooltipTrigger>
+                                              {m.manual && (
+                                                <TooltipContent>
+                                                  <div className="text-xs space-y-1">
+                                                    <div className="font-semibold mb-1">Manual matches:</div>
+                                                    {manualLines.map(ml => (
+                                                      <div key={ml.idx} className="flex items-center gap-2">
+                                                        <span>{ml.description} = <CurrencyDisplay value={ml.amount} /></span>
+                                                        <button onClick={() => handleRemoveManualMatch(dropKey, ml.idx)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                </TooltipContent>
+                                              )}
+                                            </Tooltip>
+                                          ) : td && td.total > 0 ? (
+                                            <span className={`text-xs ${isDragOver ? 'text-primary font-medium' : 'text-destructive'}`}>
+                                              {isDragOver ? '⬇ Drop here' : '—'}
+                                            </span>
+                                          ) : <span className="text-muted-foreground">—</span>}
+                                        </TableCell>
+                                        <TableCell className="text-right text-sm">
+                                          {m.bankAmount > 0 && !m.matched ? (
+                                            <span className="text-destructive font-semibold"><CurrencyDisplay value={m.diff} /></span>
+                                          ) : m.matched ? (
+                                            <span className="text-green-600 text-xs">✓</span>
+                                          ) : <span className="text-muted-foreground">—</span>}
+                                        </TableCell>
+                                      </>
+                                    );
+                                  })()}
                                 </React.Fragment>
                               );
                             })}
@@ -495,15 +582,19 @@ export function Reports() {
             </TooltipProvider>
           </div>
 
-          {/* Unmatched terminal lines from bank */}
+          {/* Unmatched terminal lines from bank — draggable */}
           {unmatchedTerminalLines.length > 0 && (
             <div className="bg-card border rounded-lg overflow-hidden mt-4">
               <div className="px-4 py-2 border-b bg-muted/30">
-                <h3 className="font-semibold text-sm text-destructive">Unmatched Bank Terminal Lines ({unmatchedTerminalLines.length})</h3>
+                <h3 className="font-semibold text-sm text-destructive">
+                  Unmatched Bank Terminal Lines ({unmatchedTerminalLines.length})
+                  <span className="text-muted-foreground font-normal ml-2 text-xs">— drag to match manually</span>
+                </h3>
               </div>
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead></TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Terminal</TableHead>
                     <TableHead>Batch</TableHead>
@@ -513,7 +604,13 @@ export function Reports() {
                 </TableHeader>
                 <TableBody>
                   {unmatchedTerminalLines.map((l, i) => (
-                    <TableRow key={i}>
+                    <TableRow
+                      key={i}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, l)}
+                      className="cursor-grab active:cursor-grabbing hover:bg-muted/30"
+                    >
+                      <TableCell className="text-center text-muted-foreground w-8">⠿</TableCell>
                       <TableCell className="text-sm font-mono">{l.date}</TableCell>
                       <TableCell className="text-sm">{l.terminal}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{l.batch}</TableCell>
@@ -522,7 +619,7 @@ export function Reports() {
                     </TableRow>
                   ))}
                   <TableRow className="bg-secondary font-semibold">
-                    <TableCell colSpan={4}>TOTAL Unmatched</TableCell>
+                    <TableCell colSpan={5}>TOTAL Unmatched</TableCell>
                     <TableCell className="text-right"><CurrencyDisplay value={unmatchedTerminalLines.reduce((s, l) => s + l.amount, 0)} /></TableCell>
                   </TableRow>
                 </TableBody>
