@@ -120,16 +120,22 @@ export function Reports() {
   Object.values(manualMatches).forEach(arr => arr.forEach(bp => manuallyMatchedIdxs.add(bp.idx)));
 
   // Build per-row match data including manual matches
+  // Each bank amount is consumed by the first cashup row that claims it
   type SpRowMatch = Record<string, { bankAmount: number; diff: number; matched: boolean; manual: boolean }>;
+  const consumedBankKeys = new Set<string>();
   const speedpointMatches: SpRowMatch[] = speedpointByDate.map(r => {
     const rowMatch: SpRowMatch = {};
     SP_TERMINALS.forEach(t => {
       const td = r.terminals[t];
       if (!td || td.total === 0) { rowMatch[t] = { bankAmount: 0, diff: 0, matched: false, manual: false }; return; }
-      // Auto match by terminal+batch
+      // Auto match by terminal+batch — only if not already consumed by a prior row
       const key = `${t}|${td.batchNo}`;
-      let bankAmt = bankLookup[key] ?? 0;
+      let bankAmt = 0;
       let isManual = false;
+      if (!consumedBankKeys.has(key)) {
+        bankAmt = bankLookup[key] ?? 0;
+        if (bankAmt > 0) consumedBankKeys.add(key);
+      }
       // Add manual matches for this cell
       const manualKey = `${r.date}|${t}`;
       const manualLines = manualMatches[manualKey] || [];
