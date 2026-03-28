@@ -582,15 +582,19 @@ export function Reports() {
             </TooltipProvider>
           </div>
 
-          {/* Unmatched terminal lines from bank */}
+          {/* Unmatched terminal lines from bank — draggable */}
           {unmatchedTerminalLines.length > 0 && (
             <div className="bg-card border rounded-lg overflow-hidden mt-4">
               <div className="px-4 py-2 border-b bg-muted/30">
-                <h3 className="font-semibold text-sm text-destructive">Unmatched Bank Terminal Lines ({unmatchedTerminalLines.length})</h3>
+                <h3 className="font-semibold text-sm text-destructive">
+                  Unmatched Bank Terminal Lines ({unmatchedTerminalLines.length})
+                  <span className="text-muted-foreground font-normal ml-2 text-xs">— drag to match manually</span>
+                </h3>
               </div>
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead></TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Terminal</TableHead>
                     <TableHead>Batch</TableHead>
@@ -600,7 +604,13 @@ export function Reports() {
                 </TableHeader>
                 <TableBody>
                   {unmatchedTerminalLines.map((l, i) => (
-                    <TableRow key={i}>
+                    <TableRow
+                      key={i}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, l)}
+                      className="cursor-grab active:cursor-grabbing hover:bg-muted/30"
+                    >
+                      <TableCell className="text-center text-muted-foreground w-8">⠿</TableCell>
                       <TableCell className="text-sm font-mono">{l.date}</TableCell>
                       <TableCell className="text-sm">{l.terminal}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{l.batch}</TableCell>
@@ -609,7 +619,7 @@ export function Reports() {
                     </TableRow>
                   ))}
                   <TableRow className="bg-secondary font-semibold">
-                    <TableCell colSpan={4}>TOTAL Unmatched</TableCell>
+                    <TableCell colSpan={5}>TOTAL Unmatched</TableCell>
                     <TableCell className="text-right"><CurrencyDisplay value={unmatchedTerminalLines.reduce((s, l) => s + l.amount, 0)} /></TableCell>
                   </TableRow>
                 </TableBody>
