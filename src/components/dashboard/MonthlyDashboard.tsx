@@ -98,7 +98,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
   const dataRows = rows.filter((r) => r.hasData);
   const totalShopDiff = dataRows.reduce((s, r) => s + (r.shopDiff ?? 0), 0);
   const greenCount = dataRows.filter((r) => {
-    const shopOk = r.shopDiff !== null && Math.abs(r.shopDiff) < 0.01;
+    const shopOk = r.shopDiff !== null && Math.abs(r.shopDiff) < 20;
     const optOk = r.optDiff === null || Math.abs(r.optDiff) < 0.01;
     const invOk = r.invMatch === null || r.invMatch;
     const vatOk = r.vatMatch === null || r.vatMatch;
@@ -150,7 +150,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                   );
                 }
 
-                const shopOk = row.shopDiff !== null && Math.abs(row.shopDiff) < 0.01;
+                const shopOk = row.shopDiff !== null && Math.abs(row.shopDiff) < 20;
                 const optOk = row.optDiff === null || Math.abs(row.optDiff) < 0.01;
                 const showOpt = row.optDiff !== null && Math.abs(row.optDiff) >= 0.01;
                 const invOk = row.invMatch === null || row.invMatch;
