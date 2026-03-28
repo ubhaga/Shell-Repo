@@ -153,7 +153,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                         ? <span className="text-destructive"><CurrencyDisplay value={row.bldPayment} /></span>
                         : <span className="text-muted-foreground">—</span>}
                     </TableCell>
-                    <TableCell className="text-right text-xs font-semibold">
+                    <TableCell className="text-right text-xs font-semibold bg-destructive/10">
                       <CurrencyDisplay value={bldBalance} />
                     </TableCell>
                     {/* Easypay */}
@@ -167,7 +167,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                         ? <span className="text-destructive"><CurrencyDisplay value={row.easypayCollection} /></span>
                         : <span className="text-muted-foreground">—</span>}
                     </TableCell>
-                    <TableCell className="text-right text-xs font-semibold">
+                    <TableCell className="text-right text-xs font-semibold bg-primary/10">
                       <CurrencyDisplay value={easypayBalance} />
                     </TableCell>
                   </TableRow>
