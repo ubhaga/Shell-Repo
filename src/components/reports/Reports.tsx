@@ -458,7 +458,7 @@ export function Reports() {
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
                     <button onClick={() => setSelectedTerminal('all')} className={`px-2 py-1 text-xs rounded ${selectedTerminal === 'all' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}>All</button>
-                    {visibleTerminals.map(t => (
+                    {SP_TERMINALS.map(t => (
                       <button key={t} onClick={() => setSelectedTerminal(t)} className={`px-2 py-1 text-xs rounded ${selectedTerminal === t ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}>{t}</button>
                     ))}
                   </div>
