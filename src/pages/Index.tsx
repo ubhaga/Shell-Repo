@@ -7,7 +7,7 @@ import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Reports } from "@/components/reports/Reports";
 import { MasterDataSettings } from "@/components/settings/MasterDataSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2 } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2, GitCompareArrows } from "lucide-react";
 import { useCashupStore } from "@/store/cashupStore";
 import { useMasterDataStore } from "@/store/masterDataStore";
 
@@ -63,7 +63,7 @@ export default function Index() {
 
       <div className="container mx-auto px-4 py-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-6 w-full mb-4">
+          <TabsList className="grid grid-cols-7 w-full mb-4">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5 text-xs">
               <LayoutDashboard className="h-3.5 w-3.5" />
               Dashboard
@@ -84,6 +84,10 @@ export default function Index() {
               <BarChart3 className="h-3.5 w-3.5" />
               Reports
             </TabsTrigger>
+            <TabsTrigger value="recons" className="flex items-center gap-1.5 text-xs">
+              <GitCompareArrows className="h-3.5 w-3.5" />
+              Recons
+            </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-1.5 text-xs">
               <Settings className="h-3.5 w-3.5" />
               Settings
@@ -103,7 +107,10 @@ export default function Index() {
             <ManagerMonthlyForm selectedDate={selectedDate} />
           </TabsContent>
           <TabsContent value="reports">
-            <Reports />
+            <Reports mode="reports" />
+          </TabsContent>
+          <TabsContent value="recons">
+            <Reports mode="recons" />
           </TabsContent>
           <TabsContent value="settings">
             <MasterDataSettings />
