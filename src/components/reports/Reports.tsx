@@ -196,6 +196,75 @@ export function Reports() {
     return rowMatch;
   });
 
+  // ── Opening Balance: previous month's unmatched batches ──
+  // Parse previous month bank lines
+  const prevBankParsed: BankParsedLine[] = [];
+  prevBankLines.forEach((l, idx) => {
+    if (!l.matched_terminal || !SP_TERMINALS.includes(l.matched_terminal)) return;
+    const termNum = TERMINAL_NUM_MAP[l.matched_terminal] || '';
+    const batchMatch = l.description.match(new RegExp(`${termNum}\\s+(\\d+)`));
+    const batch = batchMatch ? batchMatch[1] : '';
+    prevBankParsed.push({ terminal: l.matched_terminal, batch, amount: l.amount, date: l.transaction_date, description: l.description, idx: idx + 100000 });
+  });
+  const prevBankLookup: Record<string, number> = {};
+  prevBankParsed.forEach(bp => { if (bp.batch) { const k = `${bp.terminal}|${bp.batch}`; prevBankLookup[k] = (prevBankLookup[k] || 0) + bp.amount; } });
+  const prevManuallyMatchedIdxs = new Set<number>();
+  Object.values(prevManualMatches).forEach(arr => arr.forEach(bp => prevManuallyMatchedIdxs.add(bp.idx)));
+
+  // Build previous month speedpoint data
+  const prevSpeedpointByDate = prevMonthCashups.map(c => {
+    const termMap: SpDateRow['terminals'] = {};
+    SP_TERMINALS.forEach(t => { termMap[t] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 }; });
+    c.shop.speedpoints.forEach(sp => {
+      if (!termMap[sp.terminal]) termMap[sp.terminal] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 };
+      termMap[sp.terminal].batchNo = sp.batchNo || termMap[sp.terminal].batchNo;
+      termMap[sp.terminal].shopAmount += sp.shopAmount;
+    });
+    c.opt.speedpoints.forEach(sp => {
+      if (!termMap[sp.terminal]) termMap[sp.terminal] = { batchNo: '', shopAmount: 0, optAmount: 0, total: 0 };
+      termMap[sp.terminal].batchNo = sp.batchNo || termMap[sp.terminal].batchNo;
+      termMap[sp.terminal].optAmount += sp.optAmount;
+    });
+    SP_TERMINALS.forEach(t => { const v = termMap[t]; if (v) v.total = v.shopAmount + v.optAmount; });
+    return { date: c.date, terminals: termMap };
+  });
+
+  // Find unmatched batches from previous month
+  type OBRow = { date: string; terminal: string; batchNo: string; cashupAmount: number; bankAmount: number; diff: number; manualBankAmount: number };
+  const openingBalanceRows: OBRow[] = [];
+  const prevConsumedKeys = new Set<string>();
+  prevSpeedpointByDate.forEach(r => {
+    SP_TERMINALS.forEach(t => {
+      const td = r.terminals[t];
+      if (!td || td.total === 0) return;
+      const batchKey = `${t}|${td.batchNo}`;
+      if (prevConsumedKeys.has(batchKey)) return;
+      prevConsumedKeys.add(batchKey);
+      const autoBankAmt = prevBankLookup[batchKey] ?? 0;
+      // Check manual matches from previous month
+      const prevManualKey = `${r.date}|${t}`;
+      const prevManualLines = prevManualMatches[prevManualKey] || [];
+      const prevManualAmt = prevManualLines.reduce((s, ml) => s + ml.amount, 0);
+      const totalBank = autoBankAmt + prevManualAmt;
+      const diff = td.total - totalBank;
+      if (Math.abs(diff) > 0.01) {
+        // Check if this OB row has manual matches in the current month
+        const obKey = `OB-${r.date}|${t}`;
+        const obManualLines = manualMatches[obKey] || [];
+        const obManualAmt = obManualLines.reduce((s, ml) => s + ml.amount, 0);
+        openingBalanceRows.push({
+          date: r.date,
+          terminal: t,
+          batchNo: td.batchNo,
+          cashupAmount: diff, // The outstanding amount carried forward
+          bankAmount: obManualAmt,
+          diff: diff - obManualAmt,
+          manualBankAmount: obManualAmt,
+        });
+      }
+    });
+  });
+
   // Bank totals per terminal
   const bankTerminalTotals: Record<string, number> = {};
   SP_TERMINALS.forEach(t => { bankTerminalTotals[t] = bankParsed.filter(bp => bp.terminal === t).reduce((s, bp) => s + bp.amount, 0); });
