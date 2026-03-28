@@ -10,7 +10,7 @@ import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { BankStatementTab } from './BankStatementTab';
 
-export function Reports() {
+export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   const { cashups, managerEntries } = useCashupStore();
   const [filterMonth, setFilterMonth] = useState(() => new Date().toISOString().slice(0, 7));
 
@@ -448,16 +448,21 @@ export function Reports() {
         </span>
       </div>
 
-      <Tabs defaultValue="payouts">
-        <TabsList className="grid grid-cols-7 w-full">
+      <Tabs defaultValue={mode === 'recons' ? 'speedpoints' : 'payouts'}>
+        {mode === 'reports' ? (
+        <TabsList className="grid grid-cols-6 w-full">
           <TabsTrigger value="payouts">Payouts</TabsTrigger>
           <TabsTrigger value="receipts">Receipts</TabsTrigger>
-          <TabsTrigger value="speedpoints">Speedpoints</TabsTrigger>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="mop">MOP</TabsTrigger>
           <TabsTrigger value="bank">Bank</TabsTrigger>
         </TabsList>
+        ) : (
+        <TabsList className="grid grid-cols-1 w-full max-w-xs">
+          <TabsTrigger value="speedpoints">Speedpoints</TabsTrigger>
+        </TabsList>
+        )}
 
         {/* Payouts */}
         <TabsContent value="payouts">
