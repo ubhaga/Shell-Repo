@@ -69,7 +69,7 @@ function computeEffectiveClosingForDate(
 
     const dailyCoins = cashup?.shop.coins ?? 0;
     const dailyEasypay = cashup?.shop.easyPay ?? 0;
-    const dailyCC = (cashup?.shop.cashDepositedBanking ?? 0) + (cashup?.shop.easyPay ?? 0) + (cashup?.shop.coins ?? 0);
+    const dailyCC = cashup?.shop.cashDepositedBanking ?? 0;
     const closureCoins = Math.abs(entry?.ccBagClosureCoins ?? 0);
     const closureEasypay = Math.abs(entry?.ccBagClosureEasypay ?? 0);
     const closureCC = Math.abs(entry?.ccBagClosureCashConnect ?? 0);
@@ -312,8 +312,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   // Cash Connect = Cash Connect Total (sum of Banking + EasyPay + Coins) from cashier
   const dailyCashupCoins = cashup?.shop.coins ?? 0;
   const dailyCashupEasypay = cashup?.shop.easyPay ?? 0;
-  const dailyCashupCashConnect =
-    (cashup?.shop.cashDepositedBanking ?? 0) + (cashup?.shop.easyPay ?? 0) + (cashup?.shop.coins ?? 0);
+  const dailyCashupCashConnect = cashup?.shop.cashDepositedBanking ?? 0;
 
   // Opening balances: always use chain-derived prev-day closing (never the stale stored value)
   const effectiveCoinsOpening = usePrevClosingAsOpening ? prevCoinsClosing : form.coinsOpeningBalance;
@@ -649,7 +648,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
               <th className="px-3 py-2 text-center font-semibold">Coins</th>
               <th className="px-3 py-2 text-center font-semibold">Easy Pay</th>
               <th className="px-3 py-2 text-center font-semibold">Cash Connect</th>
-              <th className="px-3 py-2 text-center font-semibold">TOTAL CC Excl Coins</th>
+              <th className="px-3 py-2 text-center font-semibold">TOTAL CC</th>
             </tr>
           </thead>
           <tbody>
@@ -708,7 +707,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
               </td>
               <td className="px-3 py-1.5">
                 <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded font-semibold">
-                  <CurrencyDisplay value={dailyCashupEasypay + dailyCashupCashConnect} />
+                  <CurrencyDisplay value={dailyCashupEasypay + dailyCashupCashConnect + dailyCashupCoins} />
                 </div>
               </td>
             </tr>
