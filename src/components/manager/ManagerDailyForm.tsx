@@ -1,26 +1,34 @@
-import { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { useCashupStore } from '@/store/cashupStore';
-import { useMasterDataStore } from '@/store/masterDataStore';
-import type { ManagerDailyEntry, InvoiceLine } from '@/types/cashup';
-import { Section, DataRow, CurrencyInput, CurrencyDisplay } from '@/components/ui/CashupUI';
-import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Save, AlertCircle, CheckCircle, Lock } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { format, subDays, addDays, parseISO } from 'date-fns';
+import { useState, useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { useCashupStore } from "@/store/cashupStore";
+import { useMasterDataStore } from "@/store/masterDataStore";
+import type { ManagerDailyEntry, InvoiceLine } from "@/types/cashup";
+import { Section, DataRow, CurrencyInput, CurrencyDisplay } from "@/components/ui/CashupUI";
+import { Button } from "@/components/ui/button";
+import { Plus, Trash2, Save, AlertCircle, CheckCircle, Lock } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { format, subDays, addDays, parseISO } from "date-fns";
 
 // ---- Recursive chain helper ----
 // Walk forward from Jan 1 2026 to compute the TRUE effective closing balance for any date.
 // This ensures each day's opening is based on the correctly-derived previous closing,
 // regardless of what stale values may have been stored.
-interface EffectiveClosing { coins: number; easypay: number; cc: number; }
+interface EffectiveClosing {
+  coins: number;
+  easypay: number;
+  cc: number;
+}
 
 function computeEffectiveClosingForDate(
   targetDate: string,
   getEntry: (d: string) => ManagerDailyEntry | undefined,
-  getCashup: (d: string) => { shop: { coins: number; easyPay: number; cashDepositedBanking: number; cashConnectTotal?: number } } | undefined,
+  getCashup: (
+    d: string,
+  ) =>
+    | { shop: { coins: number; easyPay: number; cashDepositedBanking: number; cashConnectTotal?: number } }
+    | undefined,
 ): EffectiveClosing | null {
-  const SEED_DATE = '2026-01-01';
+  const SEED_DATE = "2026-01-01";
   if (targetDate < SEED_DATE) return null;
 
   // Build ordered list of dates from SEED_DATE to targetDate
@@ -28,7 +36,7 @@ function computeEffectiveClosingForDate(
   let d = parseISO(SEED_DATE);
   const end = parseISO(targetDate);
   while (d <= end) {
-    dates.push(format(d, 'yyyy-MM-dd'));
+    dates.push(format(d, "yyyy-MM-dd"));
     d = addDays(d, 1);
   }
 
@@ -67,14 +75,9 @@ function computeEffectiveClosingForDate(
     const closureCC = Math.abs(entry?.ccBagClosureCashConnect ?? 0);
     const transferFromCoins = Math.abs(entry?.transferFromCoins ?? 0);
 
-    coinsOpening = effCoinsOpen + dailyCoins
-      - closureCoins
-      - transferFromCoins;
-    easypayOpening = effEasypayOpen + dailyEasypay
-      - closureEasypay;
-    ccOpening = effCCOpen + dailyCC
-      - closureCC
-      + transferFromCoins;
+    coinsOpening = effCoinsOpen + dailyCoins - closureCoins - transferFromCoins;
+    easypayOpening = effEasypayOpen + dailyEasypay - closureEasypay;
+    ccOpening = effCCOpen + dailyCC - closureCC + transferFromCoins;
   }
 
   return { coins: coinsOpening, easypay: easypayOpening, cc: ccOpening };
@@ -92,7 +95,16 @@ interface InvoiceTableProps {
   onUpdate: (id: string, patch: Partial<InvoiceLine>) => void;
 }
 
-function InvoiceTable({ lines, supplierList, categories, invoiceTotal, vatTotal, onAdd, onRemove, onUpdate }: InvoiceTableProps) {
+function InvoiceTable({
+  lines,
+  supplierList,
+  categories,
+  invoiceTotal,
+  vatTotal,
+  onAdd,
+  onRemove,
+  onUpdate,
+}: InvoiceTableProps) {
   return (
     <>
       <div className="px-3 py-1 border-b grid grid-cols-12 gap-1 text-xs text-muted-foreground font-semibold bg-muted/30">
@@ -103,35 +115,45 @@ function InvoiceTable({ lines, supplierList, categories, invoiceTotal, vatTotal,
         <span className="col-span-1 text-right">VAT</span>
         <span></span>
       </div>
-      {lines.map(l => (
+      {lines.map((l) => (
         <div key={l.id} className="px-2 py-1 border-b grid grid-cols-12 gap-1 items-center">
           <div className="col-span-3">
-            <select value={l.supplier} onChange={e => onUpdate(l.id, { supplier: e.target.value })}
-              className="input-cell w-full text-left text-xs py-0.5">
+            <select
+              value={l.supplier}
+              onChange={(e) => onUpdate(l.id, { supplier: e.target.value })}
+              className="input-cell w-full text-left text-xs py-0.5"
+            >
               <option value="">Select...</option>
-              {supplierList.map(s => <option key={s}>{s}</option>)}
+              {supplierList.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
             </select>
           </div>
           <div className="col-span-3">
-            <select value={l.category} onChange={e => onUpdate(l.id, { category: e.target.value })}
-              className="input-cell w-full text-left text-xs py-0.5">
+            <select
+              value={l.category}
+              onChange={(e) => onUpdate(l.id, { category: e.target.value })}
+              className="input-cell w-full text-left text-xs py-0.5"
+            >
               <option value="">Category...</option>
-              {categories.map(c => <option key={c}>{c}</option>)}
+              {categories.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
             </select>
           </div>
           <div className="col-span-2">
             <input
               value={l.branchDocNum}
-              onChange={e => onUpdate(l.id, { branchDocNum: e.target.value })}
+              onChange={(e) => onUpdate(l.id, { branchDocNum: e.target.value })}
               className="input-cell w-full text-xs py-0.5"
               placeholder="Doc#"
             />
           </div>
           <div className="col-span-2">
-            <CurrencyInput value={l.inclusive} onChange={v => onUpdate(l.id, { inclusive: v })} className="w-full" />
+            <CurrencyInput value={l.inclusive} onChange={(v) => onUpdate(l.id, { inclusive: v })} className="w-full" />
           </div>
           <div className="col-span-1">
-            <CurrencyInput value={l.vat} onChange={v => onUpdate(l.id, { vat: v })} className="w-full" />
+            <CurrencyInput value={l.vat} onChange={(v) => onUpdate(l.id, { vat: v })} className="w-full" />
           </div>
           <button onClick={() => onRemove(l.id)} className="text-destructive p-0.5 flex justify-center">
             <Trash2 className="h-3.5 w-3.5" />
@@ -140,40 +162,67 @@ function InvoiceTable({ lines, supplierList, categories, invoiceTotal, vatTotal,
       ))}
       <div className="px-3 py-1.5 flex justify-between items-center">
         <Button variant="outline" size="sm" onClick={onAdd} className="text-xs h-7">
-          <Plus className="h-3 w-3 mr-1" />Add Invoice
+          <Plus className="h-3 w-3 mr-1" />
+          Add Invoice
         </Button>
         <div className="flex gap-4 text-sm font-semibold">
-          <span>Total: <CurrencyDisplay value={invoiceTotal} highlight /></span>
-          <span>VAT: <CurrencyDisplay value={vatTotal} /></span>
+          <span>
+            Total: <CurrencyDisplay value={invoiceTotal} highlight />
+          </span>
+          <span>
+            VAT: <CurrencyDisplay value={vatTotal} />
+          </span>
         </div>
       </div>
     </>
   );
 }
 
-const blankEntry = (date: string): Omit<ManagerDailyEntry, 'id'> => ({
-  date, cashupId: '', enteredBy: '', explanations: '',
-  payoutInvoices: [], eftInvoices: [],
-  coinsOpeningBalance: 0, easypayOpeningBalance: 0, cashConnectOpeningBalance: 0,
-  dailyCoins: 0, cashDepositedEasypay: 0, cashDepositedCashConnect: 0,
-  ccBagClosureCoins: 0, ccBagClosureEasypay: 0, ccBagClosureCashConnect: 0,
+const blankEntry = (date: string): Omit<ManagerDailyEntry, "id"> => ({
+  date,
+  cashupId: "",
+  enteredBy: "",
+  explanations: "",
+  payoutInvoices: [],
+  eftInvoices: [],
+  coinsOpeningBalance: 0,
+  easypayOpeningBalance: 0,
+  cashConnectOpeningBalance: 0,
+  dailyCoins: 0,
+  cashDepositedEasypay: 0,
+  cashDepositedCashConnect: 0,
+  ccBagClosureCoins: 0,
+  ccBagClosureEasypay: 0,
+  ccBagClosureCashConnect: 0,
   transferFromCoins: 0,
-  branchDayEndTotal: 0, branchDayEndVat: 0,
-  invoiceNotes: '', cashReconcNotes: '',
-  bankCharges: 0, banking: 0, locked: false,
+  branchDayEndTotal: 0,
+  branchDayEndVat: 0,
+  invoiceNotes: "",
+  cashReconcNotes: "",
+  bankCharges: 0,
+  banking: 0,
+  locked: false,
 });
 
-interface Props { selectedDate: string; }
+interface Props {
+  selectedDate: string;
+}
 
 export function ManagerDailyForm({ selectedDate }: Props) {
-  const { getManagerEntryByDate, addManagerEntry, updateManagerEntry, getCashupByDate, managerEntries } = useCashupStore();
-  const { payoutSuppliers: SUPPLIERS, eftSuppliers, managerNames: MANAGER_NAMES, categories: CATEGORIES } = useMasterDataStore();
+  const { getManagerEntryByDate, addManagerEntry, updateManagerEntry, getCashupByDate, managerEntries } =
+    useCashupStore();
+  const {
+    payoutSuppliers: SUPPLIERS,
+    eftSuppliers,
+    managerNames: MANAGER_NAMES,
+    categories: CATEGORIES,
+  } = useMasterDataStore();
   const existing = getManagerEntryByDate(selectedDate);
   const cashup = getCashupByDate(selectedDate);
-  const isLocked = selectedDate < '2026-01-01';
+  const isLocked = selectedDate < "2026-01-01";
 
-  const isFirstJan2026 = selectedDate === '2026-01-01';
-  const prevDate = format(subDays(new Date(selectedDate + 'T00:00:00'), 1), 'yyyy-MM-dd');
+  const isFirstJan2026 = selectedDate === "2026-01-01";
+  const prevDate = format(subDays(new Date(selectedDate + "T00:00:00"), 1), "yyyy-MM-dd");
 
   // Compute the TRUE prev-day closing by walking the full chain from Jan 1 forward.
   // This ensures no stale stored opening values pollute the chain.
@@ -183,9 +232,9 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const prevCCClosing = prevClosing?.cc ?? 0;
 
   // Opening is always derived from prev day's effective closing (unless it's the seed date)
-  const usePrevClosingAsOpening = selectedDate >= '2026-01-01' && !isFirstJan2026 && prevClosing !== null;
+  const usePrevClosingAsOpening = selectedDate >= "2026-01-01" && !isFirstJan2026 && prevClosing !== null;
 
-  const [form, setForm] = useState<Omit<ManagerDailyEntry, 'id'>>(() => blankEntry(selectedDate));
+  const [form, setForm] = useState<Omit<ManagerDailyEntry, "id">>(() => blankEntry(selectedDate));
 
   useEffect(() => {
     if (existing) {
@@ -211,40 +260,41 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   // Auto-populate payout invoices from cashup
   useEffect(() => {
     if (cashup && !existing) {
-      const invoices: InvoiceLine[] = cashup.shop.payouts.map(p => ({
+      const invoices: InvoiceLine[] = cashup.shop.payouts.map((p) => ({
         id: uuidv4(),
         supplier: p.vendor,
-        category: '',
-        branchDocNum: '',
+        category: "",
+        branchDocNum: "",
         inclusive: p.amount,
-        vat: p.amount > 0 ? parseFloat((p.amount * 15 / 115).toFixed(2)) : 0,
+        vat: p.amount > 0 ? parseFloat(((p.amount * 15) / 115).toFixed(2)) : 0,
       }));
-      setForm(f => ({ ...f, payoutInvoices: invoices, cashupId: cashup.id }));
+      setForm((f) => ({ ...f, payoutInvoices: invoices, cashupId: cashup.id }));
     }
   }, [cashup?.id]);
 
-  const addInvoice = (type: 'payout' | 'eft') => {
-    const line: InvoiceLine = { id: uuidv4(), supplier: '', category: '', branchDocNum: '', inclusive: 0, vat: 0 };
-    if (type === 'payout') setForm(f => ({ ...f, payoutInvoices: [...f.payoutInvoices, line] }));
-    else setForm(f => ({ ...f, eftInvoices: [...f.eftInvoices, line] }));
+  const addInvoice = (type: "payout" | "eft") => {
+    const line: InvoiceLine = { id: uuidv4(), supplier: "", category: "", branchDocNum: "", inclusive: 0, vat: 0 };
+    if (type === "payout") setForm((f) => ({ ...f, payoutInvoices: [...f.payoutInvoices, line] }));
+    else setForm((f) => ({ ...f, eftInvoices: [...f.eftInvoices, line] }));
   };
 
-  const removeInvoice = (id: string, type: 'payout' | 'eft') => {
-    if (type === 'payout') setForm(f => ({ ...f, payoutInvoices: f.payoutInvoices.filter(i => i.id !== id) }));
-    else setForm(f => ({ ...f, eftInvoices: f.eftInvoices.filter(i => i.id !== id) }));
+  const removeInvoice = (id: string, type: "payout" | "eft") => {
+    if (type === "payout") setForm((f) => ({ ...f, payoutInvoices: f.payoutInvoices.filter((i) => i.id !== id) }));
+    else setForm((f) => ({ ...f, eftInvoices: f.eftInvoices.filter((i) => i.id !== id) }));
   };
 
-  const updateInvoice = (id: string, patch: Partial<InvoiceLine>, type: 'payout' | 'eft') => {
-    const update = (lines: InvoiceLine[]) => lines.map(l => {
-      if (l.id !== id) return l;
-      const updated = { ...l, ...patch };
-      if ('inclusive' in patch && !('vat' in patch)) {
-        updated.vat = parseFloat((updated.inclusive * 15 / 115).toFixed(2));
-      }
-      return updated;
-    });
-    if (type === 'payout') setForm(f => ({ ...f, payoutInvoices: update(f.payoutInvoices) }));
-    else setForm(f => ({ ...f, eftInvoices: update(f.eftInvoices) }));
+  const updateInvoice = (id: string, patch: Partial<InvoiceLine>, type: "payout" | "eft") => {
+    const update = (lines: InvoiceLine[]) =>
+      lines.map((l) => {
+        if (l.id !== id) return l;
+        const updated = { ...l, ...patch };
+        if ("inclusive" in patch && !("vat" in patch)) {
+          updated.vat = parseFloat(((updated.inclusive * 15) / 115).toFixed(2));
+        }
+        return updated;
+      });
+    if (type === "payout") setForm((f) => ({ ...f, payoutInvoices: update(f.payoutInvoices) }));
+    else setForm((f) => ({ ...f, eftInvoices: update(f.eftInvoices) }));
   };
 
   // Calculations
@@ -255,14 +305,15 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const totalAllInvoices = payoutInvoiceTotal + eftInvoiceTotal;
   const totalAllVat = payoutVatTotal + eftVatTotal;
 
-  const invMatch = Math.abs(totalAllInvoices - form.branchDayEndTotal) < 0.50;
-  const vatMatch = Math.abs(totalAllVat - form.branchDayEndVat) < 1.00;
+  const invMatch = Math.abs(totalAllInvoices - form.branchDayEndTotal) < 0.5;
+  const vatMatch = Math.abs(totalAllVat - form.branchDayEndVat) < 1.0;
 
   // Daily Cashup pulled directly from Cashier form (read-only)
   // Cash Connect = Cash Connect Total (sum of Banking + EasyPay + Coins) from cashier
   const dailyCashupCoins = cashup?.shop.coins ?? 0;
   const dailyCashupEasypay = cashup?.shop.easyPay ?? 0;
-  const dailyCashupCashConnect = (cashup?.shop.cashDepositedBanking ?? 0) + (cashup?.shop.easyPay ?? 0) + (cashup?.shop.coins ?? 0);
+  const dailyCashupCashConnect =
+    (cashup?.shop.cashDepositedBanking ?? 0) + (cashup?.shop.easyPay ?? 0) + (cashup?.shop.coins ?? 0);
 
   // Opening balances: always use chain-derived prev-day closing (never the stale stored value)
   const effectiveCoinsOpening = usePrevClosingAsOpening ? prevCoinsClosing : form.coinsOpeningBalance;
@@ -270,17 +321,17 @@ export function ManagerDailyForm({ selectedDate }: Props) {
   const effectiveCCOpening = usePrevClosingAsOpening ? prevCCClosing : form.cashConnectOpeningBalance;
 
   // CLOSING = Opening + DailyCashup - CCBagClosure ± Transfer
-  const coinsClosing = effectiveCoinsOpening + dailyCashupCoins
-    - Math.abs(form.ccBagClosureCoins)
-    - Math.abs(form.transferFromCoins);
-  const easypayClosing = effectiveEasypayOpening + dailyCashupEasypay
-    - Math.abs(form.ccBagClosureEasypay);
-  const ccClosing = effectiveCCOpening + dailyCashupCashConnect
-    - Math.abs(form.ccBagClosureCashConnect)
-    + Math.abs(form.transferFromCoins);
+  const coinsClosing =
+    effectiveCoinsOpening + dailyCashupCoins - Math.abs(form.ccBagClosureCoins) - Math.abs(form.transferFromCoins);
+  const easypayClosing = effectiveEasypayOpening + dailyCashupEasypay - Math.abs(form.ccBagClosureEasypay);
+  const ccClosing =
+    effectiveCCOpening +
+    dailyCashupCashConnect -
+    Math.abs(form.ccBagClosureCashConnect) +
+    Math.abs(form.transferFromCoins);
 
   // 2.1 Banking — derived from CC Bag Closure Cash Connect
-  const bankChargesCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) / 100 * 0.3297 * 1.15) * 100) / 100;
+  const bankChargesCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) / 100) * 0.3297 * 1.15 * 100) / 100;
   const bankingCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) - bankChargesCalc) * 100) / 100;
 
   const openingIsReadOnly = true; // Always read-only — seeded from prev day or Jan 1 spreadsheet values
@@ -292,30 +343,58 @@ export function ManagerDailyForm({ selectedDate }: Props) {
 
     // 1. Mandatory: Entered By
     if (!form.enteredBy) {
-      toast({ title: 'Missing information', description: 'Please select who entered this record (Entered By).', variant: 'destructive' });
+      toast({
+        title: "Missing information",
+        description: "Please select who entered this record (Entered By).",
+        variant: "destructive",
+      });
       return;
     }
 
     // 2. Invoice line validation — supplier, category, doc no are mandatory if any amount entered
-    const incompletePayoutInvoices = form.payoutInvoices.filter(i => i.inclusive !== 0 && (!i.supplier || !i.category || !i.branchDocNum));
+    const incompletePayoutInvoices = form.payoutInvoices.filter(
+      (i) => i.inclusive !== 0 && (!i.supplier || !i.category || !i.branchDocNum),
+    );
     if (incompletePayoutInvoices.length > 0) {
-      toast({ title: 'Incomplete payout invoices', description: 'Each payout invoice with an amount must have a Supplier, Category and Doc No.', variant: 'destructive' });
+      toast({
+        title: "Incomplete payout invoices",
+        description: "Each payout invoice with an amount must have a Supplier, Category and Doc No.",
+        variant: "destructive",
+      });
       return;
     }
-    const hasBlankPayoutLine = form.payoutInvoices.some(i => i.inclusive === 0 && (!i.supplier || !i.category || !i.branchDocNum));
+    const hasBlankPayoutLine = form.payoutInvoices.some(
+      (i) => i.inclusive === 0 && (!i.supplier || !i.category || !i.branchDocNum),
+    );
     if (hasBlankPayoutLine) {
-      toast({ title: 'Incomplete payout invoices', description: 'All payout invoice rows must have a Supplier, Category and Doc No (or remove empty rows).', variant: 'destructive' });
+      toast({
+        title: "Incomplete payout invoices",
+        description: "All payout invoice rows must have a Supplier, Category and Doc No (or remove empty rows).",
+        variant: "destructive",
+      });
       return;
     }
 
-    const incompleteEftInvoices = form.eftInvoices.filter(i => i.inclusive !== 0 && (!i.supplier || !i.category || !i.branchDocNum));
+    const incompleteEftInvoices = form.eftInvoices.filter(
+      (i) => i.inclusive !== 0 && (!i.supplier || !i.category || !i.branchDocNum),
+    );
     if (incompleteEftInvoices.length > 0) {
-      toast({ title: 'Incomplete EFT invoices', description: 'Each EFT/Non-Cash invoice with an amount must have a Supplier, Category and Doc No.', variant: 'destructive' });
+      toast({
+        title: "Incomplete EFT invoices",
+        description: "Each EFT/Non-Cash invoice with an amount must have a Supplier, Category and Doc No.",
+        variant: "destructive",
+      });
       return;
     }
-    const hasBlankEftLine = form.eftInvoices.some(i => i.inclusive === 0 && (!i.supplier || !i.category || !i.branchDocNum));
+    const hasBlankEftLine = form.eftInvoices.some(
+      (i) => i.inclusive === 0 && (!i.supplier || !i.category || !i.branchDocNum),
+    );
     if (hasBlankEftLine) {
-      toast({ title: 'Incomplete EFT invoices', description: 'All EFT/Non-Cash invoice rows must have a Supplier, Category and Doc No (or remove empty rows).', variant: 'destructive' });
+      toast({
+        title: "Incomplete EFT invoices",
+        description: "All EFT/Non-Cash invoice rows must have a Supplier, Category and Doc No (or remove empty rows).",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -323,30 +402,38 @@ export function ManagerDailyForm({ selectedDate }: Props) {
     const hasAnyInvoices = form.payoutInvoices.length > 0 || form.eftInvoices.length > 0;
     if (hasAnyInvoices) {
       if (!form.branchDayEndTotal || form.branchDayEndTotal === 0) {
-        toast({ title: 'Missing Branch Day End Total', description: 'Branch Day End Total is mandatory when invoices are entered.', variant: 'destructive' });
+        toast({
+          title: "Missing Branch Day End Total",
+          description: "Branch Day End Total is mandatory when invoices are entered.",
+          variant: "destructive",
+        });
         return;
       }
       if (!form.branchDayEndVat || form.branchDayEndVat === 0) {
-        toast({ title: 'Missing Branch Day End VAT', description: 'Branch Day End VAT is mandatory when invoices are entered.', variant: 'destructive' });
+        toast({
+          title: "Missing Branch Day End VAT",
+          description: "Branch Day End VAT is mandatory when invoices are entered.",
+          variant: "destructive",
+        });
         return;
       }
     }
 
     // 4. Closing balance cannot be negative
     const negativeClosingFields: string[] = [];
-    if (coinsClosing < -0.005) negativeClosingFields.push('Coins');
-    if (easypayClosing < -0.005) negativeClosingFields.push('Easy Pay');
-    if (ccClosing < -0.005) negativeClosingFields.push('Cash Connect');
+    if (coinsClosing < -0.005) negativeClosingFields.push("Coins");
+    if (easypayClosing < -0.005) negativeClosingFields.push("Easy Pay");
+    if (ccClosing < -0.005) negativeClosingFields.push("Cash Connect");
     if (negativeClosingFields.length > 0) {
       toast({
-        title: 'Negative closing balance',
-        description: `The closing balance for ${negativeClosingFields.join(', ')} is negative. Please correct the figures before saving.`,
-        variant: 'destructive',
+        title: "Negative closing balance",
+        description: `The closing balance for ${negativeClosingFields.join(", ")} is negative. Please correct the figures before saving.`,
+        variant: "destructive",
       });
       return;
     }
 
-    const payload: Omit<ManagerDailyEntry, 'id'> = {
+    const payload: Omit<ManagerDailyEntry, "id"> = {
       ...form,
       coinsOpeningBalance: effectiveCoinsOpening,
       easypayOpeningBalance: effectiveEasypayOpening,
@@ -359,32 +446,41 @@ export function ManagerDailyForm({ selectedDate }: Props) {
     else addManagerEntry(payload);
 
     setForm(payload);
-    const now = format(new Date(), 'dd MMM yyyy HH:mm:ss');
-    setSavedAt(prev => prev ?? now);
-    toast({ title: 'Manager entry saved', description: `Saved for ${format(new Date(selectedDate), 'dd MMM yyyy')}` });
+    const now = format(new Date(), "dd MMM yyyy HH:mm:ss");
+    setSavedAt((prev) => prev ?? now);
+    toast({ title: "Manager entry saved", description: `Saved for ${format(new Date(selectedDate), "dd MMM yyyy")}` });
   };
 
   // Cashier short/over calculations — must match CashierDailyForm exactly
-  const cashierBlock = cashup ? (() => {
-    const shopNetSales = cashup.shop.income - cashup.shop.returns - (cashup.shop.returns_today ?? 0);
-    const shopPayoutsTotal = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0);
-    const shopTotalReceipts = cashup.shop.receipts.reduce((s, r) => s + r.amount, 0);
-    const shopTotalTakings = shopNetSales - shopPayoutsTotal - cashup.shop.lottoPayouts + shopTotalReceipts;
+  const cashierBlock = cashup
+    ? (() => {
+        const shopNetSales = cashup.shop.income - cashup.shop.returns - (cashup.shop.returns_today ?? 0);
+        const shopPayoutsTotal = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0);
+        const shopTotalReceipts = cashup.shop.receipts.reduce((s, r) => s + r.amount, 0);
+        const shopTotalTakings = shopNetSales - shopPayoutsTotal - cashup.shop.lottoPayouts + shopTotalReceipts;
 
-    // Must match CashierDailyForm exactly: cashConnectTotal = cashDepositedBanking + easyPay + coins
-    const cashConnectTotal = cashup.shop.cashDepositedBanking + cashup.shop.easyPay + cashup.shop.coins;
-    const shopSpeedpointTotal = cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0);
-    const shopAccountTotal = cashup.shop.accounts.reduce((s, a) => s + a.amount, 0);
-    const shopOtherTotal = cashup.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0);
-    const shopDiff = shopTotalTakings - cashConnectTotal - shopSpeedpointTotal - shopAccountTotal - shopOtherTotal - cashup.shop.returns_mop - cashup.shop.attendantShortOver;
+        // Must match CashierDailyForm exactly: cashConnectTotal = cashDepositedBanking + easyPay + coins
+        const cashConnectTotal = cashup.shop.cashDepositedBanking + cashup.shop.easyPay + cashup.shop.coins;
+        const shopSpeedpointTotal = cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0);
+        const shopAccountTotal = cashup.shop.accounts.reduce((s, a) => s + a.amount, 0);
+        const shopOtherTotal = cashup.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0);
+        const shopDiff =
+          shopTotalTakings -
+          cashConnectTotal -
+          shopSpeedpointTotal -
+          shopAccountTotal -
+          shopOtherTotal -
+          cashup.shop.returns_mop -
+          cashup.shop.attendantShortOver;
 
-    const optNetSales = cashup.opt.income - cashup.opt.returns;
-    const optSpeedpointTotal = cashup.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0);
-    const optAccountTotal = cashup.opt.accounts.reduce((s, a) => s + a.amount, 0);
-    const optDiff = optNetSales - optSpeedpointTotal - optAccountTotal;
+        const optNetSales = cashup.opt.income - cashup.opt.returns;
+        const optSpeedpointTotal = cashup.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0);
+        const optAccountTotal = cashup.opt.accounts.reduce((s, a) => s + a.amount, 0);
+        const optDiff = optNetSales - optSpeedpointTotal - optAccountTotal;
 
-    return { shopDiff, optDiff };
-  })() : null;
+        return { shopDiff, optDiff };
+      })()
+    : null;
 
   return (
     <div className="space-y-3">
@@ -393,7 +489,9 @@ export function ManagerDailyForm({ selectedDate }: Props) {
           <Lock className="h-5 w-5 shrink-0" />
           <div>
             <p className="font-semibold text-sm">Period Locked — Read Only</p>
-            <p className="text-xs opacity-80">Dates before 1 January 2026 are locked. No data can be posted or modified.</p>
+            <p className="text-xs opacity-80">
+              Dates before 1 January 2026 are locked. No data can be posted or modified.
+            </p>
           </div>
         </div>
       )}
@@ -401,16 +499,25 @@ export function ManagerDailyForm({ selectedDate }: Props) {
       <div className="bg-card border rounded-lg p-3 grid grid-cols-2 md:grid-cols-3 gap-3">
         <div>
           <label className="text-xs text-muted-foreground">Entered By</label>
-          <select value={form.enteredBy} onChange={e => setForm(f => ({ ...f, enteredBy: e.target.value }))}
-            className="input-cell w-full mt-0.5">
+          <select
+            value={form.enteredBy}
+            onChange={(e) => setForm((f) => ({ ...f, enteredBy: e.target.value }))}
+            className="input-cell w-full mt-0.5"
+          >
             <option value="">Select manager...</option>
-            {MANAGER_NAMES.map(n => <option key={n}>{n}</option>)}
+            {MANAGER_NAMES.map((n) => (
+              <option key={n}>{n}</option>
+            ))}
           </select>
         </div>
         <div className="col-span-2">
           <label className="text-xs text-muted-foreground">Explanations / Notes</label>
-          <input value={form.explanations} onChange={e => setForm(f => ({ ...f, explanations: e.target.value }))}
-            className="input-cell w-full mt-0.5 text-left" placeholder="Any notes for the day..." />
+          <input
+            value={form.explanations}
+            onChange={(e) => setForm((f) => ({ ...f, explanations: e.target.value }))}
+            className="input-cell w-full mt-0.5 text-left"
+            placeholder="Any notes for the day..."
+          />
         </div>
       </div>
 
@@ -426,12 +533,16 @@ export function ManagerDailyForm({ selectedDate }: Props) {
         <Section title="Cashier Short / (Over) from Cashup" color="default">
           <div className="grid grid-cols-2 gap-2 px-3 py-2">
             <DataRow label="Shop Till">
-              <div className={`rounded px-2 py-0.5 text-sm font-semibold ${Math.abs(cashierBlock.shopDiff) < 0.01 ? 'status-green' : 'status-red'}`}>
+              <div
+                className={`rounded px-2 py-0.5 text-sm font-semibold ${Math.abs(cashierBlock.shopDiff) < 0.01 ? "status-green" : "status-red"}`}
+              >
                 <CurrencyDisplay value={cashierBlock.shopDiff} />
               </div>
             </DataRow>
             <DataRow label="OPT">
-              <div className={`rounded px-2 py-0.5 text-sm font-semibold ${Math.abs(cashierBlock.optDiff) < 0.01 ? 'status-green' : 'status-red'}`}>
+              <div
+                className={`rounded px-2 py-0.5 text-sm font-semibold ${Math.abs(cashierBlock.optDiff) < 0.01 ? "status-green" : "status-red"}`}
+              >
                 <CurrencyDisplay value={cashierBlock.optDiff} />
               </div>
             </DataRow>
@@ -447,9 +558,9 @@ export function ManagerDailyForm({ selectedDate }: Props) {
           categories={CATEGORIES}
           invoiceTotal={payoutInvoiceTotal}
           vatTotal={payoutVatTotal}
-          onAdd={() => addInvoice('payout')}
-          onRemove={id => removeInvoice(id, 'payout')}
-          onUpdate={(id, patch) => updateInvoice(id, patch, 'payout')}
+          onAdd={() => addInvoice("payout")}
+          onRemove={(id) => removeInvoice(id, "payout")}
+          onUpdate={(id, patch) => updateInvoice(id, patch, "payout")}
         />
       </Section>
 
@@ -461,9 +572,9 @@ export function ManagerDailyForm({ selectedDate }: Props) {
           categories={CATEGORIES}
           invoiceTotal={eftInvoiceTotal}
           vatTotal={eftVatTotal}
-          onAdd={() => addInvoice('eft')}
-          onRemove={id => removeInvoice(id, 'eft')}
-          onUpdate={(id, patch) => updateInvoice(id, patch, 'eft')}
+          onAdd={() => addInvoice("eft")}
+          onRemove={(id) => removeInvoice(id, "eft")}
+          onUpdate={(id, patch) => updateInvoice(id, patch, "eft")}
         />
       </Section>
 
@@ -483,26 +594,38 @@ export function ManagerDailyForm({ selectedDate }: Props) {
         </DataRow>
         <div className="border-t mt-1 pt-1">
           <DataRow label="Branch Day End Total (enter)">
-            <CurrencyInput value={form.branchDayEndTotal} onChange={v => setForm(f => ({ ...f, branchDayEndTotal: v }))} />
+            <CurrencyInput
+              value={form.branchDayEndTotal}
+              onChange={(v) => setForm((f) => ({ ...f, branchDayEndTotal: v }))}
+            />
           </DataRow>
           <DataRow label="Branch Day End VAT (enter)">
-            <CurrencyInput value={form.branchDayEndVat} onChange={v => setForm(f => ({ ...f, branchDayEndVat: v }))} />
+            <CurrencyInput
+              value={form.branchDayEndVat}
+              onChange={(v) => setForm((f) => ({ ...f, branchDayEndVat: v }))}
+            />
           </DataRow>
           <div className="px-3 py-2 flex gap-3 text-sm">
-            <div className={`flex items-center gap-1.5 rounded px-2 py-1 ${invMatch ? 'status-green' : 'status-red'}`}>
+            <div className={`flex items-center gap-1.5 rounded px-2 py-1 ${invMatch ? "status-green" : "status-red"}`}>
               {invMatch ? <CheckCircle className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
-              Total: {invMatch ? 'MATCH' : `Diff ${new Intl.NumberFormat('en-ZA', { minimumFractionDigits: 2 }).format(Math.abs(totalAllInvoices - form.branchDayEndTotal))}`}
+              Total:{" "}
+              {invMatch
+                ? "MATCH"
+                : `Diff ${new Intl.NumberFormat("en-ZA", { minimumFractionDigits: 2 }).format(Math.abs(totalAllInvoices - form.branchDayEndTotal))}`}
             </div>
-            <div className={`flex items-center gap-1.5 rounded px-2 py-1 ${vatMatch ? 'status-green' : 'status-red'}`}>
+            <div className={`flex items-center gap-1.5 rounded px-2 py-1 ${vatMatch ? "status-green" : "status-red"}`}>
               {vatMatch ? <CheckCircle className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
-              VAT: {vatMatch ? 'MATCH' : `Diff ${new Intl.NumberFormat('en-ZA', { minimumFractionDigits: 2 }).format(Math.abs(totalAllVat - form.branchDayEndVat))}`}
+              VAT:{" "}
+              {vatMatch
+                ? "MATCH"
+                : `Diff ${new Intl.NumberFormat("en-ZA", { minimumFractionDigits: 2 }).format(Math.abs(totalAllVat - form.branchDayEndVat))}`}
             </div>
           </div>
           <div className="border-t mt-1 pt-2 pb-2 px-3">
             <label className="text-xs text-muted-foreground font-medium">Explanations / Notes</label>
             <input
               value={form.invoiceNotes}
-              onChange={e => setForm(f => ({ ...f, invoiceNotes: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, invoiceNotes: e.target.value }))}
               className="input-cell w-full mt-0.5 text-left text-sm"
               placeholder="Any notes for section 1.3..."
             />
@@ -585,7 +708,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
               </td>
               <td className="px-3 py-1.5">
                 <div className="input-cell w-full text-right bg-muted/30 text-xs py-0.5 px-1 rounded font-semibold">
-                  <CurrencyDisplay value={dailyCashupEasypay + dailyCashupCashConnect} />
+                  <CurrencyDisplay value={dailyCashupEasypay + dailyCashupCashConnect + dailyCashupCoins} />
                 </div>
               </td>
             </tr>
@@ -597,12 +720,26 @@ export function ManagerDailyForm({ selectedDate }: Props) {
               </td>
               <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
               <td className="px-3 py-1.5">
-                <CurrencyInput value={form.ccBagClosureEasypay} onChange={v => setForm(f => ({ ...f, ccBagClosureEasypay: Math.abs(v) }))} className="w-full" placeholder="0.00" />
-                <div className="text-xs text-destructive text-right mt-0.5"><CurrencyDisplay value={-Math.abs(form.ccBagClosureEasypay)} /></div>
+                <CurrencyInput
+                  value={form.ccBagClosureEasypay}
+                  onChange={(v) => setForm((f) => ({ ...f, ccBagClosureEasypay: Math.abs(v) }))}
+                  className="w-full"
+                  placeholder="0.00"
+                />
+                <div className="text-xs text-destructive text-right mt-0.5">
+                  <CurrencyDisplay value={-Math.abs(form.ccBagClosureEasypay)} />
+                </div>
               </td>
               <td className="px-3 py-1.5">
-                <CurrencyInput value={form.ccBagClosureCashConnect} onChange={v => setForm(f => ({ ...f, ccBagClosureCashConnect: Math.abs(v) }))} className="w-full" placeholder="0.00" />
-                <div className="text-xs text-destructive text-right mt-0.5"><CurrencyDisplay value={-Math.abs(form.ccBagClosureCashConnect)} /></div>
+                <CurrencyInput
+                  value={form.ccBagClosureCashConnect}
+                  onChange={(v) => setForm((f) => ({ ...f, ccBagClosureCashConnect: Math.abs(v) }))}
+                  className="w-full"
+                  placeholder="0.00"
+                />
+                <div className="text-xs text-destructive text-right mt-0.5">
+                  <CurrencyDisplay value={-Math.abs(form.ccBagClosureCashConnect)} />
+                </div>
               </td>
               <td className="px-3 py-1.5 text-right align-top pt-2 text-destructive font-semibold">
                 <CurrencyDisplay value={-Math.abs(form.ccBagClosureEasypay) - Math.abs(form.ccBagClosureCashConnect)} />
@@ -613,8 +750,15 @@ export function ManagerDailyForm({ selectedDate }: Props) {
             <tr className="border-b">
               <td className="px-3 py-1.5 text-xs text-muted-foreground">Transfer from Coin</td>
               <td className="px-3 py-1.5">
-                <CurrencyInput value={form.transferFromCoins} onChange={v => setForm(f => ({ ...f, transferFromCoins: Math.abs(v) }))} className="w-full" placeholder="0.00" />
-                <div className="text-xs text-destructive text-right mt-0.5"><CurrencyDisplay value={-Math.abs(form.transferFromCoins)} /></div>
+                <CurrencyInput
+                  value={form.transferFromCoins}
+                  onChange={(v) => setForm((f) => ({ ...f, transferFromCoins: Math.abs(v) }))}
+                  className="w-full"
+                  placeholder="0.00"
+                />
+                <div className="text-xs text-destructive text-right mt-0.5">
+                  <CurrencyDisplay value={-Math.abs(form.transferFromCoins)} />
+                </div>
               </td>
               <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
               <td className="px-3 py-1.5 align-middle">
@@ -628,10 +772,18 @@ export function ManagerDailyForm({ selectedDate }: Props) {
             {/* Closing Balance */}
             <tr className="bg-secondary font-semibold border-t-2">
               <td className="px-3 py-2 rounded-bl-md font-bold text-xs uppercase">CLOSING BALANCE</td>
-              <td className="px-3 py-2 text-right"><CurrencyDisplay value={coinsClosing} highlight /></td>
-              <td className="px-3 py-2 text-right"><CurrencyDisplay value={easypayClosing} highlight /></td>
-              <td className="px-3 py-2 text-right"><CurrencyDisplay value={ccClosing} highlight /></td>
-              <td className="px-3 py-2 text-right rounded-br-md"><CurrencyDisplay value={easypayClosing + ccClosing} highlight /></td>
+              <td className="px-3 py-2 text-right">
+                <CurrencyDisplay value={coinsClosing} highlight />
+              </td>
+              <td className="px-3 py-2 text-right">
+                <CurrencyDisplay value={easypayClosing} highlight />
+              </td>
+              <td className="px-3 py-2 text-right">
+                <CurrencyDisplay value={ccClosing} highlight />
+              </td>
+              <td className="px-3 py-2 text-right rounded-br-md">
+                <CurrencyDisplay value={easypayClosing + ccClosing} highlight />
+              </td>
             </tr>
           </tbody>
         </table>
@@ -639,7 +791,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
           <label className="text-xs text-muted-foreground font-medium">Explanations / Notes</label>
           <input
             value={form.cashReconcNotes}
-            onChange={e => setForm(f => ({ ...f, cashReconcNotes: e.target.value }))}
+            onChange={(e) => setForm((f) => ({ ...f, cashReconcNotes: e.target.value }))}
             className="input-cell w-full mt-0.5 text-left text-sm"
             placeholder="Any notes for section 2..."
           />
@@ -663,7 +815,8 @@ export function ManagerDailyForm({ selectedDate }: Props) {
       {/* Save button at bottom */}
       <div className="flex flex-col items-center gap-2 pt-2 pb-4">
         <Button onClick={handleSave} size="lg" className="w-full max-w-xs" disabled={isLocked}>
-          <Save className="h-4 w-4 mr-2" />Save Entry
+          <Save className="h-4 w-4 mr-2" />
+          Save Entry
         </Button>
         {savedAt && (
           <p className="text-xs text-muted-foreground">
