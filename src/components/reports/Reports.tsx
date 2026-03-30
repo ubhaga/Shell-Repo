@@ -74,20 +74,45 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   }, [filterMonth, prevMonth]);
   useEffect(() => { loadManualMatches(); }, [loadManualMatches]);
 
-  // Payout report
+  // Payout report — with invoice matching
+  // Build a lookup of manager payout invoices by date+vendor (track counts for multiple invoices)
+  const managerPayoutInvoiceLookup = new Map<string, number>();
+  monthManagers.forEach(e => {
+    e.payoutInvoices.forEach(inv => {
+      const key = `${e.date}|${inv.supplier.toLowerCase().trim()}`;
+      managerPayoutInvoiceLookup.set(key, (managerPayoutInvoiceLookup.get(key) ?? 0) + 1);
+    });
+  });
+  // Track consumption of invoices so each invoice matches only one payout
+  const invoiceConsumed = new Map<string, number>();
+
   const payoutReport = monthCashups.flatMap(c =>
-    c.shop.payouts.map(p => ({
+    c.shop.payouts.map(p => {
+      const key = `${c.date}|${p.vendor.toLowerCase().trim()}`;
+      const available = (managerPayoutInvoiceLookup.get(key) ?? 0) - (invoiceConsumed.get(key) ?? 0);
+      const matched = available > 0;
+      if (matched) invoiceConsumed.set(key, (invoiceConsumed.get(key) ?? 0) + 1);
+      return {
+        date: c.date,
+        cashier: c.cashierName,
+        vendor: p.vendor,
+        amount: p.amount,
+        matched,
+      };
+    })
+  ).concat(monthCashups.map(c => {
+    const key = `${c.date}|lotto`;
+    const available = (managerPayoutInvoiceLookup.get(key) ?? 0) - (invoiceConsumed.get(key) ?? 0);
+    const matched = available > 0;
+    if (matched) invoiceConsumed.set(key, (invoiceConsumed.get(key) ?? 0) + 1);
+    return {
       date: c.date,
       cashier: c.cashierName,
-      vendor: p.vendor,
-      amount: p.amount,
-    }))
-  ).concat(monthCashups.map(c => ({
-    date: c.date,
-    cashier: c.cashierName,
-    vendor: 'Lotto',
-    amount: c.shop.lottoPayouts,
-  })).filter(r => r.amount > 0));
+      vendor: 'Lotto',
+      amount: c.shop.lottoPayouts,
+      matched,
+    };
+  }).filter(r => r.amount > 0));
   const payoutTotal = payoutReport.reduce((s, r) => s + r.amount, 0);
 
   // Receipts report
