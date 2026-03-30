@@ -75,44 +75,59 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   useEffect(() => { loadManualMatches(); }, [loadManualMatches]);
 
   // Payout report — with invoice matching
-  // Build a lookup of manager payout invoices by date+vendor (track counts for multiple invoices)
-  const managerPayoutInvoiceLookup = new Map<string, number>();
+  // Build lookup: vendor -> array of dates with invoices
+  const managerPayoutByVendor = new Map<string, Map<string, number>>();
   monthManagers.forEach(e => {
     e.payoutInvoices.forEach(inv => {
-      const key = `${e.date}|${inv.supplier.toLowerCase().trim()}`;
-      managerPayoutInvoiceLookup.set(key, (managerPayoutInvoiceLookup.get(key) ?? 0) + 1);
+      const vendor = inv.supplier.toLowerCase().trim();
+      if (!managerPayoutByVendor.has(vendor)) managerPayoutByVendor.set(vendor, new Map());
+      const dateMap = managerPayoutByVendor.get(vendor)!;
+      dateMap.set(e.date, (dateMap.get(e.date) ?? 0) + 1);
     });
   });
-  // Track consumption of invoices so each invoice matches only one payout
+  // Track consumption: vendor+date -> consumed count
   const invoiceConsumed = new Map<string, number>();
 
+  type MatchStatus = 'matched' | 'matched-other-day' | 'unmatched';
+
+  const matchPayout = (payoutDate: string, vendor: string): MatchStatus => {
+    const v = vendor.toLowerCase().trim();
+    const dateMap = managerPayoutByVendor.get(v);
+    if (!dateMap) return 'unmatched';
+    // Try same-day first
+    const sameKey = `${v}|${payoutDate}`;
+    const sameAvail = (dateMap.get(payoutDate) ?? 0) - (invoiceConsumed.get(sameKey) ?? 0);
+    if (sameAvail > 0) {
+      invoiceConsumed.set(sameKey, (invoiceConsumed.get(sameKey) ?? 0) + 1);
+      return 'matched';
+    }
+    // Try other days
+    for (const [date, count] of dateMap) {
+      const otherKey = `${v}|${date}`;
+      const otherAvail = count - (invoiceConsumed.get(otherKey) ?? 0);
+      if (otherAvail > 0) {
+        invoiceConsumed.set(otherKey, (invoiceConsumed.get(otherKey) ?? 0) + 1);
+        return 'matched-other-day';
+      }
+    }
+    return 'unmatched';
+  };
+
   const payoutReport = monthCashups.flatMap(c =>
-    c.shop.payouts.map(p => {
-      const key = `${c.date}|${p.vendor.toLowerCase().trim()}`;
-      const available = (managerPayoutInvoiceLookup.get(key) ?? 0) - (invoiceConsumed.get(key) ?? 0);
-      const matched = available > 0;
-      if (matched) invoiceConsumed.set(key, (invoiceConsumed.get(key) ?? 0) + 1);
-      return {
-        date: c.date,
-        cashier: c.cashierName,
-        vendor: p.vendor,
-        amount: p.amount,
-        matched,
-      };
-    })
-  ).concat(monthCashups.map(c => {
-    const key = `${c.date}|lotto`;
-    const available = (managerPayoutInvoiceLookup.get(key) ?? 0) - (invoiceConsumed.get(key) ?? 0);
-    const matched = available > 0;
-    if (matched) invoiceConsumed.set(key, (invoiceConsumed.get(key) ?? 0) + 1);
-    return {
+    c.shop.payouts.map(p => ({
       date: c.date,
       cashier: c.cashierName,
-      vendor: 'Lotto',
-      amount: c.shop.lottoPayouts,
-      matched,
-    };
-  }).filter(r => r.amount > 0));
+      vendor: p.vendor,
+      amount: p.amount,
+      status: matchPayout(c.date, p.vendor) as MatchStatus,
+    }))
+  ).concat(monthCashups.map(c => ({
+    date: c.date,
+    cashier: c.cashierName,
+    vendor: 'Lotto',
+    amount: c.shop.lottoPayouts,
+    status: matchPayout(c.date, 'Lotto') as MatchStatus,
+  })).filter(r => r.amount > 0));
   const payoutTotal = payoutReport.reduce((s, r) => s + r.amount, 0);
 
   // Receipts report
