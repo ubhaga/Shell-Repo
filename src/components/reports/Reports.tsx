@@ -498,7 +498,7 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
           <div className="bg-card border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
               <h3 className="font-semibold text-sm">Detailed Payouts — {monthLabel}</h3>
-              <Button size="sm" variant="outline" onClick={() => exportCSV(payoutReport, `payouts-${filterMonth}.csv`)}>
+              <Button size="sm" variant="outline" onClick={() => exportCSV(payoutReport.map(({matched, ...rest}) => ({...rest, invoice: matched ? 'Yes' : 'No'})), `payouts-${filterMonth}.csv`)}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
             </div>
