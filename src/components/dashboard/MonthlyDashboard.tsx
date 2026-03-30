@@ -184,6 +184,15 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                       )}
                     </td>
                     <td className="px-3 py-2 text-center border-r">
+                      {row.payoutsDiff !== null ? (
+                        <span className={`inline-flex items-center justify-center gap-1 font-mono ${payoutsOk ? 'text-green-700' : 'text-red-600 font-semibold'}`}>
+                          {payoutsOk ? '✓' : <CurrencyDisplay value={row.payoutsDiff} />}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/30">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-center border-r">
                       {showOpt ? (
                         <span className="inline-flex items-center justify-center gap-1 font-mono text-red-600 font-semibold">
                           <CurrencyDisplay value={row.optDiff!} />
