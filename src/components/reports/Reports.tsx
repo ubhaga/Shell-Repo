@@ -509,11 +509,12 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
                   <TableHead>Cashier</TableHead>
                   <TableHead>Vendor</TableHead>
                   <TableHead className="text-right">Amount (Incl.)</TableHead>
+                  <TableHead className="text-center">Invoice</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {payoutReport.length === 0 ? (
-                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No payout data for this month</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No payout data for this month</TableCell></TableRow>
                 ) : (
                   <>
                     {payoutReport.map((r, i) => (
@@ -522,10 +523,15 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
                         <TableCell className="text-sm">{r.cashier}</TableCell>
                         <TableCell className="text-sm">{r.vendor}</TableCell>
                         <TableCell className="text-right"><CurrencyDisplay value={r.amount} /></TableCell>
+                        <TableCell className="text-center">
+                          {r.matched
+                            ? <span className="text-green-600 font-bold">✓</span>
+                            : <span className="text-destructive font-bold">✗</span>}
+                        </TableCell>
                       </TableRow>
                     ))}
                     <TableRow className="bg-secondary font-semibold">
-                      <TableCell colSpan={3}>TOTAL</TableCell>
+                      <TableCell colSpan={4}>TOTAL</TableCell>
                       <TableCell className="text-right"><CurrencyDisplay value={payoutTotal} highlight /></TableCell>
                     </TableRow>
                   </>
