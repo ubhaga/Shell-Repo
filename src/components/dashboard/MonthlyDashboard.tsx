@@ -110,9 +110,10 @@ export function MonthlyDashboard({ selectedDate }: Props) {
   const greenCount = dataRows.filter((r) => {
     const shopOk = r.shopDiff !== null && Math.abs(r.shopDiff) < 20;
     const optOk = r.optDiff === null || Math.abs(r.optDiff) < 0.01;
+    const payoutsOk = r.payoutsDiff === null || Math.abs(r.payoutsDiff) < 0.50;
     const invOk = r.invMatch === null || r.invMatch;
     const vatOk = r.vatMatch === null || r.vatMatch;
-    return shopOk && optOk && invOk && vatOk;
+    return shopOk && optOk && payoutsOk && invOk && vatOk;
   }).length;
 
   return (
