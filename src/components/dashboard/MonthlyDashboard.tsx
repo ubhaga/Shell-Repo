@@ -164,9 +164,10 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                 const shopOk = row.shopDiff !== null && Math.abs(row.shopDiff) < 20;
                 const optOk = row.optDiff === null || Math.abs(row.optDiff) < 0.01;
                 const showOpt = row.optDiff !== null && Math.abs(row.optDiff) >= 0.01;
+                const payoutsOk = row.payoutsDiff === null || Math.abs(row.payoutsDiff) < 0.50;
                 const invOk = row.invMatch === null || row.invMatch;
                 const vatOk = row.vatMatch === null || row.vatMatch;
-                const allOk = shopOk && optOk && invOk && vatOk;
+                const allOk = shopOk && optOk && payoutsOk && invOk && vatOk;
 
                 return (
                   <tr key={row.date} className={`border-b last:border-b-0 ${allOk ? '' : 'bg-red-50/50'}`}>
