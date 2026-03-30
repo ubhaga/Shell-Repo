@@ -13,6 +13,7 @@ interface DayMetrics {
   cashierName?: string;
   shopDiff: number | null;
   optDiff: number | null;
+  payoutsDiff: number | null;
   invDiff: number | null;
   invMatch: boolean | null;
   vatDiff: number | null;
@@ -26,7 +27,7 @@ function computeDayMetrics(
   managerEntry: ManagerDailyEntry | undefined,
 ): DayMetrics {
   if (!cashup && !managerEntry) {
-    return { date: dateStr, shopDiff: null, optDiff: null, invDiff: null, invMatch: null, vatDiff: null, vatMatch: null, hasData: false };
+    return { date: dateStr, shopDiff: null, optDiff: null, payoutsDiff: null, invDiff: null, invMatch: null, vatDiff: null, vatMatch: null, hasData: false };
   }
 
   let shopDiff: number | null = null;
@@ -49,6 +50,14 @@ function computeDayMetrics(
     optDiff = optNetSales - optSP - optAcc;
   }
 
+  // Payouts comparison: cashier payouts total vs manager 1.1 payout invoices total
+  let payoutsDiff: number | null = null;
+  if (cashup && managerEntry) {
+    const cashierPayoutsTotal = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0) + cashup.shop.lottoPayouts;
+    const managerPayoutInvoicesTotal = managerEntry.payoutInvoices.reduce((s, i) => s + i.inclusive, 0);
+    payoutsDiff = cashierPayoutsTotal - managerPayoutInvoicesTotal;
+  }
+
   let invDiff: number | null = null;
   let invMatch: boolean | null = null;
   let vatDiff: number | null = null;
@@ -68,6 +77,7 @@ function computeDayMetrics(
     cashierName: cashup?.cashierName,
     shopDiff,
     optDiff,
+    payoutsDiff,
     invDiff,
     invMatch,
     vatDiff,
@@ -100,9 +110,10 @@ export function MonthlyDashboard({ selectedDate }: Props) {
   const greenCount = dataRows.filter((r) => {
     const shopOk = r.shopDiff !== null && Math.abs(r.shopDiff) < 20;
     const optOk = r.optDiff === null || Math.abs(r.optDiff) < 0.01;
+    const payoutsOk = r.payoutsDiff === null || Math.abs(r.payoutsDiff) < 0.50;
     const invOk = r.invMatch === null || r.invMatch;
     const vatOk = r.vatMatch === null || r.vatMatch;
-    return shopOk && optOk && invOk && vatOk;
+    return shopOk && optOk && payoutsOk && invOk && vatOk;
   }).length;
 
   return (
@@ -131,6 +142,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Date</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Cashier</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Shop Till</th>
+                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Payouts</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">OPT</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Invoices</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">VAT</th>
@@ -145,7 +157,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                     <tr key={row.date} className="border-b last:border-b-0 bg-muted/10">
                       <td className="px-3 py-2 text-center text-muted-foreground/40 font-mono border-r">{format(d, 'd')}</td>
                       <td className="px-3 py-2 text-center text-muted-foreground/40 border-r">{format(d, 'EEE dd')}</td>
-                      <td colSpan={6} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">No data</td>
+                      <td colSpan={7} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">No data</td>
                     </tr>
                   );
                 }
@@ -153,9 +165,10 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                 const shopOk = row.shopDiff !== null && Math.abs(row.shopDiff) < 20;
                 const optOk = row.optDiff === null || Math.abs(row.optDiff) < 0.01;
                 const showOpt = row.optDiff !== null && Math.abs(row.optDiff) >= 0.01;
+                const payoutsOk = row.payoutsDiff === null || Math.abs(row.payoutsDiff) < 0.50;
                 const invOk = row.invMatch === null || row.invMatch;
                 const vatOk = row.vatMatch === null || row.vatMatch;
-                const allOk = shopOk && optOk && invOk && vatOk;
+                const allOk = shopOk && optOk && payoutsOk && invOk && vatOk;
 
                 return (
                   <tr key={row.date} className={`border-b last:border-b-0 ${allOk ? '' : 'bg-red-50/50'}`}>
@@ -166,6 +179,15 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                       {row.shopDiff !== null ? (
                         <span className={`inline-flex items-center justify-center gap-1 font-mono ${shopOk ? 'text-green-700' : 'text-red-600 font-semibold'}`}>
                           <CurrencyDisplay value={row.shopDiff} />
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/30">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-center border-r">
+                      {row.payoutsDiff !== null ? (
+                        <span className={`inline-flex items-center justify-center gap-1 font-mono ${payoutsOk ? 'text-green-700' : 'text-red-600 font-semibold'}`}>
+                          {payoutsOk ? '✓' : <CurrencyDisplay value={row.payoutsDiff} />}
                         </span>
                       ) : (
                         <span className="text-muted-foreground/30">—</span>
@@ -217,6 +239,9 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                   <td colSpan={3} className="px-3 py-2.5 text-center border-r">Monthly Total</td>
                   <td className="px-3 py-2.5 text-center border-r">
                     <CurrencyDisplay value={totalShopDiff} highlight />
+                   </td>
+                  <td className="px-3 py-2.5 text-center text-xs text-muted-foreground border-r">
+                    {dataRows.filter(r => r.payoutsDiff !== null && Math.abs(r.payoutsDiff) < 0.50).length}/{dataRows.filter(r => r.payoutsDiff !== null).length}
                   </td>
                   <td className="px-3 py-2.5 text-center border-r">
                     <CurrencyDisplay value={dataRows.reduce((s, r) => s + (r.optDiff !== null && Math.abs(r.optDiff) >= 0.01 ? r.optDiff : 0), 0)} />
