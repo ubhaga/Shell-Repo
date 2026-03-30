@@ -156,7 +156,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                     <tr key={row.date} className="border-b last:border-b-0 bg-muted/10">
                       <td className="px-3 py-2 text-center text-muted-foreground/40 font-mono border-r">{format(d, 'd')}</td>
                       <td className="px-3 py-2 text-center text-muted-foreground/40 border-r">{format(d, 'EEE dd')}</td>
-                      <td colSpan={6} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">No data</td>
+                      <td colSpan={7} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">No data</td>
                     </tr>
                   );
                 }
