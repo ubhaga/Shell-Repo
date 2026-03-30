@@ -27,7 +27,7 @@ function computeDayMetrics(
   managerEntry: ManagerDailyEntry | undefined,
 ): DayMetrics {
   if (!cashup && !managerEntry) {
-    return { date: dateStr, shopDiff: null, optDiff: null, invDiff: null, invMatch: null, vatDiff: null, vatMatch: null, hasData: false };
+    return { date: dateStr, shopDiff: null, optDiff: null, payoutsDiff: null, invDiff: null, invMatch: null, vatDiff: null, vatMatch: null, hasData: false };
   }
 
   let shopDiff: number | null = null;
