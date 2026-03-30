@@ -13,6 +13,7 @@ interface DayMetrics {
   cashierName?: string;
   shopDiff: number | null;
   optDiff: number | null;
+  payoutsDiff: number | null;
   invDiff: number | null;
   invMatch: boolean | null;
   vatDiff: number | null;
