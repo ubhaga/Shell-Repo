@@ -85,7 +85,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     const aliasRules: Array<{ patterns: RegExp[]; suppliers: string[] }> = [
       { patterns: [/\bCR\s+WICKED\s+CONV(?:ENIENCE)?\b/, /\bWICKED\s+CONV\b/], suppliers: ['Wicked Convenience'] },
       { patterns: [/\bCR\s+STATUS\s+HYGIENE\b/, /\bSTATUS\s+HYGIENE\b/], suppliers: ['Status Hygiene'] },
-      { patterns: [/\bCR\s+RFP\b/], suppliers: ['RFP'] },
+      { patterns: [/\bCR\s+RFP\b/, /\bCR\s+FROZEN\s+SOLN\b/], suppliers: ['RFP'] },
       { patterns: [/\bSS898\b/, /\bSS998\b/], suppliers: ['Clippa Sales'] },
       { patterns: [/\bSHELL\s+F2K\b/, /\bF2K\b/], suppliers: ['F2K'] },
       { patterns: [/\bSHELL\s*DOWN\d+\b/, /\bSHELL\s+DOWNSTREAM\b/], suppliers: ['Shell Downstream'] },
