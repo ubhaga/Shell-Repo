@@ -50,6 +50,14 @@ function computeDayMetrics(
     optDiff = optNetSales - optSP - optAcc;
   }
 
+  // Payouts comparison: cashier payouts total vs manager 1.1 payout invoices total
+  let payoutsDiff: number | null = null;
+  if (cashup && managerEntry) {
+    const cashierPayoutsTotal = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0) + cashup.shop.lottoPayouts;
+    const managerPayoutInvoicesTotal = managerEntry.payoutInvoices.reduce((s, i) => s + i.inclusive, 0);
+    payoutsDiff = cashierPayoutsTotal - managerPayoutInvoicesTotal;
+  }
+
   let invDiff: number | null = null;
   let invMatch: boolean | null = null;
   let vatDiff: number | null = null;
@@ -69,6 +77,7 @@ function computeDayMetrics(
     cashierName: cashup?.cashierName,
     shopDiff,
     optDiff,
+    payoutsDiff,
     invDiff,
     invMatch,
     vatDiff,
