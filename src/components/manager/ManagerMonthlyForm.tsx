@@ -35,7 +35,9 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
 
   const [form, setForm] = useState<Omit<MonthlyBranchFigures, 'id'>>({
     month, enteredBy: '', branchNetSales: 0, branchTotalPayouts: 0,
-    branchTotalReceipts: 0, branchTotalInvoicesCapital: 0, branchTotalInvoicesVat: 0, notes: '',
+    branchTotalReceipts: 0, branchTotalInvoicesCapital: 0, branchTotalInvoicesVat: 0,
+    salesCStore: 0, salesWslDsl: 0, salesFuel: 0, salesGas: 0, salesOil: 0, vatTaxAmount: 0,
+    notes: '',
   });
 
   useEffect(() => {

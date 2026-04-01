@@ -138,6 +138,13 @@ export interface MonthlyBranchFigures {
   branchTotalReceipts: number;
   branchTotalInvoicesCapital: number;
   branchTotalInvoicesVat: number;
+  // Month End Report (Other)
+  salesCStore: number;
+  salesWslDsl: number;
+  salesFuel: number;
+  salesGas: number;
+  salesOil: number;
+  vatTaxAmount: number;
   // Misc
   notes: string;
 }
