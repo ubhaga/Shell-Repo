@@ -10,13 +10,13 @@ import { format } from 'date-fns';
 
 interface Props { selectedDate: string; }
 
-const MetricRow = ({ label, spreadsheet, branch, match }: { label: string; spreadsheet: number; branch: number; match: boolean }) => {
+const MetricRow = ({ label, spreadsheet, branch, match, onChange }: { label: string; spreadsheet: number; branch: number; match: boolean; onChange: (v: number) => void }) => {
   const diff = spreadsheet - branch;
   return (
     <div className="grid grid-cols-4 gap-3 px-3 py-2 border-b last:border-b-0 text-sm items-center">
       <span className="text-muted-foreground col-span-1">{label}</span>
       <CurrencyDisplay value={spreadsheet} className="text-right" />
-      <CurrencyDisplay value={branch} className="text-right" />
+      <CurrencyInput value={branch} onChange={onChange} />
       <div className={`flex items-center justify-center gap-1 rounded px-2 py-0.5 font-semibold text-xs ${match ? 'status-green' : 'status-red'}`}>
         {match ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
         {match ? 'MATCH' : <CurrencyDisplay value={diff} />}
@@ -122,30 +122,11 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           <span className="text-right">Branch Report (enter below)</span>
           <span className="text-center">Status</span>
         </div>
-        <MetricRow label="Net Sales" spreadsheet={spreadsheetNetSales} branch={form.branchNetSales} match={salesMatch} />
-        <MetricRow label="Total Payouts" spreadsheet={spreadsheetPayouts} branch={form.branchTotalPayouts} match={payoutsMatch} />
-        <MetricRow label="Total Receipts" spreadsheet={spreadsheetReceipts} branch={form.branchTotalReceipts} match={receiptsMatch} />
-        <MetricRow label="Total Invoices (Incl.)" spreadsheet={spreadsheetInvoicesTotal} branch={form.branchTotalInvoicesCapital} match={invoicesMatch} />
-        <MetricRow label="Total VAT" spreadsheet={spreadsheetInvoicesVat} branch={form.branchTotalInvoicesVat} match={vatMatch} />
-      </Section>
-
-      {/* Branch Report Input */}
-      <Section title="Enter Branch Report Figures" color="orange">
-        <DataRow label="Branch Net Sales">
-          <CurrencyInput value={form.branchNetSales} onChange={v => setForm(f => ({ ...f, branchNetSales: v }))} />
-        </DataRow>
-        <DataRow label="Branch Total Payouts">
-          <CurrencyInput value={form.branchTotalPayouts} onChange={v => setForm(f => ({ ...f, branchTotalPayouts: v }))} />
-        </DataRow>
-        <DataRow label="Branch Total Receipts">
-          <CurrencyInput value={form.branchTotalReceipts} onChange={v => setForm(f => ({ ...f, branchTotalReceipts: v }))} />
-        </DataRow>
-        <DataRow label="Branch Total Invoices (Incl.)">
-          <CurrencyInput value={form.branchTotalInvoicesCapital} onChange={v => setForm(f => ({ ...f, branchTotalInvoicesCapital: v }))} />
-        </DataRow>
-        <DataRow label="Branch Total VAT">
-          <CurrencyInput value={form.branchTotalInvoicesVat} onChange={v => setForm(f => ({ ...f, branchTotalInvoicesVat: v }))} />
-        </DataRow>
+        <MetricRow label="Net Sales" spreadsheet={spreadsheetNetSales} branch={form.branchNetSales} match={salesMatch} onChange={v => setForm(f => ({ ...f, branchNetSales: v }))} />
+        <MetricRow label="Total Payouts" spreadsheet={spreadsheetPayouts} branch={form.branchTotalPayouts} match={payoutsMatch} onChange={v => setForm(f => ({ ...f, branchTotalPayouts: v }))} />
+        <MetricRow label="Total Receipts" spreadsheet={spreadsheetReceipts} branch={form.branchTotalReceipts} match={receiptsMatch} onChange={v => setForm(f => ({ ...f, branchTotalReceipts: v }))} />
+        <MetricRow label="Total Invoices (Incl.)" spreadsheet={spreadsheetInvoicesTotal} branch={form.branchTotalInvoicesCapital} match={invoicesMatch} onChange={v => setForm(f => ({ ...f, branchTotalInvoicesCapital: v }))} />
+        <MetricRow label="Total VAT" spreadsheet={spreadsheetInvoicesVat} branch={form.branchTotalInvoicesVat} match={vatMatch} onChange={v => setForm(f => ({ ...f, branchTotalInvoicesVat: v }))} />
       </Section>
 
       {/* Month End Status */}
