@@ -149,13 +149,14 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
       </Section>
 
       {/* Month End Status */}
-      <div className={`rounded-xl border-2 p-4 text-center ${salesMatch && payoutsMatch && invoicesMatch && vatMatch ? 'border-green-500 bg-green-50' : 'border-destructive bg-destructive/5'}`}>
-        <div className="text-2xl mb-1">{salesMatch && payoutsMatch && invoicesMatch && vatMatch ? '✅' : '❌'}</div>
-        <div className="font-bold text-lg">{salesMatch && payoutsMatch && invoicesMatch && vatMatch ? 'Month End Reconciled' : 'Month End NOT Reconciled'}</div>
+      <div className={`rounded-xl border-2 p-4 text-center ${salesMatch && payoutsMatch && receiptsMatch && invoicesMatch && vatMatch ? 'border-green-500 bg-green-50' : 'border-destructive bg-destructive/5'}`}>
+        <div className="text-2xl mb-1">{salesMatch && payoutsMatch && receiptsMatch && invoicesMatch && vatMatch ? '✅' : '❌'}</div>
+        <div className="font-bold text-lg">{salesMatch && payoutsMatch && receiptsMatch && invoicesMatch && vatMatch ? 'Month End Reconciled' : 'Month End NOT Reconciled'}</div>
         <div className="text-sm text-muted-foreground">
           {[
             !salesMatch && 'Sales mismatch',
             !payoutsMatch && 'Payouts mismatch',
+            !receiptsMatch && 'Receipts mismatch',
             !invoicesMatch && 'Invoices mismatch',
             !vatMatch && 'VAT mismatch',
           ].filter(Boolean).join(' • ') || 'All figures agree ✓'}
