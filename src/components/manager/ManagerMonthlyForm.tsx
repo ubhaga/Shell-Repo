@@ -62,17 +62,20 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     toast({ title: 'Monthly figures saved', description: `Saved for ${format(new Date(month + '-01'), 'MMM yyyy')}` });
   };
 
-  const MetricRow = ({ label, spreadsheet, branch, match }: { label: string; spreadsheet: number; branch: number; match: boolean }) => (
-    <div className="grid grid-cols-4 gap-3 px-3 py-2 border-b last:border-b-0 text-sm items-center">
-      <span className="text-muted-foreground col-span-1">{label}</span>
-      <CurrencyDisplay value={spreadsheet} className="text-right" />
-      <CurrencyDisplay value={branch} className="text-right" />
-      <div className={`flex items-center justify-center gap-1 rounded px-2 py-0.5 font-semibold text-xs ${match ? 'status-green' : 'status-red'}`}>
-        {match ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
-        {match ? 'MATCH' : 'DIFFER'}
+  const MetricRow = ({ label, spreadsheet, branch, match }: { label: string; spreadsheet: number; branch: number; match: boolean }) => {
+    const diff = spreadsheet - branch;
+    return (
+      <div className="grid grid-cols-4 gap-3 px-3 py-2 border-b last:border-b-0 text-sm items-center">
+        <span className="text-muted-foreground col-span-1">{label}</span>
+        <CurrencyDisplay value={spreadsheet} className="text-right" />
+        <CurrencyDisplay value={branch} className="text-right" />
+        <div className={`flex items-center justify-center gap-1 rounded px-2 py-0.5 font-semibold text-xs ${match ? 'status-green' : 'status-red'}`}>
+          {match ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+          {match ? 'MATCH' : <CurrencyDisplay value={diff} />}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-4 max-w-4xl">
