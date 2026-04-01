@@ -510,6 +510,11 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
         </TabsList>
         )}
 
+        {/* Daily Summary */}
+        <TabsContent value="daily-summary">
+          <DailySummaryReport filterMonth={filterMonth} />
+        </TabsContent>
+
         {/* Payouts */}
         <TabsContent value="payouts">
           <div className="bg-card border rounded-lg overflow-hidden">
