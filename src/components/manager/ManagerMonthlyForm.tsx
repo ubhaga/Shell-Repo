@@ -16,7 +16,7 @@ const MetricRow = ({ label, spreadsheet, branch, match, onChange }: { label: str
     <div className="grid grid-cols-4 gap-3 px-3 py-2 border-b last:border-b-0 text-sm items-center">
       <span className="text-muted-foreground col-span-1">{label}</span>
       <CurrencyDisplay value={spreadsheet} className="text-right" />
-      <CurrencyInput value={branch} onChange={onChange} />
+      <CurrencyInput value={branch} onChange={onChange} className="text-right" />
       <div className={`flex items-center justify-center gap-1 rounded px-2 py-0.5 font-semibold text-xs ${match ? 'status-green' : 'status-red'}`}>
         {match ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
         {match ? 'MATCH' : <CurrencyDisplay value={diff} />}
