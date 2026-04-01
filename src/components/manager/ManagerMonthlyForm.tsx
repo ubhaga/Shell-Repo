@@ -116,8 +116,8 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
         Showing data for: <strong>{format(new Date(month + '-01'), 'MMMM yyyy')}</strong> — {monthCashups.length} cashup days recorded
       </div>
 
-      {/* Monthly Summary from Spreadsheet */}
-      <Section title="Monthly Totals from Spreadsheet vs Branch Report" color="blue">
+      {/* Month End Report */}
+      <Section title="Month End Report" color="blue">
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Metric</span>
           <span className="text-right">Spreadsheet Total</span>
@@ -127,6 +127,16 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
         <MetricRow label="Net Sales" spreadsheet={spreadsheetNetSales} branch={form.branchNetSales} match={salesMatch} onChange={v => setForm(f => ({ ...f, branchNetSales: v }))} />
         <MetricRow label="Total Payouts" spreadsheet={spreadsheetPayouts} branch={form.branchTotalPayouts} match={payoutsMatch} onChange={v => setForm(f => ({ ...f, branchTotalPayouts: v }))} />
         <MetricRow label="Total Receipts" spreadsheet={spreadsheetReceipts} branch={form.branchTotalReceipts} match={receiptsMatch} onChange={v => setForm(f => ({ ...f, branchTotalReceipts: v }))} />
+      </Section>
+
+      {/* Creditors Transactions Report */}
+      <Section title="Creditors Transactions Report" color="purple">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+          <span>Metric</span>
+          <span className="text-right">Spreadsheet Total</span>
+          <span className="text-center">Branch Report (enter below)</span>
+          <span className="text-center">Status</span>
+        </div>
         <MetricRow label="Total Invoices (Incl.)" spreadsheet={spreadsheetInvoicesTotal} branch={form.branchTotalInvoicesCapital} match={invoicesMatch} onChange={v => setForm(f => ({ ...f, branchTotalInvoicesCapital: v }))} />
         <MetricRow label="Total VAT" spreadsheet={spreadsheetInvoicesVat} branch={form.branchTotalInvoicesVat} match={vatMatch} onChange={v => setForm(f => ({ ...f, branchTotalInvoicesVat: v }))} />
       </Section>
