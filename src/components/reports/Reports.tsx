@@ -491,7 +491,7 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
         </span>
       </div>
 
-      <Tabs defaultValue={mode === 'recons' ? 'speedpoints' : 'payouts'}>
+      <Tabs defaultValue={mode === 'recons' ? 'speedpoints' : 'daily-summary'}>
         {mode === 'reports' ? (
         <TabsList className="grid grid-cols-7 w-full">
           <TabsTrigger value="daily-summary">Daily Summary</TabsTrigger>
