@@ -242,7 +242,13 @@ export type Database = {
           id: string
           month: string
           notes: string
+          sales_c_store: number
+          sales_fuel: number
+          sales_gas: number
+          sales_oil: number
+          sales_wsl_dsl: number
           updated_at: string
+          vat_tax_amount: number
         }
         Insert: {
           branch_net_sales?: number
@@ -255,7 +261,13 @@ export type Database = {
           id?: string
           month: string
           notes?: string
+          sales_c_store?: number
+          sales_fuel?: number
+          sales_gas?: number
+          sales_oil?: number
+          sales_wsl_dsl?: number
           updated_at?: string
+          vat_tax_amount?: number
         }
         Update: {
           branch_net_sales?: number
@@ -268,7 +280,13 @@ export type Database = {
           id?: string
           month?: string
           notes?: string
+          sales_c_store?: number
+          sales_fuel?: number
+          sales_gas?: number
+          sales_oil?: number
+          sales_wsl_dsl?: number
           updated_at?: string
+          vat_tax_amount?: number
         }
         Relationships: []
       }
