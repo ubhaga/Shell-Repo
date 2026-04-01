@@ -143,6 +143,38 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
         <MetricRow label="Total VAT" spreadsheet={spreadsheetInvoicesVat} branch={form.branchTotalInvoicesVat} match={vatMatch} onChange={v => setForm(f => ({ ...f, branchTotalInvoicesVat: v }))} />
       </Section>
 
+      {/* Month End Report (Other) */}
+      <Section title="Month End Report (Other)" color="orange">
+        <div className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+          <span>Description</span>
+          <span className="text-center">Sales Value</span>
+        </div>
+        {[
+          { label: 'Sales C Store', key: 'salesCStore' as const },
+          { label: 'Sales WSL DSL', key: 'salesWslDsl' as const },
+          { label: 'Sales Fuel', key: 'salesFuel' as const },
+          { label: 'Sales Gas', key: 'salesGas' as const },
+          { label: 'Sales Oil', key: 'salesOil' as const },
+        ].map(({ label, key }) => (
+          <div key={key} className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-2 border-b last:border-b-0 text-sm items-center">
+            <span className="text-muted-foreground">{label}</span>
+            <div className="flex justify-center">
+              <CurrencyInput value={form[key]} onChange={v => setForm(f => ({ ...f, [key]: v }))} className="text-right w-full max-w-[120px]" />
+            </div>
+          </div>
+        ))}
+        <div className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+          <span>Tax</span>
+          <span className="text-center">Tax Amount - Final Total</span>
+        </div>
+        <div className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-2 border-b last:border-b-0 text-sm items-center">
+          <span className="text-muted-foreground">VAT</span>
+          <div className="flex justify-center">
+            <CurrencyInput value={form.vatTaxAmount} onChange={v => setForm(f => ({ ...f, vatTaxAmount: v }))} className="text-right w-full max-w-[120px]" />
+          </div>
+        </div>
+      </Section>
+
       {/* Month End Status */}
       <div className={`rounded-xl border-2 p-4 text-center ${salesMatch && payoutsMatch && receiptsMatch && invoicesMatch && vatMatch ? 'border-green-500 bg-green-50' : 'border-destructive bg-destructive/5'}`}>
         <div className="text-2xl mb-1">{salesMatch && payoutsMatch && receiptsMatch && invoicesMatch && vatMatch ? '✅' : '❌'}</div>
