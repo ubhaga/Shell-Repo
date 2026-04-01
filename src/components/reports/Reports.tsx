@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { BankStatementTab } from './BankStatementTab';
+import { DailySummaryReport } from './DailySummaryReport';
 import { CreditorsRecon } from '@/components/recons/CreditorsRecon';
 import { AirtimeRecon } from '@/components/recons/AirtimeRecon';
 
@@ -490,9 +491,10 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
         </span>
       </div>
 
-      <Tabs defaultValue={mode === 'recons' ? 'speedpoints' : 'payouts'}>
+      <Tabs defaultValue={mode === 'recons' ? 'speedpoints' : 'daily-summary'}>
         {mode === 'reports' ? (
-        <TabsList className="grid grid-cols-6 w-full">
+        <TabsList className="grid grid-cols-7 w-full">
+          <TabsTrigger value="daily-summary">Daily Summary</TabsTrigger>
           <TabsTrigger value="payouts">Payouts</TabsTrigger>
           <TabsTrigger value="receipts">Receipts</TabsTrigger>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
@@ -507,6 +509,11 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
           <TabsTrigger value="airtime">Airtime</TabsTrigger>
         </TabsList>
         )}
+
+        {/* Daily Summary */}
+        <TabsContent value="daily-summary">
+          <DailySummaryReport filterMonth={filterMonth} />
+        </TabsContent>
 
         {/* Payouts */}
         <TabsContent value="payouts">
