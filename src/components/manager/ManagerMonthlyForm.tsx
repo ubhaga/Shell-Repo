@@ -124,6 +124,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
         </div>
         <MetricRow label="Net Sales" spreadsheet={spreadsheetNetSales} branch={form.branchNetSales} match={salesMatch} />
         <MetricRow label="Total Payouts" spreadsheet={spreadsheetPayouts} branch={form.branchTotalPayouts} match={payoutsMatch} />
+        <MetricRow label="Total Receipts" spreadsheet={spreadsheetReceipts} branch={form.branchTotalReceipts} match={receiptsMatch} />
         <MetricRow label="Total Invoices (Incl.)" spreadsheet={spreadsheetInvoicesTotal} branch={form.branchTotalInvoicesCapital} match={invoicesMatch} />
         <MetricRow label="Total VAT" spreadsheet={spreadsheetInvoicesVat} branch={form.branchTotalInvoicesVat} match={vatMatch} />
       </Section>
