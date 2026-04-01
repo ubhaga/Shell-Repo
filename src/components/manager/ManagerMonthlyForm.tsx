@@ -68,6 +68,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
 
   const salesMatch = Math.abs(spreadsheetNetSales - form.branchNetSales) < 1;
   const payoutsMatch = Math.abs(spreadsheetPayouts - form.branchTotalPayouts) < 1;
+  const receiptsMatch = Math.abs(spreadsheetReceipts - form.branchTotalReceipts) < 1;
   const invoicesMatch = Math.abs(spreadsheetInvoicesTotal - form.branchTotalInvoicesCapital) < 1;
   const vatMatch = Math.abs(spreadsheetInvoicesVat - form.branchTotalInvoicesVat) < 1;
 
