@@ -118,10 +118,10 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
 
       {/* Monthly Summary from Spreadsheet */}
       <Section title="Monthly Totals from Spreadsheet vs Branch Report" color="blue">
-        <div className="grid grid-cols-4 gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Metric</span>
           <span className="text-right">Spreadsheet Total</span>
-          <span className="text-right">Branch Report (enter below)</span>
+          <span className="text-center">Branch Report (enter below)</span>
           <span className="text-center">Status</span>
         </div>
         <MetricRow label="Net Sales" spreadsheet={spreadsheetNetSales} branch={form.branchNetSales} match={salesMatch} onChange={v => setForm(f => ({ ...f, branchNetSales: v }))} />
