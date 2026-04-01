@@ -240,8 +240,8 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                   <td className="px-3 py-2.5 text-center border-r">
                     <CurrencyDisplay value={totalShopDiff} highlight />
                    </td>
-                  <td className="px-3 py-2.5 text-center text-xs text-muted-foreground border-r">
-                    {dataRows.filter(r => r.payoutsDiff !== null && Math.abs(r.payoutsDiff) < 0.50).length}/{dataRows.filter(r => r.payoutsDiff !== null).length}
+                  <td className="px-3 py-2.5 text-center border-r">
+                    <CurrencyDisplay value={dataRows.reduce((s, r) => s + (r.payoutsDiff ?? 0), 0)} highlight />
                   </td>
                   <td className="px-3 py-2.5 text-center border-r">
                     <CurrencyDisplay value={dataRows.reduce((s, r) => s + (r.optDiff !== null && Math.abs(r.optDiff) >= 0.01 ? r.optDiff : 0), 0)} />
