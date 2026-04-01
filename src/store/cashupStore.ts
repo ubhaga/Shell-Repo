@@ -105,6 +105,12 @@ function monthlyToRow(f: MonthlyBranchFigures) {
     branch_total_receipts: f.branchTotalReceipts,
     branch_total_invoices_capital: f.branchTotalInvoicesCapital,
     branch_total_invoices_vat: f.branchTotalInvoicesVat,
+    sales_c_store: f.salesCStore,
+    sales_wsl_dsl: f.salesWslDsl,
+    sales_fuel: f.salesFuel,
+    sales_gas: f.salesGas,
+    sales_oil: f.salesOil,
+    vat_tax_amount: f.vatTaxAmount,
     notes: f.notes,
   };
 }
@@ -119,6 +125,12 @@ function rowToMonthly(r: Record<string, unknown>): MonthlyBranchFigures {
     branchTotalReceipts: Number(r.branch_total_receipts ?? 0),
     branchTotalInvoicesCapital: Number(r.branch_total_invoices_capital ?? 0),
     branchTotalInvoicesVat: Number(r.branch_total_invoices_vat ?? 0),
+    salesCStore: Number(r.sales_c_store ?? 0),
+    salesWslDsl: Number(r.sales_wsl_dsl ?? 0),
+    salesFuel: Number(r.sales_fuel ?? 0),
+    salesGas: Number(r.sales_gas ?? 0),
+    salesOil: Number(r.sales_oil ?? 0),
+    vatTaxAmount: Number(r.vat_tax_amount ?? 0),
     notes: r.notes as string,
   };
 }

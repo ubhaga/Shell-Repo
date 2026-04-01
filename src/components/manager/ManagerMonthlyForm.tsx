@@ -35,7 +35,9 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
 
   const [form, setForm] = useState<Omit<MonthlyBranchFigures, 'id'>>({
     month, enteredBy: '', branchNetSales: 0, branchTotalPayouts: 0,
-    branchTotalReceipts: 0, branchTotalInvoicesCapital: 0, branchTotalInvoicesVat: 0, notes: '',
+    branchTotalReceipts: 0, branchTotalInvoicesCapital: 0, branchTotalInvoicesVat: 0,
+    salesCStore: 0, salesWslDsl: 0, salesFuel: 0, salesGas: 0, salesOil: 0, vatTaxAmount: 0,
+    notes: '',
   });
 
   useEffect(() => {
@@ -139,6 +141,38 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
         </div>
         <MetricRow label="Total Invoices (Incl.)" spreadsheet={spreadsheetInvoicesTotal} branch={form.branchTotalInvoicesCapital} match={invoicesMatch} onChange={v => setForm(f => ({ ...f, branchTotalInvoicesCapital: v }))} />
         <MetricRow label="Total VAT" spreadsheet={spreadsheetInvoicesVat} branch={form.branchTotalInvoicesVat} match={vatMatch} onChange={v => setForm(f => ({ ...f, branchTotalInvoicesVat: v }))} />
+      </Section>
+
+      {/* Month End Report (Other) */}
+      <Section title="Month End Report (Other)" color="orange">
+        <div className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+          <span>Description</span>
+          <span className="text-center">Sales Value</span>
+        </div>
+        {[
+          { label: 'Sales C Store', key: 'salesCStore' as const },
+          { label: 'Sales WSL DSL', key: 'salesWslDsl' as const },
+          { label: 'Sales Fuel', key: 'salesFuel' as const },
+          { label: 'Sales Gas', key: 'salesGas' as const },
+          { label: 'Sales Oil', key: 'salesOil' as const },
+        ].map(({ label, key }) => (
+          <div key={key} className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-2 border-b last:border-b-0 text-sm items-center">
+            <span className="text-muted-foreground">{label}</span>
+            <div className="flex justify-center">
+              <CurrencyInput value={form[key]} onChange={v => setForm(f => ({ ...f, [key]: v }))} className="text-right w-full max-w-[120px]" />
+            </div>
+          </div>
+        ))}
+        <div className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+          <span>Tax</span>
+          <span className="text-center">Tax Amount - Final Total</span>
+        </div>
+        <div className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-2 border-b last:border-b-0 text-sm items-center">
+          <span className="text-muted-foreground">VAT</span>
+          <div className="flex justify-center">
+            <CurrencyInput value={form.vatTaxAmount} onChange={v => setForm(f => ({ ...f, vatTaxAmount: v }))} className="text-right w-full max-w-[120px]" />
+          </div>
+        </div>
       </Section>
 
       {/* Month End Status */}
