@@ -48,8 +48,8 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   const monthManagers = managerEntries.filter(e => e.date.startsWith(month));
 
   const spreadsheetNetSales = monthCashups.reduce((s, c) => {
-    const shopNet = c.shop.income - c.shop.returns;
-    const optNet = c.opt.income - c.opt.returns;
+    const shopNet = c.shop.income - c.shop.returns - (c.shop.returns_today ?? 0);
+    const optNet = c.opt.income - c.opt.returns - ((c.opt as any).returns_today ?? 0);
     return s + shopNet + optNet;
   }, 0);
 
