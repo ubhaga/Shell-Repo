@@ -13,10 +13,12 @@ interface Props { selectedDate: string; }
 const MetricRow = ({ label, spreadsheet, branch, match, onChange }: { label: string; spreadsheet: number; branch: number; match: boolean; onChange: (v: number) => void }) => {
   const diff = spreadsheet - branch;
   return (
-    <div className="grid grid-cols-4 gap-3 px-3 py-2 border-b last:border-b-0 text-sm items-center">
-      <span className="text-muted-foreground col-span-1">{label}</span>
+    <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-2 border-b last:border-b-0 text-sm items-center">
+      <span className="text-muted-foreground">{label}</span>
       <CurrencyDisplay value={spreadsheet} className="text-right" />
-      <CurrencyInput value={branch} onChange={onChange} className="text-right" />
+      <div className="flex justify-center">
+        <CurrencyInput value={branch} onChange={onChange} className="text-right w-full max-w-[120px]" />
+      </div>
       <div className={`flex items-center justify-center gap-1 rounded px-2 py-0.5 font-semibold text-xs ${match ? 'status-green' : 'status-red'}`}>
         {match ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
         {match ? 'MATCH' : <CurrencyDisplay value={diff} />}
@@ -116,10 +118,10 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
 
       {/* Monthly Summary from Spreadsheet */}
       <Section title="Monthly Totals from Spreadsheet vs Branch Report" color="blue">
-        <div className="grid grid-cols-4 gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Metric</span>
           <span className="text-right">Spreadsheet Total</span>
-          <span className="text-right">Branch Report (enter below)</span>
+          <span className="text-center">Branch Report (enter below)</span>
           <span className="text-center">Status</span>
         </div>
         <MetricRow label="Net Sales" spreadsheet={spreadsheetNetSales} branch={form.branchNetSales} match={salesMatch} onChange={v => setForm(f => ({ ...f, branchNetSales: v }))} />
