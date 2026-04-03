@@ -90,6 +90,7 @@ function rowToManager(r: Record<string, unknown>): ManagerDailyEntry {
     branchDayEndVat: Number(r.branch_day_end_vat ?? 0),
     invoiceNotes: r.invoice_notes as string,
     cashReconcNotes: r.cash_reconc_notes as string,
+    bankChargesRate: Number(r.bank_charges_rate ?? 37.9),
     bankCharges: Number(r.bank_charges ?? 0),
     banking: Number(r.banking ?? 0),
     locked: r.locked as boolean,

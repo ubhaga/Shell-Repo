@@ -199,6 +199,7 @@ const blankEntry = (date: string): Omit<ManagerDailyEntry, "id"> => ({
   branchDayEndVat: 0,
   invoiceNotes: "",
   cashReconcNotes: "",
+  bankChargesRate: 0,
   bankCharges: 0,
   banking: 0,
   locked: false,

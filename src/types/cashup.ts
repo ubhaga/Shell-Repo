@@ -123,6 +123,7 @@ export interface ManagerDailyEntry {
   branchDayEndVat: number;
   invoiceNotes: string;
   cashReconcNotes: string;
+  bankChargesRate: number; // cents per R100 inclusive
   bankCharges: number;
   banking: number;
   locked: boolean;
