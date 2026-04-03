@@ -373,15 +373,19 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
         const obKey = `OB-${r.date}|${t}`;
         const obManualLines = manualMatches[obKey] || [];
         const obManualAmt = obManualLines.reduce((s, ml) => s + ml.amount, 0);
-        openingBalanceRows.push({
-          date: r.date,
-          terminal: t,
-          batchNo: td.batchNo,
-          cashupAmount: diff, // The outstanding amount carried forward
-          bankAmount: obManualAmt,
-          diff: diff - obManualAmt,
-          manualBankAmount: obManualAmt,
-        });
+        const finalDiff = diff - obManualAmt;
+        // Only show in OB if still outstanding after manual matches
+        if (Math.abs(finalDiff) > 0.01) {
+          openingBalanceRows.push({
+            date: r.date,
+            terminal: t,
+            batchNo: td.batchNo,
+            cashupAmount: diff, // The outstanding amount carried forward
+            bankAmount: obManualAmt,
+            diff: finalDiff,
+            manualBankAmount: obManualAmt,
+          });
+        }
       }
     });
   });
