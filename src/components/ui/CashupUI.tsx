@@ -19,7 +19,12 @@ export function CurrencyInput({ value, onChange, className, placeholder = '0.00'
       disabled={disabled}
       onChange={(e) => {
         const v = parseFloat(e.target.value);
-        onChange(isNaN(v) ? 0 : v);
+        onChange(isNaN(v) ? 0 : Math.round(v * 100) / 100);
+      }}
+      onBlur={(e) => {
+        if (e.target.value !== '' && !isNaN(parseFloat(e.target.value))) {
+          e.target.value = parseFloat(e.target.value).toFixed(2);
+        }
       }}
       className={cn('input-cell', disabled && 'opacity-50 cursor-not-allowed', className)}
     />
