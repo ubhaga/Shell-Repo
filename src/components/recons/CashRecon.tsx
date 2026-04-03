@@ -14,18 +14,23 @@ interface CashReconProps {
 const SEED_DATE = '2026-01-01';
 const SEED_CC = 2000;
 const SEED_COINS = 4483.15;
+const BANKING_OB_SEED_MONTH = '2026-03'; // first month with banking OB
+const BANKING_OB_SEED = 60320.42; // outstanding from Feb
 
 export function CashRecon({ filterMonth }: CashReconProps) {
   const { cashups, managerEntries, getCashupByDate, getManagerEntryByDate } = useCashupStore();
 
-  const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
+  type BankLine = { amount: number; description: string; transaction_date: string };
+  const [bankLines, setBankLines] = useState<BankLine[]>([]);
+  const [allPriorBankLines, setAllPriorBankLines] = useState<BankLine[]>([]);
 
   const loadBankLines = useCallback(async () => {
-    const { data } = await supabase
-      .from('bank_statement_lines')
-      .select('amount, description, transaction_date')
-      .eq('month', filterMonth);
-    setBankLines((data ?? []) as typeof bankLines);
+    const [cur, prior] = await Promise.all([
+      supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth),
+      supabase.from('bank_statement_lines').select('amount, description, transaction_date').lt('month', filterMonth),
+    ]);
+    setBankLines((cur.data ?? []) as BankLine[]);
+    setAllPriorBankLines((prior.data ?? []) as BankLine[]);
   }, [filterMonth]);
 
   useEffect(() => { loadBankLines(); }, [loadBankLines]);
@@ -56,6 +61,27 @@ export function CashRecon({ filterMonth }: CashReconProps) {
       }
     }
   });
+
+  // Compute banking opening balance: sum of all prior months' expected banking minus prior CCONNECT bank deposits
+  const bankingOB = (() => {
+    const monthStartStr = format(monthStart, 'yyyy-MM-dd');
+    // Start with seed OB for March 2026
+    let ob = filterMonth >= BANKING_OB_SEED_MONTH ? BANKING_OB_SEED : 0;
+    // Add all expected banking from seed month onwards, before current month
+    const priorExpected = managerEntries
+      .filter(e => e.date >= BANKING_OB_SEED_MONTH + '-01' && e.date < monthStartStr)
+      .reduce((s, e) => s + (e.banking ?? 0), 0);
+    ob += priorExpected;
+    // Subtract all CCONNECT bank deposits from prior months (seed month onwards)
+    let priorActual = 0;
+    allPriorBankLines.forEach(line => {
+      if (line.description.toUpperCase().trim().includes('CCONNECT')) {
+        priorActual += line.amount;
+      }
+    });
+    ob -= priorActual;
+    return ob;
+  })();
 
   // Compute opening balances by walking from seed date to month start
   const computeOpeningForMonth = (): { ccOpening: number; coinsOpening: number } => {
@@ -95,18 +121,16 @@ export function CashRecon({ filterMonth }: CashReconProps) {
   // Build daily rows
   type DayRow = {
     date: string;
-    // Cash Connect
     ccOpening: number;
     ccDailyCashup: number;
     ccBagClosure: number;
     ccTransferIn: number;
     ccClosing: number;
-    // Bank matching for CC
     bankCharges: number;
-    bankingExpected: number; // bag closure - bank charges
-    bankActual: number; // from CCONNECT bank lines
+    bankingExpected: number;
+    bankActual: number;
     bankMatched: boolean;
-    // Coins
+    bankRunningBalance: number; // cumulative outstanding (expected - actual)
     coinsOpening: number;
     coinsDailyCashup: number;
     coinsBagClosure: number;
@@ -117,6 +141,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
   const dailyRows: DayRow[] = [];
   let runningCC = monthCCOpening;
   let runningCoins = monthCoinsOpening;
+  let bankRunning = bankingOB; // start with OB from prior months
 
   days.forEach(day => {
     const dateStr = format(day, 'yyyy-MM-dd');
@@ -139,6 +164,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
     const coinsClosing = coinsOpening + coinsDailyCashup - coinsBagClosure - transferFromCoins;
 
     const bankActual = cconnectByDate.get(dateStr) ?? 0;
+    bankRunning = bankRunning + bankingExpected - bankActual;
     const bankMatched = bankingExpected > 0 && Math.abs(bankingExpected - bankActual) < 0.01;
 
     dailyRows.push({
@@ -152,6 +178,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
       bankingExpected,
       bankActual,
       bankMatched,
+      bankRunningBalance: bankRunning,
       coinsOpening,
       coinsDailyCashup,
       coinsBagClosure,
@@ -197,13 +224,25 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                 <TableHead className="text-right text-xs border-l min-w-[80px]">Bank Charges</TableHead>
                 <TableHead className="text-right text-xs min-w-[90px]">Expected Banking</TableHead>
                 <TableHead className="text-right text-xs min-w-[90px]">Bank Stmt</TableHead>
-                <TableHead className="text-right text-xs min-w-[80px]">Diff</TableHead>
+                <TableHead className="text-right text-xs min-w-[100px]">Outstanding</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
+              {/* Banking Opening Balance row */}
+              {bankingOB !== 0 && (
+                <TableRow className="bg-muted/40 font-semibold">
+                  <TableCell className="text-xs">Opening Balance</TableCell>
+                  <TableCell colSpan={5}></TableCell>
+                  <TableCell className="border-l"></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell className="text-right text-xs font-semibold">
+                    <CurrencyDisplay value={bankingOB} />
+                  </TableCell>
+                </TableRow>
+              )}
               {dailyRows.map(row => {
                 const hasData = row.ccDailyCashup > 0 || row.ccBagClosure > 0 || row.ccTransferIn > 0;
-                const bankDiff = row.bankingExpected > 0 ? row.bankActual - row.bankingExpected : 0;
 
                 return (
                   <TableRow key={row.date} className={!hasData ? 'opacity-50' : ''}>
@@ -246,17 +285,13 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                         : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className={`text-right text-xs font-semibold ${
-                      row.bankingExpected === 0 ? '' :
-                      row.bankMatched ? 'bg-green-100 text-green-700' :
-                      row.bankActual === 0 ? 'bg-yellow-50 text-yellow-700' :
+                      Math.abs(row.bankRunningBalance) < 0.01 ? 'bg-green-100 text-green-700' :
                       'bg-destructive/10 text-destructive'
                     }`}>
-                      {row.bankingExpected > 0
-                        ? (row.bankMatched
+                      {(row.bankingExpected > 0 || row.bankActual > 0 || Math.abs(row.bankRunningBalance) > 0.01)
+                        ? (Math.abs(row.bankRunningBalance) < 0.01
                           ? '✓'
-                          : row.bankActual === 0
-                            ? 'No bank'
-                            : <CurrencyDisplay value={bankDiff} />)
+                          : <CurrencyDisplay value={row.bankRunningBalance} />)
                         : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                   </TableRow>
@@ -288,9 +323,9 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                   <CurrencyDisplay value={totalBankActual} highlight />
                 </TableCell>
                 <TableCell className={`text-right text-xs font-bold ${
-                  Math.abs(totalBankActual - totalBankingExpected) < 0.01 ? 'text-green-700' : 'text-destructive'
+                  Math.abs(bankRunning) < 0.01 ? 'text-green-700' : 'text-destructive'
                 }`}>
-                  <CurrencyDisplay value={totalBankActual - totalBankingExpected} />
+                  <CurrencyDisplay value={bankRunning} />
                 </TableCell>
               </TableRow>
             </TableBody>
