@@ -10,10 +10,10 @@ import { format } from 'date-fns';
 
 interface Props { selectedDate: string; }
 
-const MetricRow = ({ label, spreadsheet, branch, match, onChange }: { label: string; spreadsheet: number; branch: number; match: boolean; onChange: (v: number) => void }) => {
+const MetricRow = ({ label, spreadsheet, branch, match, onChange, explanation, onExplanationChange }: { label: string; spreadsheet: number; branch: number; match: boolean; onChange: (v: number) => void; explanation: string; onExplanationChange: (v: string) => void }) => {
   const diff = spreadsheet - branch;
   return (
-    <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-2 border-b last:border-b-0 text-sm items-center">
+    <div className="grid grid-cols-[2fr_1fr_1fr_1fr_2fr] gap-3 px-3 py-2 border-b last:border-b-0 text-sm items-center">
       <span className="text-muted-foreground">{label}</span>
       <CurrencyDisplay value={spreadsheet} className="text-right" />
       <div className="flex justify-center">
@@ -23,6 +23,12 @@ const MetricRow = ({ label, spreadsheet, branch, match, onChange }: { label: str
         {match ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
         {match ? 'MATCH' : <CurrencyDisplay value={diff} />}
       </div>
+      <input
+        value={explanation}
+        onChange={e => onExplanationChange(e.target.value)}
+        className="input-cell w-full text-left text-xs"
+        placeholder={match ? '' : 'Explain variance...'}
+      />
     </div>
   );
 };
@@ -37,6 +43,8 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     month, enteredBy: '', branchNetSales: 0, branchTotalPayouts: 0,
     branchTotalReceipts: 0, branchTotalInvoicesCapital: 0, branchTotalInvoicesVat: 0,
     salesCStore: 0, salesWslDsl: 0, salesFuel: 0, salesGas: 0, salesOil: 0, vatTaxAmount: 0,
+    explanationNetSales: '', explanationPayouts: '', explanationReceipts: '',
+    explanationInvoices: '', explanationVat: '',
     notes: '',
   });
 
@@ -120,27 +128,29 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
 
       {/* Month End Report */}
       <Section title="Month End Report" color="blue">
-        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_2fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Metric</span>
           <span className="text-right">Spreadsheet Total</span>
           <span className="text-center">Branch Report (enter below)</span>
           <span className="text-center">Status</span>
+          <span>Explanation</span>
         </div>
-        <MetricRow label="Net Sales" spreadsheet={spreadsheetNetSales} branch={form.branchNetSales} match={salesMatch} onChange={v => setForm(f => ({ ...f, branchNetSales: v }))} />
-        <MetricRow label="Total Payouts" spreadsheet={spreadsheetPayouts} branch={form.branchTotalPayouts} match={payoutsMatch} onChange={v => setForm(f => ({ ...f, branchTotalPayouts: v }))} />
-        <MetricRow label="Total Receipts" spreadsheet={spreadsheetReceipts} branch={form.branchTotalReceipts} match={receiptsMatch} onChange={v => setForm(f => ({ ...f, branchTotalReceipts: v }))} />
+        <MetricRow label="Net Sales" spreadsheet={spreadsheetNetSales} branch={form.branchNetSales} match={salesMatch} onChange={v => setForm(f => ({ ...f, branchNetSales: v }))} explanation={form.explanationNetSales} onExplanationChange={v => setForm(f => ({ ...f, explanationNetSales: v }))} />
+        <MetricRow label="Total Payouts" spreadsheet={spreadsheetPayouts} branch={form.branchTotalPayouts} match={payoutsMatch} onChange={v => setForm(f => ({ ...f, branchTotalPayouts: v }))} explanation={form.explanationPayouts} onExplanationChange={v => setForm(f => ({ ...f, explanationPayouts: v }))} />
+        <MetricRow label="Total Receipts" spreadsheet={spreadsheetReceipts} branch={form.branchTotalReceipts} match={receiptsMatch} onChange={v => setForm(f => ({ ...f, branchTotalReceipts: v }))} explanation={form.explanationReceipts} onExplanationChange={v => setForm(f => ({ ...f, explanationReceipts: v }))} />
       </Section>
 
       {/* Creditors Transactions Report */}
       <Section title="Creditors Transactions Report" color="purple">
-        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_2fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Metric</span>
           <span className="text-right">Spreadsheet Total</span>
           <span className="text-center">Branch Report (enter below)</span>
           <span className="text-center">Status</span>
+          <span>Explanation</span>
         </div>
-        <MetricRow label="Total Invoices (Incl.)" spreadsheet={spreadsheetInvoicesTotal} branch={form.branchTotalInvoicesCapital} match={invoicesMatch} onChange={v => setForm(f => ({ ...f, branchTotalInvoicesCapital: v }))} />
-        <MetricRow label="Total VAT" spreadsheet={spreadsheetInvoicesVat} branch={form.branchTotalInvoicesVat} match={vatMatch} onChange={v => setForm(f => ({ ...f, branchTotalInvoicesVat: v }))} />
+        <MetricRow label="Total Invoices (Incl.)" spreadsheet={spreadsheetInvoicesTotal} branch={form.branchTotalInvoicesCapital} match={invoicesMatch} onChange={v => setForm(f => ({ ...f, branchTotalInvoicesCapital: v }))} explanation={form.explanationInvoices} onExplanationChange={v => setForm(f => ({ ...f, explanationInvoices: v }))} />
+        <MetricRow label="Total VAT" spreadsheet={spreadsheetInvoicesVat} branch={form.branchTotalInvoicesVat} match={vatMatch} onChange={v => setForm(f => ({ ...f, branchTotalInvoicesVat: v }))} explanation={form.explanationVat} onExplanationChange={v => setForm(f => ({ ...f, explanationVat: v }))} />
       </Section>
 
       {/* Month End Report (Other) */}
