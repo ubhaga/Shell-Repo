@@ -125,6 +125,7 @@ export type Database = {
       manager_daily_entries: {
         Row: {
           bank_charges: number
+          bank_charges_rate: number
           banking: number
           branch_day_end_total: number
           branch_day_end_vat: number
@@ -153,6 +154,7 @@ export type Database = {
         }
         Insert: {
           bank_charges?: number
+          bank_charges_rate?: number
           banking?: number
           branch_day_end_total?: number
           branch_day_end_vat?: number
@@ -181,6 +183,7 @@ export type Database = {
         }
         Update: {
           bank_charges?: number
+          bank_charges_rate?: number
           banking?: number
           branch_day_end_total?: number
           branch_day_end_vat?: number

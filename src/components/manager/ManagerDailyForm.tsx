@@ -199,6 +199,7 @@ const blankEntry = (date: string): Omit<ManagerDailyEntry, "id"> => ({
   branchDayEndVat: 0,
   invoiceNotes: "",
   cashReconcNotes: "",
+  bankChargesRate: 0,
   bankCharges: 0,
   banking: 0,
   locked: false,
@@ -236,11 +237,17 @@ export function ManagerDailyForm({ selectedDate }: Props) {
 
   const [form, setForm] = useState<Omit<ManagerDailyEntry, "id">>(() => blankEntry(selectedDate));
 
+  // Find prev day's bank charges rate for auto-fill
+  const prevEntry = getManagerEntryByDate(prevDate);
+  const prevBankChargesRate = prevEntry?.bankChargesRate ?? 37.9;
+
   useEffect(() => {
     if (existing) {
       setForm({ ...existing });
     } else {
       const base = blankEntry(selectedDate);
+      // Auto-fill rate from previous day (or default 37.9)
+      base.bankChargesRate = prevBankChargesRate;
       if (isFirstJan2026) {
         base.coinsOpeningBalance = 4483.15;
         base.easypayOpeningBalance = 3500;
@@ -329,8 +336,9 @@ export function ManagerDailyForm({ selectedDate }: Props) {
     Math.abs(form.ccBagClosureCashConnect) +
     Math.abs(form.transferFromCoins);
 
-  // 2.1 Banking — derived from CC Bag Closure Cash Connect
-  const bankChargesCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) / 100) * 0.3297 * 1.15 * 100) / 100;
+  // 2.1 Banking — derived from CC Bag Closure Cash Connect using configurable rate
+  const effectiveRate = form.bankChargesRate || 37.9; // cents per R100 inclusive
+  const bankChargesCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) / 100) * (effectiveRate / 100) * 100) / 100;
   const bankingCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) - bankChargesCalc) * 100) / 100;
 
   const openingIsReadOnly = true; // Always read-only — seeded from prev day or Jan 1 spreadsheet values
@@ -437,6 +445,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
       coinsOpeningBalance: effectiveCoinsOpening,
       easypayOpeningBalance: effectiveEasypayOpening,
       cashConnectOpeningBalance: effectiveCCOpening,
+      bankChargesRate: effectiveRate,
       bankCharges: bankChargesCalc,
       banking: bankingCalc,
     };
@@ -799,6 +808,14 @@ export function ManagerDailyForm({ selectedDate }: Props) {
 
       {/* 2.1 Banking — full width, below 2 */}
       <Section title="2.1 Banking" color="blue">
+        <DataRow label="Charges cents per R100 (incl)">
+          <CurrencyInput
+            value={form.bankChargesRate}
+            onChange={(v) => setForm((f) => ({ ...f, bankChargesRate: v }))}
+            className="w-[120px]"
+            placeholder="37.90"
+          />
+        </DataRow>
         <DataRow label="Bank Charges">
           <div className="input-cell text-right bg-muted/30 text-sm px-2 py-1 rounded min-w-[120px]">
             <CurrencyDisplay value={bankChargesCalc} />
