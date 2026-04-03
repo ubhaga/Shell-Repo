@@ -388,6 +388,10 @@ export function CashierDailyForm({ selectedDate }: Props) {
             </div>
           </div>
         </div>
+        <div className="flex items-center justify-between px-3 py-2 bg-primary/10 text-sm font-bold border-t">
+          <span>Total Net Sales (Shop + OPT)</span>
+          <CurrencyDisplay value={shopNetSales + optNetSales} highlight />
+        </div>
       </div>
 
       {/* ─── SECTION 2: PAYOUTS (Shop only) ─── */}
