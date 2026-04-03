@@ -10,10 +10,10 @@ import { format } from 'date-fns';
 
 interface Props { selectedDate: string; }
 
-const MetricRow = ({ label, spreadsheet, branch, match, onChange }: { label: string; spreadsheet: number; branch: number; match: boolean; onChange: (v: number) => void }) => {
+const MetricRow = ({ label, spreadsheet, branch, match, onChange, explanation, onExplanationChange }: { label: string; spreadsheet: number; branch: number; match: boolean; onChange: (v: number) => void; explanation: string; onExplanationChange: (v: string) => void }) => {
   const diff = spreadsheet - branch;
   return (
-    <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-2 border-b last:border-b-0 text-sm items-center">
+    <div className="grid grid-cols-[2fr_1fr_1fr_1fr_2fr] gap-3 px-3 py-2 border-b last:border-b-0 text-sm items-center">
       <span className="text-muted-foreground">{label}</span>
       <CurrencyDisplay value={spreadsheet} className="text-right" />
       <div className="flex justify-center">
@@ -23,6 +23,12 @@ const MetricRow = ({ label, spreadsheet, branch, match, onChange }: { label: str
         {match ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
         {match ? 'MATCH' : <CurrencyDisplay value={diff} />}
       </div>
+      <input
+        value={explanation}
+        onChange={e => onExplanationChange(e.target.value)}
+        className="input-cell w-full text-left text-xs"
+        placeholder={match ? '' : 'Explain variance...'}
+      />
     </div>
   );
 };
