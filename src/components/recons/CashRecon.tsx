@@ -233,8 +233,6 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                   </TableCell>
                 </TableRow>
               )}
-            </TableHeader>
-            <TableBody>
               {dailyRows.map(row => {
                 const hasData = row.ccDailyCashup > 0 || row.ccBagClosure > 0 || row.ccTransferIn > 0;
                 const bankDiff = row.bankingExpected > 0 ? row.bankActual - row.bankingExpected : 0;
