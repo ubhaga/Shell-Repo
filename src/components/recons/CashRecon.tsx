@@ -14,6 +14,8 @@ interface CashReconProps {
 const SEED_DATE = '2026-01-01';
 const SEED_CC = 2000;
 const SEED_COINS = 4483.15;
+const BANKING_OB_SEED_MONTH = '2026-03'; // first month with banking OB
+const BANKING_OB_SEED = 60320.42; // outstanding from Feb
 
 export function CashRecon({ filterMonth }: CashReconProps) {
   const { cashups, managerEntries, getCashupByDate, getManagerEntryByDate } = useCashupStore();
