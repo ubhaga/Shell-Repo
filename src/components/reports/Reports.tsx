@@ -272,7 +272,7 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
     const termNum = TERMINAL_NUM_MAP[l.matched_terminal] || '';
     const batchMatch = l.description.match(new RegExp(`${termNum}\\s+(\\d+)`));
     const batch = batchMatch ? batchMatch[1] : '';
-    bankParsed.push({ terminal: l.matched_terminal, batch, amount: l.amount, date: l.transaction_date, description: l.description, idx });
+    bankParsed.push({ terminal: l.matched_terminal, batch, amount: l.amount, date: l.transaction_date, description: l.description, idx, bankLineId: l.id });
   });
 
   // Build auto-match lookup: key = "terminal|batch" -> bank amount
