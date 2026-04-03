@@ -78,29 +78,39 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   useEffect(() => { loadManualMatches(); }, [loadManualMatches]);
 
   // Diff clearances: pairs of differences that offset each other
-  type DiffClearance = { id: string; terminal: string; date_1: string; date_2: string; amount: number };
+  type DiffClearance = { id: string; month: string; terminal: string; date_1: string; date_2: string; amount: number };
   const [diffClearances, setDiffClearances] = useState<DiffClearance[]>([]);
   const [selectedDiffForClearing, setSelectedDiffForClearing] = useState<{ date: string; terminal: string; diff: number } | null>(null);
+  const [prevDiffClearances, setPrevDiffClearances] = useState<DiffClearance[]>([]);
 
   const loadDiffClearances = useCallback(async () => {
     const { data } = await supabase
       .from('speedpoint_diff_clearances')
       .select('*')
-      .eq('month', filterMonth);
-    setDiffClearances((data ?? []).map((r: Record<string, unknown>) => ({
+      .in('month', [filterMonth, prevMonth]);
+
+    const mapped = (data ?? []).map((r: Record<string, unknown>) => ({
       id: r.id as string,
+      month: r.month as string,
       terminal: r.terminal as string,
       date_1: r.date_1 as string,
       date_2: r.date_2 as string,
       amount: Number(r.amount),
-    })));
-  }, [filterMonth]);
+    }));
+
+    setDiffClearances(mapped.filter(r => r.month === filterMonth));
+    setPrevDiffClearances(mapped.filter(r => r.month === prevMonth));
+  }, [filterMonth, prevMonth]);
   useEffect(() => { loadDiffClearances(); }, [loadDiffClearances]);
 
   // Check if a date+terminal diff is cleared
   const isDiffCleared = useCallback((date: string, terminal: string) => {
     return diffClearances.some(c => c.terminal === terminal && (c.date_1 === date || c.date_2 === date));
   }, [diffClearances]);
+
+  const isPrevDiffCleared = useCallback((date: string, terminal: string) => {
+    return prevDiffClearances.some(c => c.terminal === terminal && (c.date_1 === date || c.date_2 === date));
+  }, [prevDiffClearances]);
 
   const getClearanceForCell = useCallback((date: string, terminal: string) => {
     return diffClearances.find(c => c.terminal === terminal && (c.date_1 === date || c.date_2 === date));
@@ -143,6 +153,7 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
         const r = data[0] as Record<string, unknown>;
         setDiffClearances(prev => [...prev, {
           id: r.id as string,
+          month: (r.month as string) || filterMonth,
           terminal: r.terminal as string,
           date_1: r.date_1 as string,
           date_2: r.date_2 as string,
@@ -302,16 +313,6 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
       let isManual = false;
       if (!consumedBankKeys.has(key)) {
         bankAmt = bankLookup[key] ?? 0;
-        // For compound batches like "536/537", try each part
-        if (bankAmt === 0 && td.batchNo.includes('/')) {
-          td.batchNo.split('/').forEach(part => {
-            const partKey = `${t}|${part.trim()}`;
-            if (!consumedBankKeys.has(partKey)) {
-              bankAmt += bankLookup[partKey] ?? 0;
-              if (bankLookup[partKey]) consumedBankKeys.add(partKey);
-            }
-          });
-        }
         if (bankAmt > 0) consumedBankKeys.add(key);
       }
       // Add manual matches for this cell
@@ -368,20 +369,14 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
     SP_TERMINALS.forEach(t => {
       const td = r.terminals[t];
       if (!td || td.total === 0) return;
+      if (isPrevDiffCleared(r.date, t)) return;
       // For auto-match dedup, use terminal+batch — but only skip if batch is non-empty and already consumed
       const batchKey = `${t}|${td.batchNo}`;
       const hasMeaningfulBatch = td.batchNo && td.batchNo !== 'X' && td.batchNo !== '';
       if (hasMeaningfulBatch && prevConsumedBatchKeys.has(batchKey)) return;
       if (hasMeaningfulBatch) prevConsumedBatchKeys.add(batchKey);
       
-      // Try auto-matching: for compound batches like "536/537", try each part
-      let autoBankAmt = prevBankLookup[batchKey] ?? 0;
-      if (autoBankAmt === 0 && td.batchNo.includes('/')) {
-        td.batchNo.split('/').forEach(part => {
-          const partKey = `${t}|${part.trim()}`;
-          autoBankAmt += prevBankLookup[partKey] ?? 0;
-        });
-      }
+      const autoBankAmt = prevBankLookup[batchKey] ?? 0;
       
       // Check manual matches from previous month
       const prevManualKey = `${r.date}|${t}`;
