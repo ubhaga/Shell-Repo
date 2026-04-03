@@ -153,6 +153,7 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
         const r = data[0] as Record<string, unknown>;
         setDiffClearances(prev => [...prev, {
           id: r.id as string,
+          month: (r.month as string) || filterMonth,
           terminal: r.terminal as string,
           date_1: r.date_1 as string,
           date_2: r.date_2 as string,
