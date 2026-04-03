@@ -11,6 +11,7 @@ interface Props {
 interface DayMetrics {
   date: string;
   cashierName?: string;
+  enteredBy?: string;
   shopDiff: number | null;
   optDiff: number | null;
   payoutsDiff: number | null;
@@ -27,7 +28,7 @@ function computeDayMetrics(
   managerEntry: ManagerDailyEntry | undefined,
 ): DayMetrics {
   if (!cashup && !managerEntry) {
-    return { date: dateStr, shopDiff: null, optDiff: null, payoutsDiff: null, invDiff: null, invMatch: null, vatDiff: null, vatMatch: null, hasData: false };
+    return { date: dateStr, shopDiff: null, optDiff: null, payoutsDiff: null, invDiff: null, invMatch: null, vatDiff: null, vatMatch: null, hasData: false, enteredBy: undefined };
   }
 
   let shopDiff: number | null = null;
@@ -72,9 +73,13 @@ function computeDayMetrics(
     vatMatch = Math.abs(vatDiff) < 1.00;
   }
 
+  // Combine entered_by from cashup and manager (they may differ)
+  const enteredBy = cashup?.enteredBy || managerEntry?.enteredBy || undefined;
+
   return {
     date: dateStr,
     cashierName: cashup?.cashierName,
+    enteredBy,
     shopDiff,
     optDiff,
     payoutsDiff,
@@ -141,6 +146,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground w-12 border-r">Day</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Date</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Cashier</th>
+                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Entered By</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Shop Till</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Payouts</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">OPT</th>
@@ -157,7 +163,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                     <tr key={row.date} className="border-b last:border-b-0 bg-muted/10">
                       <td className="px-3 py-2 text-center text-muted-foreground/40 font-mono border-r">{format(d, 'd')}</td>
                       <td className="px-3 py-2 text-center text-muted-foreground/40 border-r">{format(d, 'EEE dd')}</td>
-                      <td colSpan={7} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">No data</td>
+                      <td colSpan={8} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">No data</td>
                     </tr>
                   );
                 }
@@ -175,6 +181,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                     <td className="px-3 py-2 text-center font-mono text-muted-foreground border-r">{format(d, 'd')}</td>
                     <td className="px-3 py-2 text-center font-medium border-r">{format(d, 'EEE dd MMM')}</td>
                     <td className="px-3 py-2 text-center text-muted-foreground border-r">{row.cashierName || '—'}</td>
+                    <td className="px-3 py-2 text-center text-muted-foreground border-r">{row.enteredBy || '—'}</td>
                     <td className="px-3 py-2 text-center border-r">
                       {row.shopDiff !== null ? (
                         <span className={`inline-flex items-center justify-center gap-1 font-mono ${shopOk ? 'text-green-700' : 'text-red-600 font-semibold'}`}>
@@ -236,7 +243,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
             {dataRows.length > 0 && (
               <tfoot>
                 <tr className="bg-muted/50 border-t-2 font-semibold">
-                  <td colSpan={3} className="px-3 py-2.5 text-center border-r">Monthly Total</td>
+                  <td colSpan={4} className="px-3 py-2.5 text-center border-r">Monthly Total</td>
                   <td className="px-3 py-2.5 text-center border-r">
                     <CurrencyDisplay value={totalShopDiff} highlight />
                    </td>
