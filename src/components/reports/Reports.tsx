@@ -57,14 +57,15 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
     if (data && data.length > 0) {
       const loaded: Record<string, BankParsedLine[]> = {};
       const prevLoaded: Record<string, BankParsedLine[]> = {};
-      (data as { month: string; cashup_date: string; terminal: string; bank_line_idx: number; bank_amount: number; bank_description: string; bank_date: string; bank_terminal: string; bank_batch: string }[]).forEach(row => {
+      (data as { month: string; cashup_date: string; terminal: string; bank_line_idx: number; bank_amount: number; bank_description: string; bank_date: string; bank_terminal: string; bank_batch: string; bank_line_id: string | null }[]).forEach(row => {
         const key = `${row.cashup_date}|${row.terminal}`;
+        const bankLineId = row.bank_line_id || `legacy-${row.bank_line_idx}`;
         if (row.month === filterMonth) {
           if (!loaded[key]) loaded[key] = [];
-          loaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx });
+          loaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx, bankLineId });
         } else {
           if (!prevLoaded[key]) prevLoaded[key] = [];
-          prevLoaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx });
+          prevLoaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx, bankLineId });
         }
       });
       setManualMatches(loaded);
