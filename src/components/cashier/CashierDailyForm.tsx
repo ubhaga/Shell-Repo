@@ -373,25 +373,29 @@ export function CashierDailyForm({ selectedDate }: Props) {
             </div>
           </div>
           {/* OPT income */}
-<div>
-  <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
-    <span className="text-muted-foreground">Income (Gross Sales)</span>
-    <CurrencyInput value={form.opt.income} onChange={(v) => setOpt({ income: v })} />
-  </div>
-
-  <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
-    <span className="text-muted-foreground">Returns</span>
-    <CurrencyInput value={form.opt.returns} onChange={(v) => setOpt({ returns: v })} />
-  </div>
-
-  {/* Spacer row */}
-  <div className="px-3 py-1.5 border-b text-sm"></div>
-
-  <div className="flex items-center justify-between px-3 py-1.5 bg-secondary text-sm font-semibold">
-    <span>Net Sales</span>
-    <CurrencyDisplay value={optNetSales} highlight />
-  </div>
-</div>
+          <div>
+            <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
+              <span className="text-muted-foreground">Income (Gross Sales)</span>
+              <CurrencyInput value={form.opt.income} onChange={(v) => setOpt({ income: v })} />
+            </div>
+            <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
+              <span className="text-muted-foreground">Returns</span>
+              <CurrencyInput value={form.opt.returns} onChange={(v) => setOpt({ returns: v })} />
+            </div>
+            {/* Spacer row to align with Shop Returns (Today Shift) */}
+            <div className="px-3 py-1.5 border-b text-sm">&nbsp;</div>
+            <div className="flex items-center justify-between px-3 py-1.5 bg-secondary text-sm font-semibold">
+              <span>Net Sales</span>
+              <CurrencyDisplay value={optNetSales} highlight />
+            </div>
+          </div>
+        </div>
+        {/* Total Net Sales row */}
+        <div className="flex items-center justify-between px-3 py-2 bg-primary/10 text-sm font-bold border-t">
+          <span>Total Net Sales (Shop + OPT)</span>
+          <CurrencyDisplay value={shopNetSales + optNetSales} highlight />
+        </div>
+      </div>
 
       {/* ─── SECTION 2: PAYOUTS (Shop only) ─── */}
       <div className="border rounded-lg overflow-hidden">
