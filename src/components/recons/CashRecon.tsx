@@ -319,7 +319,6 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                 }`}>
                   <CurrencyDisplay value={bankRunning} />
                 </TableCell>
-                </TableCell>
               </TableRow>
             </TableBody>
           </Table>
