@@ -445,6 +445,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
       coinsOpeningBalance: effectiveCoinsOpening,
       easypayOpeningBalance: effectiveEasypayOpening,
       cashConnectOpeningBalance: effectiveCCOpening,
+      bankChargesRate: effectiveRate,
       bankCharges: bankChargesCalc,
       banking: bankingCalc,
     };
