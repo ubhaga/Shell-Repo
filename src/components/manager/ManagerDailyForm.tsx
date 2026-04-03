@@ -237,11 +237,17 @@ export function ManagerDailyForm({ selectedDate }: Props) {
 
   const [form, setForm] = useState<Omit<ManagerDailyEntry, "id">>(() => blankEntry(selectedDate));
 
+  // Find prev day's bank charges rate for auto-fill
+  const prevEntry = getManagerEntryByDate(prevDate);
+  const prevBankChargesRate = prevEntry?.bankChargesRate ?? 37.9;
+
   useEffect(() => {
     if (existing) {
       setForm({ ...existing });
     } else {
       const base = blankEntry(selectedDate);
+      // Auto-fill rate from previous day (or default 37.9)
+      base.bankChargesRate = prevBankChargesRate;
       if (isFirstJan2026) {
         base.coinsOpeningBalance = 4483.15;
         base.easypayOpeningBalance = 3500;
