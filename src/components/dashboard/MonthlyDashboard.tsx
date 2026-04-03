@@ -243,7 +243,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
             {dataRows.length > 0 && (
               <tfoot>
                 <tr className="bg-muted/50 border-t-2 font-semibold">
-                  <td colSpan={3} className="px-3 py-2.5 text-center border-r">Monthly Total</td>
+                  <td colSpan={4} className="px-3 py-2.5 text-center border-r">Monthly Total</td>
                   <td className="px-3 py-2.5 text-center border-r">
                     <CurrencyDisplay value={totalShopDiff} highlight />
                    </td>
