@@ -603,10 +603,11 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
           <TabsTrigger value="bank">Bank</TabsTrigger>
         </TabsList>
         ) : (
-        <TabsList className="grid grid-cols-3 w-full max-w-lg">
+        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
           <TabsTrigger value="speedpoints">Speedpoints</TabsTrigger>
           <TabsTrigger value="creditors">Creditors</TabsTrigger>
           <TabsTrigger value="airtime">Airtime</TabsTrigger>
+          <TabsTrigger value="cash">Cash CC & Coins</TabsTrigger>
         </TabsList>
         )}
 
