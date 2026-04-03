@@ -394,7 +394,7 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   // Unmatched: bank lines not auto-matched and not manually matched
   // Use consumedBankKeys from matching above instead of re-deriving
   const unmatchedTerminalLines = bankParsed.filter(bp => {
-    if (manuallyMatchedIdxs.has(bp.idx)) return false;
+    if (manuallyMatchedIds.has(bp.bankLineId)) return false;
     if (!bp.batch) return true;
     return !consumedBankKeys.has(`${bp.terminal}|${bp.batch}`);
   });
