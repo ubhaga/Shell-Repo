@@ -242,6 +242,11 @@ export type Database = {
           branch_total_receipts: number
           created_at: string
           entered_by: string
+          explanation_invoices: string
+          explanation_net_sales: string
+          explanation_payouts: string
+          explanation_receipts: string
+          explanation_vat: string
           id: string
           month: string
           notes: string
@@ -261,6 +266,11 @@ export type Database = {
           branch_total_receipts?: number
           created_at?: string
           entered_by?: string
+          explanation_invoices?: string
+          explanation_net_sales?: string
+          explanation_payouts?: string
+          explanation_receipts?: string
+          explanation_vat?: string
           id?: string
           month: string
           notes?: string
@@ -280,6 +290,11 @@ export type Database = {
           branch_total_receipts?: number
           created_at?: string
           entered_by?: string
+          explanation_invoices?: string
+          explanation_net_sales?: string
+          explanation_payouts?: string
+          explanation_receipts?: string
+          explanation_vat?: string
           id?: string
           month?: string
           notes?: string
