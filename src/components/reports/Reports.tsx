@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { toast } from '@/hooks/use-toast';
 import { useCashupStore } from '@/store/cashupStore';
 import { supabase } from '@/integrations/supabase/client';
 import { CurrencyDisplay } from '@/components/ui/CashupUI';
@@ -75,7 +76,83 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   }, [filterMonth, prevMonth]);
   useEffect(() => { loadManualMatches(); }, [loadManualMatches]);
 
-  // Payout report — with invoice matching
+  // Diff clearances: pairs of differences that offset each other
+  type DiffClearance = { id: string; terminal: string; date_1: string; date_2: string; amount: number };
+  const [diffClearances, setDiffClearances] = useState<DiffClearance[]>([]);
+  const [selectedDiffForClearing, setSelectedDiffForClearing] = useState<{ date: string; terminal: string; diff: number } | null>(null);
+
+  const loadDiffClearances = useCallback(async () => {
+    const { data } = await supabase
+      .from('speedpoint_diff_clearances')
+      .select('*')
+      .eq('month', filterMonth);
+    setDiffClearances((data ?? []).map((r: Record<string, unknown>) => ({
+      id: r.id as string,
+      terminal: r.terminal as string,
+      date_1: r.date_1 as string,
+      date_2: r.date_2 as string,
+      amount: Number(r.amount),
+    })));
+  }, [filterMonth]);
+  useEffect(() => { loadDiffClearances(); }, [loadDiffClearances]);
+
+  // Check if a date+terminal diff is cleared
+  const isDiffCleared = useCallback((date: string, terminal: string) => {
+    return diffClearances.some(c => c.terminal === terminal && (c.date_1 === date || c.date_2 === date));
+  }, [diffClearances]);
+
+  const getClearanceForCell = useCallback((date: string, terminal: string) => {
+    return diffClearances.find(c => c.terminal === terminal && (c.date_1 === date || c.date_2 === date));
+  }, [diffClearances]);
+
+  const handleDiffClick = async (date: string, terminal: string, diff: number) => {
+    // If already cleared, remove clearance
+    const existing = getClearanceForCell(date, terminal);
+    if (existing) {
+      await supabase.from('speedpoint_diff_clearances').delete().eq('id', existing.id);
+      setDiffClearances(prev => prev.filter(c => c.id !== existing.id));
+      toast({ title: 'Clearance removed', description: `Unlinked ${date} from its paired difference.` });
+      return;
+    }
+
+    if (!selectedDiffForClearing) {
+      // First selection
+      setSelectedDiffForClearing({ date, terminal, diff });
+      toast({ title: 'First difference selected', description: `Now click the offsetting difference to pair with ${date} (${terminal}).` });
+    } else {
+      // Second selection — must be same terminal, different date
+      if (selectedDiffForClearing.terminal !== terminal) {
+        toast({ title: 'Terminal mismatch', description: 'Both differences must be for the same terminal.', variant: 'destructive' });
+        setSelectedDiffForClearing(null);
+        return;
+      }
+      if (selectedDiffForClearing.date === date) {
+        setSelectedDiffForClearing(null);
+        return;
+      }
+      // Save clearance
+      const { data } = await supabase.from('speedpoint_diff_clearances').insert({
+        month: filterMonth,
+        terminal,
+        date_1: selectedDiffForClearing.date,
+        date_2: date,
+        amount: selectedDiffForClearing.diff,
+      } as never).select();
+      if (data && data.length > 0) {
+        const r = data[0] as Record<string, unknown>;
+        setDiffClearances(prev => [...prev, {
+          id: r.id as string,
+          terminal: r.terminal as string,
+          date_1: r.date_1 as string,
+          date_2: r.date_2 as string,
+          amount: Number(r.amount),
+        }]);
+      }
+      toast({ title: 'Differences cleared', description: `Paired ${selectedDiffForClearing.date} with ${date} for ${terminal}.` });
+      setSelectedDiffForClearing(null);
+    }
+  };
+
   // Build lookup: vendor -> array of dates with invoices
   const managerPayoutByVendor = new Map<string, Map<string, number>>();
   monthManagers.forEach(e => {
@@ -645,7 +722,17 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
             {/* Main speedpoint report */}
             <div className={`bg-card border rounded-lg overflow-hidden ${unmatchedTerminalLines.length > 0 ? 'flex-1 min-w-0' : 'w-full'}`}>
               <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
-                <h3 className="font-semibold text-sm">Speedpoint Report — {monthLabel}</h3>
+                <div className="flex items-center gap-3">
+                  <h3 className="font-semibold text-sm">Speedpoint Report — {monthLabel}</h3>
+                  {selectedDiffForClearing && (
+                    <div className="flex items-center gap-2 bg-primary/10 rounded px-2 py-1 text-xs">
+                      <span className="text-primary font-medium">
+                        Selecting pair for {selectedDiffForClearing.date} ({selectedDiffForClearing.terminal})
+                      </span>
+                      <button onClick={() => setSelectedDiffForClearing(null)} className="text-destructive font-bold hover:text-destructive/80">✕</button>
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
                     <button onClick={() => setSelectedTerminal('all')} className={`px-2 py-1 text-xs rounded ${selectedTerminal === 'all' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}>All</button>
@@ -883,9 +970,24 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
                                             ) : <span className="text-muted-foreground">—</span>}
                                           </TableCell>
                                           <TableCell className="text-right text-sm">
-                                            {m.bankAmount > 0 && !m.matched ? (
-                                              <span className="text-destructive font-semibold"><CurrencyDisplay value={m.diff} /></span>
-                                            ) : m.matched ? (
+                                            {m.bankAmount > 0 && !m.matched ? (() => {
+                                              const cleared = isDiffCleared(r.date, t);
+                                              const isSelected = selectedDiffForClearing?.date === r.date && selectedDiffForClearing?.terminal === t;
+                                              return (
+                                                <button
+                                                  onClick={() => handleDiffClick(r.date, t, m.diff)}
+                                                  className={`cursor-pointer px-1 py-0.5 rounded transition-colors ${
+                                                    cleared ? 'bg-green-100 dark:bg-green-900/30 line-through text-green-600' :
+                                                    isSelected ? 'bg-primary/20 ring-2 ring-primary font-bold' :
+                                                    'text-destructive font-semibold hover:bg-destructive/10'
+                                                  }`}
+                                                  title={cleared ? 'Click to remove clearance' : 'Click to pair with another difference'}
+                                                >
+                                                  <CurrencyDisplay value={m.diff} />
+                                                  {cleared && ' ✓'}
+                                                </button>
+                                              );
+                                            })() : m.matched ? (
                                               <span className="text-green-600 text-xs">✓</span>
                                             ) : <span className="text-muted-foreground">—</span>}
                                           </TableCell>
