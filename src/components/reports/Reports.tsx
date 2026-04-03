@@ -312,16 +312,6 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
       let isManual = false;
       if (!consumedBankKeys.has(key)) {
         bankAmt = bankLookup[key] ?? 0;
-        // For compound batches like "536/537", try each part
-        if (bankAmt === 0 && td.batchNo.includes('/')) {
-          td.batchNo.split('/').forEach(part => {
-            const partKey = `${t}|${part.trim()}`;
-            if (!consumedBankKeys.has(partKey)) {
-              bankAmt += bankLookup[partKey] ?? 0;
-              if (bankLookup[partKey]) consumedBankKeys.add(partKey);
-            }
-          });
-        }
         if (bankAmt > 0) consumedBankKeys.add(key);
       }
       // Add manual matches for this cell
