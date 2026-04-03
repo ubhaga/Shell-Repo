@@ -43,6 +43,8 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     month, enteredBy: '', branchNetSales: 0, branchTotalPayouts: 0,
     branchTotalReceipts: 0, branchTotalInvoicesCapital: 0, branchTotalInvoicesVat: 0,
     salesCStore: 0, salesWslDsl: 0, salesFuel: 0, salesGas: 0, salesOil: 0, vatTaxAmount: 0,
+    explanationNetSales: '', explanationPayouts: '', explanationReceipts: '',
+    explanationInvoices: '', explanationVat: '',
     notes: '',
   });
 
