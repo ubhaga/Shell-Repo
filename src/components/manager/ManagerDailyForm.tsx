@@ -450,27 +450,28 @@ export function ManagerDailyForm({ selectedDate }: Props) {
       banking: bankingCalc,
     };
 
-    if (existing) updateManagerEntry(existing.id, payload);
-    else addManagerEntry(payload);
+    if (existing) await updateManagerEntry(existing.id, payload);
+    else await addManagerEntry(payload);
 
     // Propagate rate change to all subsequent saved entries
-    const laterEntries = managerEntries.filter(e => e.date > selectedDate);
+    const laterEntries = useCashupStore.getState().managerEntries.filter(e => e.date > selectedDate);
+    let updatedCount = 0;
     for (const entry of laterEntries) {
       if (entry.bankChargesRate !== effectiveRate) {
         const recalcCharges = Math.round((Math.abs(entry.ccBagClosureCashConnect) / 100) * (effectiveRate / 100) * 100) / 100;
         const recalcBanking = Math.round((Math.abs(entry.ccBagClosureCashConnect) - recalcCharges) * 100) / 100;
-        updateManagerEntry(entry.id, {
+        await updateManagerEntry(entry.id, {
           bankChargesRate: effectiveRate,
           bankCharges: recalcCharges,
           banking: recalcBanking,
         });
+        updatedCount++;
       }
     }
 
     setForm(payload);
     const now = format(new Date(), "dd MMM yyyy HH:mm:ss");
     setSavedAt((prev) => prev ?? now);
-    const updatedCount = laterEntries.filter(e => e.bankChargesRate !== effectiveRate).length;
     const desc = updatedCount > 0
       ? `Saved for ${format(new Date(selectedDate), "dd MMM yyyy")} — rate updated on ${updatedCount} subsequent day(s)`
       : `Saved for ${format(new Date(selectedDate), "dd MMM yyyy")}`;
