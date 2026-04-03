@@ -113,6 +113,11 @@ function monthlyToRow(f: MonthlyBranchFigures) {
     sales_gas: f.salesGas,
     sales_oil: f.salesOil,
     vat_tax_amount: f.vatTaxAmount,
+    explanation_net_sales: f.explanationNetSales,
+    explanation_payouts: f.explanationPayouts,
+    explanation_receipts: f.explanationReceipts,
+    explanation_invoices: f.explanationInvoices,
+    explanation_vat: f.explanationVat,
     notes: f.notes,
   };
 }
