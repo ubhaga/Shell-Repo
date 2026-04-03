@@ -14,10 +14,10 @@ export function CurrencyInput({ value, onChange, className, placeholder = '0.00'
   const formatWithCommas = (num: number) =>
     new Intl.NumberFormat('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-  const [display, setDisplay] = React.useState(value === 0 ? '' : formatWithCommas(value));
-  const [isFocused, setIsFocused] = React.useState(false);
+  const [display, setDisplay] = useState(value === 0 ? '' : formatWithCommas(value));
+  const [isFocused, setIsFocused] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isFocused) {
       setDisplay(value === 0 ? '' : formatWithCommas(value));
     }
