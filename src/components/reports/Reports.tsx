@@ -1290,6 +1290,11 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
           <AirtimeRecon filterMonth={filterMonth} />
         </TabsContent>
 
+        {/* Cash Connect & Coins */}
+        <TabsContent value="cash">
+          <CashRecon filterMonth={filterMonth} />
+        </TabsContent>
+
         {/* Bank Statement */}
         <TabsContent value="bank">
           <BankStatementTab filterMonth={filterMonth} monthLabel={monthLabel} />
