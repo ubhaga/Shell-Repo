@@ -146,6 +146,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground w-12 border-r">Day</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Date</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Cashier</th>
+                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Entered By</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Shop Till</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Payouts</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">OPT</th>
