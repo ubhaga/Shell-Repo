@@ -326,6 +326,7 @@ export type Database = {
           bank_batch: string
           bank_date: string
           bank_description: string
+          bank_line_id: string | null
           bank_line_idx: number
           bank_terminal: string
           cashup_date: string
@@ -339,6 +340,7 @@ export type Database = {
           bank_batch?: string
           bank_date?: string
           bank_description?: string
+          bank_line_id?: string | null
           bank_line_idx: number
           bank_terminal?: string
           cashup_date: string
@@ -352,6 +354,7 @@ export type Database = {
           bank_batch?: string
           bank_date?: string
           bank_description?: string
+          bank_line_id?: string | null
           bank_line_idx?: number
           bank_terminal?: string
           cashup_date?: string

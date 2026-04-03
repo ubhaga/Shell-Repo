@@ -30,12 +30,12 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   const prevMonthCashups = cashups.filter(c => c.month === prevMonth);
 
   // Load bank statement lines for reconciliation
-  const [bankLines, setBankLines] = useState<{ matched_terminal: string; amount: number; description: string; transaction_date: string }[]>([]);
-  const [prevBankLines, setPrevBankLines] = useState<{ matched_terminal: string; amount: number; description: string; transaction_date: string }[]>([]);
+  const [bankLines, setBankLines] = useState<{ id: string; matched_terminal: string; amount: number; description: string; transaction_date: string }[]>([]);
+  const [prevBankLines, setPrevBankLines] = useState<{ id: string; matched_terminal: string; amount: number; description: string; transaction_date: string }[]>([]);
   const loadBankLines = useCallback(async () => {
     const [cur, prev] = await Promise.all([
-      supabase.from('bank_statement_lines').select('matched_terminal, amount, description, transaction_date').eq('month', filterMonth),
-      supabase.from('bank_statement_lines').select('matched_terminal, amount, description, transaction_date').eq('month', prevMonth),
+      supabase.from('bank_statement_lines').select('id, matched_terminal, amount, description, transaction_date').eq('month', filterMonth),
+      supabase.from('bank_statement_lines').select('id, matched_terminal, amount, description, transaction_date').eq('month', prevMonth),
     ]);
     setBankLines((cur.data ?? []) as typeof bankLines);
     setPrevBankLines((prev.data ?? []) as typeof prevBankLines);
@@ -43,7 +43,7 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   useEffect(() => { loadBankLines(); }, [loadBankLines]);
 
   // Manual match state: key = "cashupDate|terminal", value = array of manually matched bank lines
-  type BankParsedLine = { terminal: string; batch: string; amount: number; date: string; description: string; idx: number };
+  type BankParsedLine = { terminal: string; batch: string; amount: number; date: string; description: string; idx: number; bankLineId: string };
   const [manualMatches, setManualMatches] = useState<Record<string, BankParsedLine[]>>({});
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
 
@@ -57,14 +57,15 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
     if (data && data.length > 0) {
       const loaded: Record<string, BankParsedLine[]> = {};
       const prevLoaded: Record<string, BankParsedLine[]> = {};
-      (data as { month: string; cashup_date: string; terminal: string; bank_line_idx: number; bank_amount: number; bank_description: string; bank_date: string; bank_terminal: string; bank_batch: string }[]).forEach(row => {
+      (data as { month: string; cashup_date: string; terminal: string; bank_line_idx: number; bank_amount: number; bank_description: string; bank_date: string; bank_terminal: string; bank_batch: string; bank_line_id: string | null }[]).forEach(row => {
         const key = `${row.cashup_date}|${row.terminal}`;
+        const bankLineId = row.bank_line_id || `legacy-${row.bank_line_idx}`;
         if (row.month === filterMonth) {
           if (!loaded[key]) loaded[key] = [];
-          loaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx });
+          loaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx, bankLineId });
         } else {
           if (!prevLoaded[key]) prevLoaded[key] = [];
-          prevLoaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx });
+          prevLoaded[key].push({ terminal: row.bank_terminal, batch: row.bank_batch, amount: Number(row.bank_amount), date: row.bank_date, description: row.bank_description, idx: row.bank_line_idx, bankLineId });
         }
       });
       setManualMatches(loaded);
@@ -271,7 +272,7 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
     const termNum = TERMINAL_NUM_MAP[l.matched_terminal] || '';
     const batchMatch = l.description.match(new RegExp(`${termNum}\\s+(\\d+)`));
     const batch = batchMatch ? batchMatch[1] : '';
-    bankParsed.push({ terminal: l.matched_terminal, batch, amount: l.amount, date: l.transaction_date, description: l.description, idx });
+    bankParsed.push({ terminal: l.matched_terminal, batch, amount: l.amount, date: l.transaction_date, description: l.description, idx, bankLineId: l.id });
   });
 
   // Build auto-match lookup: key = "terminal|batch" -> bank amount
@@ -282,9 +283,9 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
     bankLookup[key] = (bankLookup[key] || 0) + bp.amount;
   });
 
-  // Collect all manually matched bank line indices
-  const manuallyMatchedIdxs = new Set<number>();
-  Object.values(manualMatches).forEach(arr => arr.forEach(bp => manuallyMatchedIdxs.add(bp.idx)));
+  // Collect all manually matched bank line IDs
+  const manuallyMatchedIds = new Set<string>();
+  Object.values(manualMatches).forEach(arr => arr.forEach(bp => manuallyMatchedIds.add(bp.bankLineId)));
 
   // Build per-row match data including manual matches
   // Each bank amount is consumed by the first cashup row that claims it
@@ -324,12 +325,12 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
     const termNum = TERMINAL_NUM_MAP[l.matched_terminal] || '';
     const batchMatch = l.description.match(new RegExp(`${termNum}\\s+(\\d+)`));
     const batch = batchMatch ? batchMatch[1] : '';
-    prevBankParsed.push({ terminal: l.matched_terminal, batch, amount: l.amount, date: l.transaction_date, description: l.description, idx: idx + 100000 });
+    prevBankParsed.push({ terminal: l.matched_terminal, batch, amount: l.amount, date: l.transaction_date, description: l.description, idx: idx + 100000, bankLineId: l.id });
   });
   const prevBankLookup: Record<string, number> = {};
   prevBankParsed.forEach(bp => { if (bp.batch) { const k = `${bp.terminal}|${bp.batch}`; prevBankLookup[k] = (prevBankLookup[k] || 0) + bp.amount; } });
-  const prevManuallyMatchedIdxs = new Set<number>();
-  Object.values(prevManualMatches).forEach(arr => arr.forEach(bp => prevManuallyMatchedIdxs.add(bp.idx)));
+  const prevManuallyMatchedIds = new Set<string>();
+  Object.values(prevManualMatches).forEach(arr => arr.forEach(bp => prevManuallyMatchedIds.add(bp.bankLineId)));
 
   // Build previous month speedpoint data
   const prevSpeedpointByDate = prevMonthCashups.map(c => {
@@ -393,7 +394,7 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   // Unmatched: bank lines not auto-matched and not manually matched
   // Use consumedBankKeys from matching above instead of re-deriving
   const unmatchedTerminalLines = bankParsed.filter(bp => {
-    if (manuallyMatchedIdxs.has(bp.idx)) return false;
+    if (manuallyMatchedIds.has(bp.bankLineId)) return false;
     if (!bp.batch) return true;
     return !consumedBankKeys.has(`${bp.terminal}|${bp.batch}`);
   });
@@ -466,24 +467,25 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
         bank_date: bp.date,
         bank_terminal: bp.terminal,
         bank_batch: bp.batch,
+        bank_line_id: bp.bankLineId,
       } as never);
     } catch {}
   };
 
-  const handleRemoveManualMatch = async (targetKey: string, bpIdx: number) => {
+  const handleRemoveManualMatch = async (targetKey: string, bankLineId: string) => {
     setManualMatches(prev => {
       const updated = { ...prev };
-      updated[targetKey] = (updated[targetKey] || []).filter(bp => bp.idx !== bpIdx);
+      updated[targetKey] = (updated[targetKey] || []).filter(bp => bp.bankLineId !== bankLineId);
       if (updated[targetKey].length === 0) delete updated[targetKey];
       return updated;
     });
-    // Delete from DB
+    // Delete from DB using bank_line_id if available, fallback to old method
     const [cashupDate, terminal] = targetKey.split('|');
     await supabase.from('speedpoint_manual_matches').delete()
       .eq('month', filterMonth)
       .eq('cashup_date', cashupDate)
       .eq('terminal', terminal)
-      .eq('bank_line_idx', bpIdx);
+      .eq('bank_line_id', bankLineId);
   };
 
   // Accounts report — shop + OPT combined per day
@@ -837,9 +839,9 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
                                                       <div className="text-xs space-y-1">
                                                         <div className="font-semibold mb-1">Manual matches:</div>
                                                         {obManualLines.map(ml => (
-                                                          <div key={ml.idx} className="flex items-center gap-2">
+                                                          <div key={ml.bankLineId} className="flex items-center gap-2">
                                                             <span>{ml.description} = <CurrencyDisplay value={ml.amount} /></span>
-                                                            <button onClick={() => handleRemoveManualMatch(obDropKey, ml.idx)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
+                                                            <button onClick={() => handleRemoveManualMatch(obDropKey, ml.bankLineId)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
                                                           </div>
                                                         ))}
                                                       </div>
@@ -970,9 +972,9 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
                                                     <div className="text-xs space-y-1">
                                                       <div className="font-semibold mb-1">Manual matches:</div>
                                                       {manualLines.map(ml => (
-                                                        <div key={ml.idx} className="flex items-center gap-2">
+                                                        <div key={ml.bankLineId} className="flex items-center gap-2">
                                                           <span>{ml.description} = <CurrencyDisplay value={ml.amount} /></span>
-                                                          <button onClick={() => handleRemoveManualMatch(dropKey, ml.idx)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
+                                                          <button onClick={() => handleRemoveManualMatch(dropKey, ml.bankLineId)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
                                                         </div>
                                                       ))}
                                                     </div>
