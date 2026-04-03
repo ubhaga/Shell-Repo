@@ -40,7 +40,7 @@ export function CurrencyInput({ value, onChange, className, placeholder = '0.00'
         const raw = e.target.value.replace(/[^0-9.\-]/g, '');
         setDisplay(raw);
         const v = parseFloat(raw);
-        onChange(isNaN(v) ? 0 : Math.round(v * 100) / 100);
+        onChange(isNaN(v) ? 0 : Math.round(v * roundFactor) / roundFactor);
       }}
       onBlur={() => {
         setIsFocused(false);
