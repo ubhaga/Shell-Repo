@@ -138,6 +138,11 @@ function rowToMonthly(r: Record<string, unknown>): MonthlyBranchFigures {
     salesGas: Number(r.sales_gas ?? 0),
     salesOil: Number(r.sales_oil ?? 0),
     vatTaxAmount: Number(r.vat_tax_amount ?? 0),
+    explanationNetSales: (r.explanation_net_sales as string) ?? '',
+    explanationPayouts: (r.explanation_payouts as string) ?? '',
+    explanationReceipts: (r.explanation_receipts as string) ?? '',
+    explanationInvoices: (r.explanation_invoices as string) ?? '',
+    explanationVat: (r.explanation_vat as string) ?? '',
     notes: r.notes as string,
   };
 }

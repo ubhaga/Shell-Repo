@@ -146,6 +146,12 @@ export interface MonthlyBranchFigures {
   salesGas: number;
   salesOil: number;
   vatTaxAmount: number;
+  // Explanations per metric
+  explanationNetSales: string;
+  explanationPayouts: string;
+  explanationReceipts: string;
+  explanationInvoices: string;
+  explanationVat: string;
   // Misc
   notes: string;
 }
