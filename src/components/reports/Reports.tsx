@@ -472,20 +472,20 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
     } catch {}
   };
 
-  const handleRemoveManualMatch = async (targetKey: string, bpIdx: number) => {
+  const handleRemoveManualMatch = async (targetKey: string, bankLineId: string) => {
     setManualMatches(prev => {
       const updated = { ...prev };
-      updated[targetKey] = (updated[targetKey] || []).filter(bp => bp.idx !== bpIdx);
+      updated[targetKey] = (updated[targetKey] || []).filter(bp => bp.bankLineId !== bankLineId);
       if (updated[targetKey].length === 0) delete updated[targetKey];
       return updated;
     });
-    // Delete from DB
+    // Delete from DB using bank_line_id if available, fallback to old method
     const [cashupDate, terminal] = targetKey.split('|');
     await supabase.from('speedpoint_manual_matches').delete()
       .eq('month', filterMonth)
       .eq('cashup_date', cashupDate)
       .eq('terminal', terminal)
-      .eq('bank_line_idx', bpIdx);
+      .eq('bank_line_id', bankLineId);
   };
 
   // Accounts report — shop + OPT combined per day
