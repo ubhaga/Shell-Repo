@@ -76,7 +76,83 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   }, [filterMonth, prevMonth]);
   useEffect(() => { loadManualMatches(); }, [loadManualMatches]);
 
-  // Payout report — with invoice matching
+  // Diff clearances: pairs of differences that offset each other
+  type DiffClearance = { id: string; terminal: string; date_1: string; date_2: string; amount: number };
+  const [diffClearances, setDiffClearances] = useState<DiffClearance[]>([]);
+  const [selectedDiffForClearing, setSelectedDiffForClearing] = useState<{ date: string; terminal: string; diff: number } | null>(null);
+
+  const loadDiffClearances = useCallback(async () => {
+    const { data } = await supabase
+      .from('speedpoint_diff_clearances')
+      .select('*')
+      .eq('month', filterMonth);
+    setDiffClearances((data ?? []).map((r: Record<string, unknown>) => ({
+      id: r.id as string,
+      terminal: r.terminal as string,
+      date_1: r.date_1 as string,
+      date_2: r.date_2 as string,
+      amount: Number(r.amount),
+    })));
+  }, [filterMonth]);
+  useEffect(() => { loadDiffClearances(); }, [loadDiffClearances]);
+
+  // Check if a date+terminal diff is cleared
+  const isDiffCleared = useCallback((date: string, terminal: string) => {
+    return diffClearances.some(c => c.terminal === terminal && (c.date_1 === date || c.date_2 === date));
+  }, [diffClearances]);
+
+  const getClearanceForCell = useCallback((date: string, terminal: string) => {
+    return diffClearances.find(c => c.terminal === terminal && (c.date_1 === date || c.date_2 === date));
+  }, [diffClearances]);
+
+  const handleDiffClick = async (date: string, terminal: string, diff: number) => {
+    // If already cleared, remove clearance
+    const existing = getClearanceForCell(date, terminal);
+    if (existing) {
+      await supabase.from('speedpoint_diff_clearances').delete().eq('id', existing.id);
+      setDiffClearances(prev => prev.filter(c => c.id !== existing.id));
+      toast({ title: 'Clearance removed', description: `Unlinked ${date} from its paired difference.` });
+      return;
+    }
+
+    if (!selectedDiffForClearing) {
+      // First selection
+      setSelectedDiffForClearing({ date, terminal, diff });
+      toast({ title: 'First difference selected', description: `Now click the offsetting difference to pair with ${date} (${terminal}).` });
+    } else {
+      // Second selection — must be same terminal, different date
+      if (selectedDiffForClearing.terminal !== terminal) {
+        toast({ title: 'Terminal mismatch', description: 'Both differences must be for the same terminal.', variant: 'destructive' });
+        setSelectedDiffForClearing(null);
+        return;
+      }
+      if (selectedDiffForClearing.date === date) {
+        setSelectedDiffForClearing(null);
+        return;
+      }
+      // Save clearance
+      const { data } = await supabase.from('speedpoint_diff_clearances').insert({
+        month: filterMonth,
+        terminal,
+        date_1: selectedDiffForClearing.date,
+        date_2: date,
+        amount: selectedDiffForClearing.diff,
+      } as never).select();
+      if (data && data.length > 0) {
+        const r = data[0] as Record<string, unknown>;
+        setDiffClearances(prev => [...prev, {
+          id: r.id as string,
+          terminal: r.terminal as string,
+          date_1: r.date_1 as string,
+          date_2: r.date_2 as string,
+          amount: Number(r.amount),
+        }]);
+      }
+      toast({ title: 'Differences cleared', description: `Paired ${selectedDiffForClearing.date} with ${date} for ${terminal}.` });
+      setSelectedDiffForClearing(null);
+    }
+  };
+
   // Build lookup: vendor -> array of dates with invoices
   const managerPayoutByVendor = new Map<string, Map<string, number>>();
   monthManagers.forEach(e => {
