@@ -235,7 +235,6 @@ export function CashRecon({ filterMonth }: CashReconProps) {
               )}
               {dailyRows.map(row => {
                 const hasData = row.ccDailyCashup > 0 || row.ccBagClosure > 0 || row.ccTransferIn > 0;
-                const bankDiff = row.bankingExpected > 0 ? row.bankActual - row.bankingExpected : 0;
 
                 return (
                   <TableRow key={row.date} className={!hasData ? 'opacity-50' : ''}>
@@ -278,17 +277,13 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                         : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className={`text-right text-xs font-semibold ${
-                      row.bankingExpected === 0 ? '' :
-                      row.bankMatched ? 'bg-green-100 text-green-700' :
-                      row.bankActual === 0 ? 'bg-yellow-50 text-yellow-700' :
+                      Math.abs(row.bankRunningBalance) < 0.01 ? 'bg-green-100 text-green-700' :
                       'bg-destructive/10 text-destructive'
                     }`}>
-                      {row.bankingExpected > 0
-                        ? (row.bankMatched
+                      {(row.bankingExpected > 0 || row.bankActual > 0 || Math.abs(row.bankRunningBalance) > 0.01)
+                        ? (Math.abs(row.bankRunningBalance) < 0.01
                           ? '✓'
-                          : row.bankActual === 0
-                            ? 'No bank'
-                            : <CurrencyDisplay value={bankDiff} />)
+                          : <CurrencyDisplay value={row.bankRunningBalance} />)
                         : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                   </TableRow>
@@ -320,9 +315,10 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                   <CurrencyDisplay value={totalBankActual} highlight />
                 </TableCell>
                 <TableCell className={`text-right text-xs font-bold ${
-                  Math.abs(totalBankActual - totalBankingExpected) < 0.01 ? 'text-green-700' : 'text-destructive'
+                  Math.abs(bankRunning) < 0.01 ? 'text-green-700' : 'text-destructive'
                 }`}>
-                  <CurrencyDisplay value={totalBankActual - totalBankingExpected} />
+                  <CurrencyDisplay value={bankRunning} />
+                </TableCell>
                 </TableCell>
               </TableRow>
             </TableBody>
