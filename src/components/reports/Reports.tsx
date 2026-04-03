@@ -391,18 +391,16 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
         const obManualLines = manualMatches[obKey] || [];
         const obManualAmt = obManualLines.reduce((s, ml) => s + ml.amount, 0);
         const finalDiff = diff - obManualAmt;
-        // Only show in OB if still outstanding after manual matches
-        if (Math.abs(finalDiff) > 0.01) {
-          openingBalanceRows.push({
-            date: r.date,
-            terminal: t,
-            batchNo: td.batchNo,
-            cashupAmount: diff, // The outstanding amount carried forward
-            bankAmount: obManualAmt,
-            diff: finalDiff,
-            manualBankAmount: obManualAmt,
-          });
-        }
+        // Show in OB whether still outstanding or fully matched (so user sees it as cleared)
+        openingBalanceRows.push({
+          date: r.date,
+          terminal: t,
+          batchNo: td.batchNo,
+          cashupAmount: diff, // The outstanding amount carried forward
+          bankAmount: obManualAmt,
+          diff: finalDiff,
+          manualBankAmount: obManualAmt,
+        });
       }
     });
   });
