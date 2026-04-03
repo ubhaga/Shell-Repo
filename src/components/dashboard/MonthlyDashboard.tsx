@@ -11,6 +11,7 @@ interface Props {
 interface DayMetrics {
   date: string;
   cashierName?: string;
+  enteredBy?: string;
   shopDiff: number | null;
   optDiff: number | null;
   payoutsDiff: number | null;
