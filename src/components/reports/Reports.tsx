@@ -722,7 +722,17 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
             {/* Main speedpoint report */}
             <div className={`bg-card border rounded-lg overflow-hidden ${unmatchedTerminalLines.length > 0 ? 'flex-1 min-w-0' : 'w-full'}`}>
               <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
-                <h3 className="font-semibold text-sm">Speedpoint Report — {monthLabel}</h3>
+                <div className="flex items-center gap-3">
+                  <h3 className="font-semibold text-sm">Speedpoint Report — {monthLabel}</h3>
+                  {selectedDiffForClearing && (
+                    <div className="flex items-center gap-2 bg-primary/10 rounded px-2 py-1 text-xs">
+                      <span className="text-primary font-medium">
+                        Selecting pair for {selectedDiffForClearing.date} ({selectedDiffForClearing.terminal})
+                      </span>
+                      <button onClick={() => setSelectedDiffForClearing(null)} className="text-destructive font-bold hover:text-destructive/80">✕</button>
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
                     <button onClick={() => setSelectedTerminal('all')} className={`px-2 py-1 text-xs rounded ${selectedTerminal === 'all' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}>All</button>
