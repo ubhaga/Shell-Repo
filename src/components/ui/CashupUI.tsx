@@ -8,11 +8,13 @@ interface CurrencyInputProps {
   placeholder?: string;
   allowNegative?: boolean;
   disabled?: boolean;
+  decimals?: number;
 }
 
-export function CurrencyInput({ value, onChange, className, placeholder = '0.00', allowNegative, disabled }: CurrencyInputProps) {
+export function CurrencyInput({ value, onChange, className, placeholder = '0.00', allowNegative, disabled, decimals = 2 }: CurrencyInputProps) {
   const formatWithCommas = (num: number) =>
-    new Intl.NumberFormat('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+    new Intl.NumberFormat('en-ZA', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(num);
+  const roundFactor = Math.pow(10, decimals);
 
   const [display, setDisplay] = useState(value === 0 ? '' : formatWithCommas(value));
   const [isFocused, setIsFocused] = useState(false);

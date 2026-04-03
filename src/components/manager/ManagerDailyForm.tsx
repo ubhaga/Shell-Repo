@@ -828,11 +828,12 @@ export function ManagerDailyForm({ selectedDate }: Props) {
       {/* 2.1 Banking — full width, below 2 */}
       <Section title="2.1 Banking" color="blue">
         <DataRow label="Charges cents per R100 (incl)">
-          <CurrencyInput
+           <CurrencyInput
             value={form.bankChargesRate}
             onChange={(v) => setForm((f) => ({ ...f, bankChargesRate: v }))}
             className="w-[120px]"
-            placeholder="37.90"
+            placeholder="37.9000"
+            decimals={4}
           />
         </DataRow>
         <DataRow label="Bank Charges">
