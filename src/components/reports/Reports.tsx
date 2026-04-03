@@ -30,12 +30,12 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   const prevMonthCashups = cashups.filter(c => c.month === prevMonth);
 
   // Load bank statement lines for reconciliation
-  const [bankLines, setBankLines] = useState<{ matched_terminal: string; amount: number; description: string; transaction_date: string }[]>([]);
-  const [prevBankLines, setPrevBankLines] = useState<{ matched_terminal: string; amount: number; description: string; transaction_date: string }[]>([]);
+  const [bankLines, setBankLines] = useState<{ id: string; matched_terminal: string; amount: number; description: string; transaction_date: string }[]>([]);
+  const [prevBankLines, setPrevBankLines] = useState<{ id: string; matched_terminal: string; amount: number; description: string; transaction_date: string }[]>([]);
   const loadBankLines = useCallback(async () => {
     const [cur, prev] = await Promise.all([
-      supabase.from('bank_statement_lines').select('matched_terminal, amount, description, transaction_date').eq('month', filterMonth),
-      supabase.from('bank_statement_lines').select('matched_terminal, amount, description, transaction_date').eq('month', prevMonth),
+      supabase.from('bank_statement_lines').select('id, matched_terminal, amount, description, transaction_date').eq('month', filterMonth),
+      supabase.from('bank_statement_lines').select('id, matched_terminal, amount, description, transaction_date').eq('month', prevMonth),
     ]);
     setBankLines((cur.data ?? []) as typeof bankLines);
     setPrevBankLines((prev.data ?? []) as typeof prevBankLines);
