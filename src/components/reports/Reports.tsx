@@ -78,10 +78,9 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   useEffect(() => { loadManualMatches(); }, [loadManualMatches]);
 
   // Diff clearances: pairs of differences that offset each other
-  type DiffClearance = { id: string; terminal: string; date_1: string; date_2: string; amount: number };
+  type DiffClearance = { id: string; month: string; terminal: string; date_1: string; date_2: string; amount: number };
   const [diffClearances, setDiffClearances] = useState<DiffClearance[]>([]);
   const [selectedDiffForClearing, setSelectedDiffForClearing] = useState<{ date: string; terminal: string; diff: number } | null>(null);
-
   const [prevDiffClearances, setPrevDiffClearances] = useState<DiffClearance[]>([]);
 
   const loadDiffClearances = useCallback(async () => {
@@ -92,14 +91,15 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
 
     const mapped = (data ?? []).map((r: Record<string, unknown>) => ({
       id: r.id as string,
+      month: r.month as string,
       terminal: r.terminal as string,
       date_1: r.date_1 as string,
       date_2: r.date_2 as string,
       amount: Number(r.amount),
     }));
 
-    setDiffClearances(mapped.filter((r: Record<string, unknown>) => (r as { month?: string }).month ? (r as { month?: string }).month === filterMonth : true));
-    setPrevDiffClearances(mapped.filter((r: Record<string, unknown>) => (r as { month?: string }).month === prevMonth));
+    setDiffClearances(mapped.filter(r => r.month === filterMonth));
+    setPrevDiffClearances(mapped.filter(r => r.month === prevMonth));
   }, [filterMonth, prevMonth]);
   useEffect(() => { loadDiffClearances(); }, [loadDiffClearances]);
 
