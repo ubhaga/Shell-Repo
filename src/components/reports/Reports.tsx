@@ -368,20 +368,14 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
     SP_TERMINALS.forEach(t => {
       const td = r.terminals[t];
       if (!td || td.total === 0) return;
+      if (isPrevDiffCleared(r.date, t)) return;
       // For auto-match dedup, use terminal+batch — but only skip if batch is non-empty and already consumed
       const batchKey = `${t}|${td.batchNo}`;
       const hasMeaningfulBatch = td.batchNo && td.batchNo !== 'X' && td.batchNo !== '';
       if (hasMeaningfulBatch && prevConsumedBatchKeys.has(batchKey)) return;
       if (hasMeaningfulBatch) prevConsumedBatchKeys.add(batchKey);
       
-      // Try auto-matching: for compound batches like "536/537", try each part
-      let autoBankAmt = prevBankLookup[batchKey] ?? 0;
-      if (autoBankAmt === 0 && td.batchNo.includes('/')) {
-        td.batchNo.split('/').forEach(part => {
-          const partKey = `${t}|${part.trim()}`;
-          autoBankAmt += prevBankLookup[partKey] ?? 0;
-        });
-      }
+      const autoBankAmt = prevBankLookup[batchKey] ?? 0;
       
       // Check manual matches from previous month
       const prevManualKey = `${r.date}|${t}`;
