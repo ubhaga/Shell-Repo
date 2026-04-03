@@ -972,9 +972,9 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
                                                     <div className="text-xs space-y-1">
                                                       <div className="font-semibold mb-1">Manual matches:</div>
                                                       {manualLines.map(ml => (
-                                                        <div key={ml.idx} className="flex items-center gap-2">
+                                                        <div key={ml.bankLineId} className="flex items-center gap-2">
                                                           <span>{ml.description} = <CurrencyDisplay value={ml.amount} /></span>
-                                                          <button onClick={() => handleRemoveManualMatch(dropKey, ml.idx)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
+                                                          <button onClick={() => handleRemoveManualMatch(dropKey, ml.bankLineId)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
                                                         </div>
                                                       ))}
                                                     </div>
