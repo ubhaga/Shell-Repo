@@ -329,8 +329,8 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   });
   const prevBankLookup: Record<string, number> = {};
   prevBankParsed.forEach(bp => { if (bp.batch) { const k = `${bp.terminal}|${bp.batch}`; prevBankLookup[k] = (prevBankLookup[k] || 0) + bp.amount; } });
-  const prevManuallyMatchedIdxs = new Set<number>();
-  Object.values(prevManualMatches).forEach(arr => arr.forEach(bp => prevManuallyMatchedIdxs.add(bp.idx)));
+  const prevManuallyMatchedIds = new Set<string>();
+  Object.values(prevManualMatches).forEach(arr => arr.forEach(bp => prevManuallyMatchedIds.add(bp.bankLineId)));
 
   // Build previous month speedpoint data
   const prevSpeedpointByDate = prevMonthCashups.map(c => {
