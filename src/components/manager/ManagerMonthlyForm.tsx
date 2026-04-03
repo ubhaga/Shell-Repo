@@ -128,15 +128,16 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
 
       {/* Month End Report */}
       <Section title="Month End Report" color="blue">
-        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_2fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Metric</span>
           <span className="text-right">Spreadsheet Total</span>
           <span className="text-center">Branch Report (enter below)</span>
           <span className="text-center">Status</span>
+          <span>Explanation</span>
         </div>
-        <MetricRow label="Net Sales" spreadsheet={spreadsheetNetSales} branch={form.branchNetSales} match={salesMatch} onChange={v => setForm(f => ({ ...f, branchNetSales: v }))} />
-        <MetricRow label="Total Payouts" spreadsheet={spreadsheetPayouts} branch={form.branchTotalPayouts} match={payoutsMatch} onChange={v => setForm(f => ({ ...f, branchTotalPayouts: v }))} />
-        <MetricRow label="Total Receipts" spreadsheet={spreadsheetReceipts} branch={form.branchTotalReceipts} match={receiptsMatch} onChange={v => setForm(f => ({ ...f, branchTotalReceipts: v }))} />
+        <MetricRow label="Net Sales" spreadsheet={spreadsheetNetSales} branch={form.branchNetSales} match={salesMatch} onChange={v => setForm(f => ({ ...f, branchNetSales: v }))} explanation={form.explanationNetSales} onExplanationChange={v => setForm(f => ({ ...f, explanationNetSales: v }))} />
+        <MetricRow label="Total Payouts" spreadsheet={spreadsheetPayouts} branch={form.branchTotalPayouts} match={payoutsMatch} onChange={v => setForm(f => ({ ...f, branchTotalPayouts: v }))} explanation={form.explanationPayouts} onExplanationChange={v => setForm(f => ({ ...f, explanationPayouts: v }))} />
+        <MetricRow label="Total Receipts" spreadsheet={spreadsheetReceipts} branch={form.branchTotalReceipts} match={receiptsMatch} onChange={v => setForm(f => ({ ...f, branchTotalReceipts: v }))} explanation={form.explanationReceipts} onExplanationChange={v => setForm(f => ({ ...f, explanationReceipts: v }))} />
       </Section>
 
       {/* Creditors Transactions Report */}
