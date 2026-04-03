@@ -60,6 +60,7 @@ function managerToRow(e: ManagerDailyEntry) {
     branch_day_end_vat: e.branchDayEndVat,
     invoice_notes: e.invoiceNotes,
     cash_reconc_notes: e.cashReconcNotes,
+    bank_charges_rate: e.bankChargesRate,
     bank_charges: e.bankCharges,
     banking: e.banking,
     locked: e.locked,
