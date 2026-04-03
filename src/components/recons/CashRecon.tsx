@@ -18,14 +18,17 @@ const SEED_COINS = 4483.15;
 export function CashRecon({ filterMonth }: CashReconProps) {
   const { cashups, managerEntries, getCashupByDate, getManagerEntryByDate } = useCashupStore();
 
-  const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
+  type BankLine = { amount: number; description: string; transaction_date: string };
+  const [bankLines, setBankLines] = useState<BankLine[]>([]);
+  const [allPriorBankLines, setAllPriorBankLines] = useState<BankLine[]>([]);
 
   const loadBankLines = useCallback(async () => {
-    const { data } = await supabase
-      .from('bank_statement_lines')
-      .select('amount, description, transaction_date')
-      .eq('month', filterMonth);
-    setBankLines((data ?? []) as typeof bankLines);
+    const [cur, prior] = await Promise.all([
+      supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth),
+      supabase.from('bank_statement_lines').select('amount, description, transaction_date').lt('month', filterMonth),
+    ]);
+    setBankLines((cur.data ?? []) as BankLine[]);
+    setAllPriorBankLines((prior.data ?? []) as BankLine[]);
   }, [filterMonth]);
 
   useEffect(() => { loadBankLines(); }, [loadBankLines]);
@@ -56,6 +59,21 @@ export function CashRecon({ filterMonth }: CashReconProps) {
       }
     }
   });
+
+  // Compute banking opening balance: sum of all prior months' expected banking minus prior CCONNECT bank deposits
+  const bankingOB = (() => {
+    const monthStartStr = format(monthStart, 'yyyy-MM-dd');
+    const priorExpected = managerEntries
+      .filter(e => e.date < monthStartStr)
+      .reduce((s, e) => s + (e.banking ?? 0), 0);
+    let priorActual = 0;
+    allPriorBankLines.forEach(line => {
+      if (line.description.toUpperCase().trim().includes('CCONNECT')) {
+        priorActual += line.amount;
+      }
+    });
+    return priorExpected - priorActual;
+  })();
 
   // Compute opening balances by walking from seed date to month start
   const computeOpeningForMonth = (): { ccOpening: number; coinsOpening: number } => {
