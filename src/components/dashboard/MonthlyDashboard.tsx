@@ -73,9 +73,13 @@ function computeDayMetrics(
     vatMatch = Math.abs(vatDiff) < 1.00;
   }
 
+  // Combine entered_by from cashup and manager (they may differ)
+  const enteredBy = cashup?.enteredBy || managerEntry?.enteredBy || undefined;
+
   return {
     date: dateStr,
     cashierName: cashup?.cashierName,
+    enteredBy,
     shopDiff,
     optDiff,
     payoutsDiff,
