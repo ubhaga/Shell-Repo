@@ -65,16 +65,22 @@ export function CashRecon({ filterMonth }: CashReconProps) {
   // Compute banking opening balance: sum of all prior months' expected banking minus prior CCONNECT bank deposits
   const bankingOB = (() => {
     const monthStartStr = format(monthStart, 'yyyy-MM-dd');
+    // Start with seed OB for March 2026
+    let ob = filterMonth >= BANKING_OB_SEED_MONTH ? BANKING_OB_SEED : 0;
+    // Add all expected banking from seed month onwards, before current month
     const priorExpected = managerEntries
-      .filter(e => e.date < monthStartStr)
+      .filter(e => e.date >= BANKING_OB_SEED_MONTH + '-01' && e.date < monthStartStr)
       .reduce((s, e) => s + (e.banking ?? 0), 0);
+    ob += priorExpected;
+    // Subtract all CCONNECT bank deposits from prior months (seed month onwards)
     let priorActual = 0;
     allPriorBankLines.forEach(line => {
       if (line.description.toUpperCase().trim().includes('CCONNECT')) {
         priorActual += line.amount;
       }
     });
-    return priorExpected - priorActual;
+    ob -= priorActual;
+    return ob;
   })();
 
   // Compute opening balances by walking from seed date to month start
