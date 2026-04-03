@@ -336,8 +336,9 @@ export function ManagerDailyForm({ selectedDate }: Props) {
     Math.abs(form.ccBagClosureCashConnect) +
     Math.abs(form.transferFromCoins);
 
-  // 2.1 Banking — derived from CC Bag Closure Cash Connect
-  const bankChargesCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) / 100) * 0.3297 * 1.15 * 100) / 100;
+  // 2.1 Banking — derived from CC Bag Closure Cash Connect using configurable rate
+  const effectiveRate = form.bankChargesRate || 37.9; // cents per R100 inclusive
+  const bankChargesCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) / 100) * (effectiveRate / 100) * 100) / 100;
   const bankingCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) - bankChargesCalc) * 100) / 100;
 
   const openingIsReadOnly = true; // Always read-only — seeded from prev day or Jan 1 spreadsheet values
