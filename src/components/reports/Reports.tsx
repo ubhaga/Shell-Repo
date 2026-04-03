@@ -467,6 +467,7 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
         bank_date: bp.date,
         bank_terminal: bp.terminal,
         bank_batch: bp.batch,
+        bank_line_id: bp.bankLineId,
       } as never);
     } catch {}
   };
