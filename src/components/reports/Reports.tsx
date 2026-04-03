@@ -960,9 +960,24 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
                                             ) : <span className="text-muted-foreground">—</span>}
                                           </TableCell>
                                           <TableCell className="text-right text-sm">
-                                            {m.bankAmount > 0 && !m.matched ? (
-                                              <span className="text-destructive font-semibold"><CurrencyDisplay value={m.diff} /></span>
-                                            ) : m.matched ? (
+                                            {m.bankAmount > 0 && !m.matched ? (() => {
+                                              const cleared = isDiffCleared(r.date, t);
+                                              const isSelected = selectedDiffForClearing?.date === r.date && selectedDiffForClearing?.terminal === t;
+                                              return (
+                                                <button
+                                                  onClick={() => handleDiffClick(r.date, t, m.diff)}
+                                                  className={`cursor-pointer px-1 py-0.5 rounded transition-colors ${
+                                                    cleared ? 'bg-green-100 dark:bg-green-900/30 line-through text-green-600' :
+                                                    isSelected ? 'bg-primary/20 ring-2 ring-primary font-bold' :
+                                                    'text-destructive font-semibold hover:bg-destructive/10'
+                                                  }`}
+                                                  title={cleared ? 'Click to remove clearance' : 'Click to pair with another difference'}
+                                                >
+                                                  <CurrencyDisplay value={m.diff} />
+                                                  {cleared && ' ✓'}
+                                                </button>
+                                              );
+                                            })() : m.matched ? (
                                               <span className="text-green-600 text-xs">✓</span>
                                             ) : <span className="text-muted-foreground">—</span>}
                                           </TableCell>
