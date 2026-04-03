@@ -216,8 +216,23 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                 <TableHead className="text-right text-xs border-l min-w-[80px]">Bank Charges</TableHead>
                 <TableHead className="text-right text-xs min-w-[90px]">Expected Banking</TableHead>
                 <TableHead className="text-right text-xs min-w-[90px]">Bank Stmt</TableHead>
-                <TableHead className="text-right text-xs min-w-[80px]">Diff</TableHead>
+                <TableHead className="text-right text-xs min-w-[100px]">Outstanding</TableHead>
               </TableRow>
+            </TableHeader>
+            <TableBody>
+              {/* Banking Opening Balance row */}
+              {bankingOB !== 0 && (
+                <TableRow className="bg-muted/40 font-semibold">
+                  <TableCell className="text-xs">Opening Balance</TableCell>
+                  <TableCell colSpan={5}></TableCell>
+                  <TableCell className="border-l"></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell className="text-right text-xs font-semibold">
+                    <CurrencyDisplay value={bankingOB} />
+                  </TableCell>
+                </TableRow>
+              )}
             </TableHeader>
             <TableBody>
               {dailyRows.map(row => {
