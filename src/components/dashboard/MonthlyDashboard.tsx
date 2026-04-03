@@ -181,6 +181,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                     <td className="px-3 py-2 text-center font-mono text-muted-foreground border-r">{format(d, 'd')}</td>
                     <td className="px-3 py-2 text-center font-medium border-r">{format(d, 'EEE dd MMM')}</td>
                     <td className="px-3 py-2 text-center text-muted-foreground border-r">{row.cashierName || '—'}</td>
+                    <td className="px-3 py-2 text-center text-muted-foreground border-r">{row.enteredBy || '—'}</td>
                     <td className="px-3 py-2 text-center border-r">
                       {row.shopDiff !== null ? (
                         <span className={`inline-flex items-center justify-center gap-1 font-mono ${shopOk ? 'text-green-700' : 'text-red-600 font-semibold'}`}>
