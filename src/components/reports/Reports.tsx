@@ -82,25 +82,35 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   const [diffClearances, setDiffClearances] = useState<DiffClearance[]>([]);
   const [selectedDiffForClearing, setSelectedDiffForClearing] = useState<{ date: string; terminal: string; diff: number } | null>(null);
 
+  const [prevDiffClearances, setPrevDiffClearances] = useState<DiffClearance[]>([]);
+
   const loadDiffClearances = useCallback(async () => {
     const { data } = await supabase
       .from('speedpoint_diff_clearances')
       .select('*')
-      .eq('month', filterMonth);
-    setDiffClearances((data ?? []).map((r: Record<string, unknown>) => ({
+      .in('month', [filterMonth, prevMonth]);
+
+    const mapped = (data ?? []).map((r: Record<string, unknown>) => ({
       id: r.id as string,
       terminal: r.terminal as string,
       date_1: r.date_1 as string,
       date_2: r.date_2 as string,
       amount: Number(r.amount),
-    })));
-  }, [filterMonth]);
+    }));
+
+    setDiffClearances(mapped.filter((r: Record<string, unknown>) => (r as { month?: string }).month ? (r as { month?: string }).month === filterMonth : true));
+    setPrevDiffClearances(mapped.filter((r: Record<string, unknown>) => (r as { month?: string }).month === prevMonth));
+  }, [filterMonth, prevMonth]);
   useEffect(() => { loadDiffClearances(); }, [loadDiffClearances]);
 
   // Check if a date+terminal diff is cleared
   const isDiffCleared = useCallback((date: string, terminal: string) => {
     return diffClearances.some(c => c.terminal === terminal && (c.date_1 === date || c.date_2 === date));
   }, [diffClearances]);
+
+  const isPrevDiffCleared = useCallback((date: string, terminal: string) => {
+    return prevDiffClearances.some(c => c.terminal === terminal && (c.date_1 === date || c.date_2 === date));
+  }, [prevDiffClearances]);
 
   const getClearanceForCell = useCallback((date: string, terminal: string) => {
     return diffClearances.find(c => c.terminal === terminal && (c.date_1 === date || c.date_2 === date));
