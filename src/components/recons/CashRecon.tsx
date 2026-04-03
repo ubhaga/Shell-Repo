@@ -113,18 +113,16 @@ export function CashRecon({ filterMonth }: CashReconProps) {
   // Build daily rows
   type DayRow = {
     date: string;
-    // Cash Connect
     ccOpening: number;
     ccDailyCashup: number;
     ccBagClosure: number;
     ccTransferIn: number;
     ccClosing: number;
-    // Bank matching for CC
     bankCharges: number;
-    bankingExpected: number; // bag closure - bank charges
-    bankActual: number; // from CCONNECT bank lines
+    bankingExpected: number;
+    bankActual: number;
     bankMatched: boolean;
-    // Coins
+    bankRunningBalance: number; // cumulative outstanding (expected - actual)
     coinsOpening: number;
     coinsDailyCashup: number;
     coinsBagClosure: number;
