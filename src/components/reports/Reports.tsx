@@ -353,15 +353,26 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   // Find unmatched batches from previous month
   type OBRow = { date: string; terminal: string; batchNo: string; cashupAmount: number; bankAmount: number; diff: number; manualBankAmount: number };
   const openingBalanceRows: OBRow[] = [];
-  const prevConsumedKeys = new Set<string>();
+  const prevConsumedBatchKeys = new Set<string>();
   prevSpeedpointByDate.forEach(r => {
     SP_TERMINALS.forEach(t => {
       const td = r.terminals[t];
       if (!td || td.total === 0) return;
+      // For auto-match dedup, use terminal+batch — but only skip if batch is non-empty and already consumed
       const batchKey = `${t}|${td.batchNo}`;
-      if (prevConsumedKeys.has(batchKey)) return;
-      prevConsumedKeys.add(batchKey);
-      const autoBankAmt = prevBankLookup[batchKey] ?? 0;
+      const hasMeaningfulBatch = td.batchNo && td.batchNo !== 'X' && td.batchNo !== '';
+      if (hasMeaningfulBatch && prevConsumedBatchKeys.has(batchKey)) return;
+      if (hasMeaningfulBatch) prevConsumedBatchKeys.add(batchKey);
+      
+      // Try auto-matching: for compound batches like "536/537", try each part
+      let autoBankAmt = prevBankLookup[batchKey] ?? 0;
+      if (autoBankAmt === 0 && td.batchNo.includes('/')) {
+        td.batchNo.split('/').forEach(part => {
+          const partKey = `${t}|${part.trim()}`;
+          autoBankAmt += prevBankLookup[partKey] ?? 0;
+        });
+      }
+      
       // Check manual matches from previous month
       const prevManualKey = `${r.date}|${t}`;
       const prevManualLines = prevManualMatches[prevManualKey] || [];
