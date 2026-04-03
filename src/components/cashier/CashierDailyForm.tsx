@@ -632,7 +632,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
         </div>
       </div>
 
-      {/* ─── SECTION 8: OTHER ADJUSTMENTS (Shop only) ─── */}
+      {/* ─── Less SECTION 8: OTHER ADJUSTMENTS (Shop only) ─── */}
       <div className="border rounded-lg overflow-hidden">
         <div className="bg-primary text-primary-foreground px-3 py-2 font-semibold text-sm">
           8. Other Adjustments — Shop Till Only
