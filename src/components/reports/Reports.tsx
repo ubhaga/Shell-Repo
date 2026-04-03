@@ -43,7 +43,7 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   useEffect(() => { loadBankLines(); }, [loadBankLines]);
 
   // Manual match state: key = "cashupDate|terminal", value = array of manually matched bank lines
-  type BankParsedLine = { terminal: string; batch: string; amount: number; date: string; description: string; idx: number };
+  type BankParsedLine = { terminal: string; batch: string; amount: number; date: string; description: string; idx: number; bankLineId: string };
   const [manualMatches, setManualMatches] = useState<Record<string, BankParsedLine[]>>({});
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
 
