@@ -283,9 +283,9 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
     bankLookup[key] = (bankLookup[key] || 0) + bp.amount;
   });
 
-  // Collect all manually matched bank line indices
-  const manuallyMatchedIdxs = new Set<number>();
-  Object.values(manualMatches).forEach(arr => arr.forEach(bp => manuallyMatchedIdxs.add(bp.idx)));
+  // Collect all manually matched bank line IDs
+  const manuallyMatchedIds = new Set<string>();
+  Object.values(manualMatches).forEach(arr => arr.forEach(bp => manuallyMatchedIds.add(bp.bankLineId)));
 
   // Build per-row match data including manual matches
   // Each bank amount is consumed by the first cashup row that claims it
