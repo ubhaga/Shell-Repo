@@ -290,6 +290,36 @@ export type Database = {
         }
         Relationships: []
       }
+      speedpoint_diff_clearances: {
+        Row: {
+          amount: number
+          created_at: string
+          date_1: string
+          date_2: string
+          id: string
+          month: string
+          terminal: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          date_1: string
+          date_2: string
+          id?: string
+          month: string
+          terminal: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date_1?: string
+          date_2?: string
+          id?: string
+          month?: string
+          terminal?: string
+        }
+        Relationships: []
+      }
       speedpoint_manual_matches: {
         Row: {
           bank_amount: number
