@@ -345,7 +345,7 @@ export function ManagerDailyForm({ selectedDate }: Props) {
 
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (isLocked) return;
 
     // 1. Mandatory: Entered By
