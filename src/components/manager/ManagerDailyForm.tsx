@@ -453,10 +453,28 @@ export function ManagerDailyForm({ selectedDate }: Props) {
     if (existing) updateManagerEntry(existing.id, payload);
     else addManagerEntry(payload);
 
+    // Propagate rate change to all subsequent saved entries
+    const laterEntries = managerEntries.filter(e => e.date > selectedDate);
+    for (const entry of laterEntries) {
+      if (entry.bankChargesRate !== effectiveRate) {
+        const recalcCharges = Math.round((Math.abs(entry.ccBagClosureCashConnect) / 100) * (effectiveRate / 100) * 100) / 100;
+        const recalcBanking = Math.round((Math.abs(entry.ccBagClosureCashConnect) - recalcCharges) * 100) / 100;
+        updateManagerEntry(entry.id, {
+          bankChargesRate: effectiveRate,
+          bankCharges: recalcCharges,
+          banking: recalcBanking,
+        });
+      }
+    }
+
     setForm(payload);
     const now = format(new Date(), "dd MMM yyyy HH:mm:ss");
     setSavedAt((prev) => prev ?? now);
-    toast({ title: "Manager entry saved", description: `Saved for ${format(new Date(selectedDate), "dd MMM yyyy")}` });
+    const updatedCount = laterEntries.filter(e => e.bankChargesRate !== effectiveRate).length;
+    const desc = updatedCount > 0
+      ? `Saved for ${format(new Date(selectedDate), "dd MMM yyyy")} — rate updated on ${updatedCount} subsequent day(s)`
+      : `Saved for ${format(new Date(selectedDate), "dd MMM yyyy")}`;
+    toast({ title: "Manager entry saved", description: desc });
   };
 
   // Cashier short/over calculations — must match CashierDailyForm exactly
