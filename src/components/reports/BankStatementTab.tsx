@@ -145,6 +145,25 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
         const { error } = await supabase.from('bank_statement_lines').insert(newRows as never[]);
         if (error) { toast.error('Upload failed: ' + error.message); }
         else {
+          // Re-link orphaned manual matches whose bank_line_id no longer exists
+          const { data: matches } = await supabase
+            .from('speedpoint_manual_matches')
+            .select('id, bank_line_id, bank_description, bank_amount')
+            .eq('month', filterMonth);
+          if (matches && matches.length > 0) {
+            const { data: allBankLines } = await supabase
+              .from('bank_statement_lines')
+              .select('id, description, amount')
+              .eq('month', filterMonth);
+            const bankLineIds = new Set((allBankLines ?? []).map(b => b.id));
+            const orphaned = matches.filter(m => m.bank_line_id && !bankLineIds.has(m.bank_line_id));
+            for (const m of orphaned) {
+              const newLine = (allBankLines ?? []).find(b => b.description === m.bank_description && b.amount === m.bank_amount);
+              if (newLine) {
+                await supabase.from('speedpoint_manual_matches').update({ bank_line_id: newLine.id } as never).eq('id', m.id);
+              }
+            }
+          }
           toast.success(`Uploaded ${newRows.length} lines${duplicates > 0 ? `, ${duplicates} duplicates skipped` : ''}`);
           await loadLines();
         }
