@@ -384,8 +384,8 @@ export function CashierDailyForm({ selectedDate }: Props) {
     <CurrencyInput value={form.opt.returns} onChange={(v) => setOpt({ returns: v })} />
   </div>
 
-  {/* Spacer row */}
-  <div className="px-3 py-1.5 border-b text-sm"></div>
+            {/* Spacer row to align with Shop Returns (Today Shift) */}
+            <div className="px-3 py-1.5 border-b text-sm">&nbsp;</div>
 
   <div className="flex items-center justify-between px-3 py-1.5 bg-secondary text-sm font-semibold">
     <span>Net Sales</span>
