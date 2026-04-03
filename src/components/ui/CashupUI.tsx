@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CurrencyInputProps {
@@ -10,21 +11,41 @@ interface CurrencyInputProps {
 }
 
 export function CurrencyInput({ value, onChange, className, placeholder = '0.00', allowNegative, disabled }: CurrencyInputProps) {
+  const formatWithCommas = (num: number) =>
+    new Intl.NumberFormat('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+
+  const [display, setDisplay] = useState(value === 0 ? '' : formatWithCommas(value));
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setDisplay(value === 0 ? '' : formatWithCommas(value));
+    }
+  }, [value, isFocused]);
+
   return (
     <input
-      type="number"
-      step="0.01"
-      value={value === 0 ? '' : value}
+      type="text"
+      inputMode="decimal"
+      value={display}
       placeholder={placeholder}
       disabled={disabled}
+      onFocus={() => {
+        setIsFocused(true);
+        setDisplay(value === 0 ? '' : String(value));
+      }}
       onChange={(e) => {
-        const v = parseFloat(e.target.value);
+        const raw = e.target.value.replace(/[^0-9.\-]/g, '');
+        setDisplay(raw);
+        const v = parseFloat(raw);
         onChange(isNaN(v) ? 0 : Math.round(v * 100) / 100);
       }}
-      onBlur={(e) => {
-        if (e.target.value !== '' && !isNaN(parseFloat(e.target.value))) {
-          e.target.value = parseFloat(e.target.value).toFixed(2);
-        }
+      onBlur={() => {
+        setIsFocused(false);
+        const v = parseFloat(display.replace(/[^0-9.\-]/g, ''));
+        const final = isNaN(v) ? 0 : Math.round(v * 100) / 100;
+        onChange(final);
+        setDisplay(final === 0 ? '' : formatWithCommas(final));
       }}
       className={cn('input-cell', disabled && 'opacity-50 cursor-not-allowed', className)}
     />
