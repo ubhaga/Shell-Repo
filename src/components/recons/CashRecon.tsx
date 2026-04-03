@@ -133,6 +133,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
   const dailyRows: DayRow[] = [];
   let runningCC = monthCCOpening;
   let runningCoins = monthCoinsOpening;
+  let bankRunning = bankingOB; // start with OB from prior months
 
   days.forEach(day => {
     const dateStr = format(day, 'yyyy-MM-dd');
@@ -155,6 +156,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
     const coinsClosing = coinsOpening + coinsDailyCashup - coinsBagClosure - transferFromCoins;
 
     const bankActual = cconnectByDate.get(dateStr) ?? 0;
+    bankRunning = bankRunning + bankingExpected - bankActual;
     const bankMatched = bankingExpected > 0 && Math.abs(bankingExpected - bankActual) < 0.01;
 
     dailyRows.push({
@@ -168,6 +170,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
       bankingExpected,
       bankActual,
       bankMatched,
+      bankRunningBalance: bankRunning,
       coinsOpening,
       coinsDailyCashup,
       coinsBagClosure,
