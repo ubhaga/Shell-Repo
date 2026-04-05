@@ -81,6 +81,7 @@ export interface DailyCashup {
     | "returns_mop"
     | "returnsNotCaptured"
     | "attendantShortOver"
+    | "attendantName"
   > & {
     income: number;
     returns: number;
