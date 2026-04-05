@@ -26,6 +26,7 @@ import {
 import { Plus, Trash2, Save, CheckCircle, AlertCircle, Lock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const blankShopShift = (): DailyCashup["shop"] => ({
   income: 0,
