@@ -54,6 +54,7 @@ function computeDaySummary(c: DailyCashup) {
   const totalOtherAdj = c.shop.otherAdjustments.reduce((s, a) => s + a.amount, 0);
 
   const returnsMop = c.shop.returns_mop;
+  const returnsNotCaptured = c.shop.returnsNotCaptured;
   const attendantShortOver = c.shop.attendantShortOver;
 
   return {
@@ -73,6 +74,7 @@ function computeDaySummary(c: DailyCashup) {
     totalAccounts,
     totalOtherAdj,
     returnsMop,
+    returnsNotCaptured,
     attendantShortOver,
   };
 }
@@ -95,7 +97,7 @@ export function DailySummaryReport({ filterMonth }: Props) {
       totalPayouts: 0, totalReceipts: 0,
       cashBanking: 0, easyPay: 0, coins: 0, cashConnectTotal: 0,
       totalSpeedpoints: 0, totalAccounts: 0, totalOtherAdj: 0,
-      returnsMop: 0, attendantShortOver: 0,
+      returnsMop: 0, returnsNotCaptured: 0, attendantShortOver: 0,
     }
   );
 
@@ -103,11 +105,11 @@ export function DailySummaryReport({ filterMonth }: Props) {
   const formatDate = (d: string) => { try { return format(new Date(d), 'dd MMM'); } catch { return d; } };
 
   const exportCSV = () => {
-    const headers = ['Date', 'Cashier', 'Income', 'Returns (Yest)', 'Returns (Today)', 'Net Sales', 'Payouts', 'Receipts', 'Banking', 'EasyPay', 'Coins', 'Cash Connect', 'Speedpoints', 'Accounts', 'Other Adj', 'Returns MOP', 'Short/Over'];
+    const headers = ['Date', 'Cashier', 'Income', 'Returns (Yest)', 'Returns (Today)', 'Net Sales', 'Payouts', 'Receipts', 'Banking', 'EasyPay', 'Coins', 'Cash Connect', 'Speedpoints', 'Accounts', 'Other Adj', 'Returns MOP', 'Returns Not Captured', 'Short/Over'];
     const csvRows = rows.map(r => [
       r.date, r.cashier, r.totalIncome, r.totalReturnsYest, r.totalReturnsToday, r.netSales,
       r.totalPayouts, r.totalReceipts, r.cashBanking, r.easyPay, r.coins, r.cashConnectTotal,
-      r.totalSpeedpoints, r.totalAccounts, r.totalOtherAdj, r.returnsMop, r.attendantShortOver,
+      r.totalSpeedpoints, r.totalAccounts, r.totalOtherAdj, r.returnsMop, r.returnsNotCaptured, r.attendantShortOver,
     ].join(','));
     const csv = [headers.join(','), ...csvRows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -144,12 +146,13 @@ export function DailySummaryReport({ filterMonth }: Props) {
               <TableHead className="text-xs text-right whitespace-nowrap">Accounts</TableHead>
               <TableHead className="text-xs text-right whitespace-nowrap">Other Adj</TableHead>
               <TableHead className="text-xs text-right whitespace-nowrap">Returns MOP</TableHead>
+              <TableHead className="text-xs text-right whitespace-nowrap">Returns N/C</TableHead>
               <TableHead className="text-xs text-right whitespace-nowrap">Short/Over</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.length === 0 && (
-              <TableRow><TableCell colSpan={17} className="text-center text-muted-foreground py-8">No cashup data for this month</TableCell></TableRow>
+              <TableRow><TableCell colSpan={18} className="text-center text-muted-foreground py-8">No cashup data for this month</TableCell></TableRow>
             )}
             {rows.map(r => (
               <TableRow key={r.date}>
@@ -169,6 +172,7 @@ export function DailySummaryReport({ filterMonth }: Props) {
                 <TableCell className="text-right"><CurrencyDisplay value={r.totalAccounts} /></TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={r.totalOtherAdj} /></TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={r.returnsMop} /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={r.returnsNotCaptured} /></TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={r.attendantShortOver} /></TableCell>
               </TableRow>
             ))}
@@ -192,6 +196,7 @@ export function DailySummaryReport({ filterMonth }: Props) {
                 <TableCell className="text-right"><CurrencyDisplay value={totals.totalAccounts} highlight /></TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={totals.totalOtherAdj} highlight /></TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={totals.returnsMop} highlight /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={totals.returnsNotCaptured} highlight /></TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={totals.attendantShortOver} highlight /></TableCell>
               </TableRow>
             </TableFooter>
