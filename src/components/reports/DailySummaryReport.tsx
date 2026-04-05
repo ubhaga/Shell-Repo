@@ -152,7 +152,7 @@ export function DailySummaryReport({ filterMonth }: Props) {
           </TableHeader>
           <TableBody>
             {rows.length === 0 && (
-              <TableRow><TableCell colSpan={17} className="text-center text-muted-foreground py-8">No cashup data for this month</TableCell></TableRow>
+              <TableRow><TableCell colSpan={18} className="text-center text-muted-foreground py-8">No cashup data for this month</TableCell></TableRow>
             )}
             {rows.map(r => (
               <TableRow key={r.date}>
