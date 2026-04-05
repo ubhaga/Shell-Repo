@@ -652,7 +652,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
           </div>
         ))}
         <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
-          <span className="text-muted-foreground">Returns (refund next day)</span>
+          <span className="text-muted-foreground">Returns (returns from Yesterday)</span>
           <CurrencyInput value={form.shop.returns_mop} onChange={() => {}} allowNegative disabled />
         </div>
         <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
