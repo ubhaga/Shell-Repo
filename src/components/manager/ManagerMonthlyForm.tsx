@@ -97,7 +97,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
 
   return (
     <div className="space-y-4 max-w-4xl">
-      <div className="bg-card border rounded-lg p-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="bg-card border rounded-lg p-3 grid grid-cols-2 md:grid-cols-3 gap-3">
         <div>
           <label className="text-xs text-muted-foreground">Month</label>
           <div className="input-cell w-full mt-0.5 text-center font-semibold">
@@ -117,15 +117,10 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
             className="input-cell w-full mt-0.5 text-left" placeholder="Any month end notes..." />
         </div>
-        <div className="flex items-end">
-          <Button onClick={handleSave} className="w-full" size="sm">
-            <Save className="h-3.5 w-3.5 mr-1" />Save Monthly
-          </Button>
-        </div>
       </div>
 
       <div className="text-xs text-muted-foreground bg-muted/50 rounded px-3 py-2">
-        Showing data for: <strong>{format(new Date(month + '-01'), 'MMMM yyyy')}</strong> — {monthCashups.length} cashup days recorded
+        Showing data for: <strong>{format(new Date(month + '-01'), 'MMMM yyyy')}</strong> — {monthCashups.length} cashup days recorded this month
       </div>
 
       {/* Month End Report */}
@@ -208,6 +203,10 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           <CurrencyDisplay value={form.salesCStore + form.salesWslDsl + form.salesFuel + form.salesGas + form.salesOil + form.vatTaxAmount + form.adjCStore + form.adjWslDsl + form.adjFuel + form.adjGas + form.adjOil + form.adjVat} className="text-right" />
         </div>
       </Section>
+
+      <Button onClick={handleSave} className="w-full" size="sm">
+        <Save className="h-3.5 w-3.5 mr-1" />Save Monthly
+      </Button>
 
       {/* Month End Status */}
       <div className={`rounded-xl border-2 p-4 text-center ${salesMatch && payoutsMatch && receiptsMatch && invoicesMatch && vatMatch ? 'border-green-500 bg-green-50' : 'border-destructive bg-destructive/5'}`}>
