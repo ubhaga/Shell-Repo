@@ -78,6 +78,7 @@ export interface DailyCashup {
     | "payouts"
     | "lottoPayouts"
     | "returns_mop"
+    | "returnsNotCaptured"
     | "attendantShortOver"
   > & {
     income: number;

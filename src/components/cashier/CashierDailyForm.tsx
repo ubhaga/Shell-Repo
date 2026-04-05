@@ -47,6 +47,7 @@ const blankShopShift = (): DailyCashup["shop"] => ({
   accounts: [],
   otherAdjustments: [],
   returns_mop: 0,
+  returnsNotCaptured: 0,
   attendantShortOver: 0,
 });
 
