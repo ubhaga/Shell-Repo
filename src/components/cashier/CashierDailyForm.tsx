@@ -680,7 +680,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
                   <SelectValue placeholder="Select attendant" />
                 </SelectTrigger>
                 <SelectContent>
-                  {masterData.cashierNames.map((name) => (
+                  {CASHIER_NAMES.map((name) => (
                     <SelectItem key={name} value={name}>{name}</SelectItem>
                   ))}
                 </SelectContent>
