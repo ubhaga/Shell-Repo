@@ -672,20 +672,12 @@ export function CashierDailyForm({ selectedDate }: Props) {
           <span className="text-muted-foreground italic">Returns not captured (to be captured tomorrow)</span>
           <CurrencyInput value={form.shop.returnsNotCaptured} onChange={(v) => setShop({ returnsNotCaptured: v })} allowNegative />
         </div>
-        <div className="px-3 py-1.5 border-b text-sm space-y-1">
-          <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
+          <div className="flex items-center gap-2">
             <span className="text-muted-foreground">Attendant Short/(Over)</span>
-            <CurrencyInput
-              value={form.shop.attendantShortOver}
-              onChange={(v) => setShop({ attendantShortOver: v })}
-              allowNegative
-            />
-          </div>
-          {form.shop.attendantShortOver !== 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Attendant:</span>
+            {form.shop.attendantShortOver !== 0 && (
               <Select value={form.shop.attendantName} onValueChange={(v) => setShop({ attendantName: v })}>
-                <SelectTrigger className="h-7 text-xs w-44">
+                <SelectTrigger className="h-7 text-xs w-36">
                   <SelectValue placeholder="Select attendant" />
                 </SelectTrigger>
                 <SelectContent>
@@ -694,8 +686,13 @@ export function CashierDailyForm({ selectedDate }: Props) {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          )}
+            )}
+          </div>
+          <CurrencyInput
+            value={form.shop.attendantShortOver}
+            onChange={(v) => setShop({ attendantShortOver: v })}
+            allowNegative
+          />
         </div>
         <div className="px-3 py-1.5">
           <Button variant="outline" size="sm" onClick={addOther} className="text-xs h-7">
