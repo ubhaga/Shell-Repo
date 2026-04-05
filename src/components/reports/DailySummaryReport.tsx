@@ -54,6 +54,7 @@ function computeDaySummary(c: DailyCashup) {
   const totalOtherAdj = c.shop.otherAdjustments.reduce((s, a) => s + a.amount, 0);
 
   const returnsMop = c.shop.returns_mop;
+  const returnsNotCaptured = c.shop.returnsNotCaptured;
   const attendantShortOver = c.shop.attendantShortOver;
 
   return {
@@ -73,6 +74,7 @@ function computeDaySummary(c: DailyCashup) {
     totalAccounts,
     totalOtherAdj,
     returnsMop,
+    returnsNotCaptured,
     attendantShortOver,
   };
 }
