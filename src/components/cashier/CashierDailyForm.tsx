@@ -161,6 +161,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
     shopAccountTotal -
     shopOtherTotal -
     form.shop.returns_mop -
+    form.shop.returnsNotCaptured -
     form.shop.attendantShortOver;
   // OPT balance = OPT Takings - OPT Speedpoints - OPT Accounts
   const optDifference = optTotalTakings - optSpeedpointTotal - optAccountTotal;
