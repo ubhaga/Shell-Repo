@@ -146,6 +146,7 @@ export function CashierDailyForm({ selectedDate }: Props) {
   const optAccountTotal = form.opt.accounts.reduce((s, a) => s + a.amount, 0);
 
   const shopOtherTotal = form.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0);
+  const shopSection8Total = shopOtherTotal + form.shop.returns_mop + form.shop.returnsNotCaptured + form.shop.attendantShortOver;
 
   // MOP Cash: Cash Connect Total = sum of the 3 sub-items
   const cashConnectTotal = form.shop.cashDepositedBanking + form.shop.easyPay + form.shop.coins;
