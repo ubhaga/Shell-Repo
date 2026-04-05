@@ -70,7 +70,7 @@ function DailyDashboard({ selectedDate }: Props) {
   const shopOther = cashup ? cashup.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0) : 0;
 
   const cashConnectTotal = cashup ? cashup.shop.cashDepositedBanking + cashup.shop.easyPay + cashup.shop.coins : 0;
-  const shopDiff = cashup ? shopTakings - cashConnectTotal - shopSP - shopAcc - shopOther - cashup.shop.returns_mop - cashup.shop.attendantShortOver : 0;
+  const shopDiff = cashup ? shopTakings - cashConnectTotal - shopSP - shopAcc - shopOther - cashup.shop.returns_mop - (cashup.shop.returnsNotCaptured ?? 0) - cashup.shop.attendantShortOver : 0;
   const optMopTotal = optSP + optAcc;
   const optDiff = optNetSales - optMopTotal;
 
