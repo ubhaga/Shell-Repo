@@ -1290,6 +1290,11 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
           <AirtimeRecon filterMonth={filterMonth} />
         </TabsContent>
 
+        {/* Other Adjustments */}
+        <TabsContent value="other-adj">
+          <OtherAdjustmentsRecon filterMonth={filterMonth} />
+        </TabsContent>
+
         {/* Cash Connect & Coins */}
         <TabsContent value="cash">
           <CashRecon filterMonth={filterMonth} />
