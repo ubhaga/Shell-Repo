@@ -173,20 +173,20 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
             </div>
           </div>
         ))}
-        <div className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center bg-secondary font-semibold">
-          <span>Total Sales</span>
-          <div className="flex justify-center">
-            <CurrencyDisplay value={form.salesCStore + form.salesWslDsl + form.salesFuel + form.salesGas + form.salesOil} className="text-right w-full max-w-[120px]" />
-          </div>
-        </div>
         <div className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Tax</span>
           <span className="text-center">Tax Amount - Final Total</span>
         </div>
-        <div className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-2 border-b last:border-b-0 text-sm items-center">
+        <div className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
           <span className="text-muted-foreground">VAT</span>
           <div className="flex justify-center">
             <CurrencyInput value={form.vatTaxAmount} onChange={v => setForm(f => ({ ...f, vatTaxAmount: v }))} className="text-right w-full max-w-[120px]" />
+          </div>
+        </div>
+        <div className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-2 text-sm items-center bg-secondary font-semibold">
+          <span>Total Sales (incl. VAT)</span>
+          <div className="flex justify-center">
+            <CurrencyDisplay value={form.salesCStore + form.salesWslDsl + form.salesFuel + form.salesGas + form.salesOil + form.vatTaxAmount} className="text-right w-full max-w-[120px]" />
           </div>
         </div>
       </Section>
