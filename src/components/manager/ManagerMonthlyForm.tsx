@@ -157,39 +157,55 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
 
       {/* Month End Report (Other) */}
       <Section title="Month End Report (Other)" color="orange">
-        <div className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Description</span>
           <span className="text-center">Sales Value</span>
+          <span className="text-center">Adjustments</span>
+          <span className="text-center">Sales Value (adj)</span>
         </div>
         {[
-          { label: 'Sales C Store', key: 'salesCStore' as const },
-          { label: 'Sales WSL DSL', key: 'salesWslDsl' as const },
-          { label: 'Sales Fuel', key: 'salesFuel' as const },
-          { label: 'Sales Gas', key: 'salesGas' as const },
-          { label: 'Sales Oil', key: 'salesOil' as const },
-        ].map(({ label, key }) => (
-          <div key={key} className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
+          { label: 'Sales C Store', key: 'salesCStore' as const, adjKey: 'adjCStore' as const },
+          { label: 'Sales WSL DSL', key: 'salesWslDsl' as const, adjKey: 'adjWslDsl' as const },
+          { label: 'Sales Fuel', key: 'salesFuel' as const, adjKey: 'adjFuel' as const },
+          { label: 'Sales Gas', key: 'salesGas' as const, adjKey: 'adjGas' as const },
+          { label: 'Sales Oil', key: 'salesOil' as const, adjKey: 'adjOil' as const },
+        ].map(({ label, key, adjKey }) => (
+          <div key={key} className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
             <span className="text-muted-foreground">{label}</span>
             <div className="flex justify-center">
               <CurrencyInput value={form[key]} onChange={v => setForm(f => ({ ...f, [key]: v }))} className="text-right w-full max-w-[120px]" />
             </div>
+            <div className="flex justify-center">
+              <CurrencyInput value={form[adjKey]} onChange={v => setForm(f => ({ ...f, [adjKey]: v }))} className="text-right w-full max-w-[120px]" />
+            </div>
+            <div className="flex justify-center">
+              <CurrencyDisplay value={form[key] + form[adjKey]} className="text-right w-full max-w-[120px]" />
+            </div>
           </div>
         ))}
-        <div className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Tax</span>
-          <span className="text-center">Tax Amount - Final Total</span>
+          <span className="text-center">Tax Amount</span>
+          <span className="text-center">Adjustments</span>
+          <span className="text-center">Tax Amount (adj)</span>
         </div>
-        <div className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
           <span className="text-muted-foreground">VAT</span>
           <div className="flex justify-center">
             <CurrencyInput value={form.vatTaxAmount} onChange={v => setForm(f => ({ ...f, vatTaxAmount: v }))} className="text-right w-full max-w-[120px]" />
           </div>
-        </div>
-        <div className="grid grid-cols-[2fr_1fr] gap-3 px-3 py-2 text-sm items-center bg-secondary font-semibold">
-          <span>Total Sales (incl. VAT)</span>
           <div className="flex justify-center">
-            <CurrencyDisplay value={form.salesCStore + form.salesWslDsl + form.salesFuel + form.salesGas + form.salesOil + form.vatTaxAmount} className="text-right w-full max-w-[120px]" />
+            <CurrencyInput value={form.adjVat} onChange={v => setForm(f => ({ ...f, adjVat: v }))} className="text-right w-full max-w-[120px]" />
           </div>
+          <div className="flex justify-center">
+            <CurrencyDisplay value={form.vatTaxAmount + form.adjVat} className="text-right w-full max-w-[120px]" />
+          </div>
+        </div>
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-2 text-sm items-center bg-secondary font-semibold">
+          <span>Total Sales (incl. VAT)</span>
+          <CurrencyDisplay value={form.salesCStore + form.salesWslDsl + form.salesFuel + form.salesGas + form.salesOil + form.vatTaxAmount} className="text-right" />
+          <CurrencyDisplay value={form.adjCStore + form.adjWslDsl + form.adjFuel + form.adjGas + form.adjOil + form.adjVat} className="text-right" />
+          <CurrencyDisplay value={form.salesCStore + form.salesWslDsl + form.salesFuel + form.salesGas + form.salesOil + form.vatTaxAmount + form.adjCStore + form.adjWslDsl + form.adjFuel + form.adjGas + form.adjOil + form.adjVat} className="text-right" />
         </div>
       </Section>
 

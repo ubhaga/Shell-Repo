@@ -235,6 +235,12 @@ export type Database = {
       }
       monthly_branch_figures: {
         Row: {
+          adj_c_store: number
+          adj_fuel: number
+          adj_gas: number
+          adj_oil: number
+          adj_vat: number
+          adj_wsl_dsl: number
           branch_net_sales: number
           branch_total_invoices_capital: number
           branch_total_invoices_vat: number
@@ -259,6 +265,12 @@ export type Database = {
           vat_tax_amount: number
         }
         Insert: {
+          adj_c_store?: number
+          adj_fuel?: number
+          adj_gas?: number
+          adj_oil?: number
+          adj_vat?: number
+          adj_wsl_dsl?: number
           branch_net_sales?: number
           branch_total_invoices_capital?: number
           branch_total_invoices_vat?: number
@@ -283,6 +295,12 @@ export type Database = {
           vat_tax_amount?: number
         }
         Update: {
+          adj_c_store?: number
+          adj_fuel?: number
+          adj_gas?: number
+          adj_oil?: number
+          adj_vat?: number
+          adj_wsl_dsl?: number
           branch_net_sales?: number
           branch_total_invoices_capital?: number
           branch_total_invoices_vat?: number
