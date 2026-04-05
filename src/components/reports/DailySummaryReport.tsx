@@ -196,6 +196,7 @@ export function DailySummaryReport({ filterMonth }: Props) {
                 <TableCell className="text-right"><CurrencyDisplay value={totals.totalAccounts} highlight /></TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={totals.totalOtherAdj} highlight /></TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={totals.returnsMop} highlight /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={totals.returnsNotCaptured} highlight /></TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={totals.attendantShortOver} highlight /></TableCell>
               </TableRow>
             </TableFooter>
