@@ -7,12 +7,15 @@ import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Reports } from "@/components/reports/Reports";
 import { MasterDataSettings } from "@/components/settings/MasterDataSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2, GitCompareArrows } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2, GitCompareArrows, FileSpreadsheet } from "lucide-react";
+import { AfsJournalEntries } from "@/components/afs/AfsJournalEntries";
+import { AfsMonthly } from "@/components/afs/AfsMonthly";
 import { useCashupStore } from "@/store/cashupStore";
 import { useMasterDataStore } from "@/store/masterDataStore";
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [afsSubTab, setAfsSubTab] = useState("jes");
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const cashupLoaded = useCashupStore(s => s.loaded);
   const loadCashups = useCashupStore(s => s.loadAll);
@@ -63,7 +66,7 @@ export default function Index() {
 
       <div className="container mx-auto px-4 py-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-7 w-full mb-4">
+          <TabsList className="grid grid-cols-8 w-full mb-4">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5 text-xs">
               <LayoutDashboard className="h-3.5 w-3.5" />
               Dashboard
@@ -88,6 +91,10 @@ export default function Index() {
               <GitCompareArrows className="h-3.5 w-3.5" />
               Recons
             </TabsTrigger>
+            <TabsTrigger value="afs" className="flex items-center gap-1.5 text-xs">
+              <FileSpreadsheet className="h-3.5 w-3.5" />
+              AFS
+            </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-1.5 text-xs">
               <Settings className="h-3.5 w-3.5" />
               Settings
@@ -111,6 +118,20 @@ export default function Index() {
           </TabsContent>
           <TabsContent value="recons">
             <Reports mode="recons" />
+          </TabsContent>
+          <TabsContent value="afs">
+            <Tabs value={afsSubTab} onValueChange={setAfsSubTab}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="jes" className="text-xs">JE's</TabsTrigger>
+                <TabsTrigger value="afs-monthly" className="text-xs">AFS Monthly</TabsTrigger>
+              </TabsList>
+              <TabsContent value="jes">
+                <AfsJournalEntries selectedDate={selectedDate} />
+              </TabsContent>
+              <TabsContent value="afs-monthly">
+                <AfsMonthly selectedDate={selectedDate} />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
           <TabsContent value="settings">
             <MasterDataSettings />
