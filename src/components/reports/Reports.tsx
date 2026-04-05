@@ -14,6 +14,7 @@ import { DailySummaryReport } from './DailySummaryReport';
 import { CreditorsRecon } from '@/components/recons/CreditorsRecon';
 import { AirtimeRecon } from '@/components/recons/AirtimeRecon';
 import { CashRecon } from '@/components/recons/CashRecon';
+import { OtherAdjustmentsRecon } from '@/components/recons/OtherAdjustmentsRecon';
 
 export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   const { cashups, managerEntries } = useCashupStore();
