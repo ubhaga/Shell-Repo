@@ -55,6 +55,7 @@ export interface CashierShift {
   returns_mop: number;
   returnsNotCaptured: number;
   attendantShortOver: number;
+  attendantName: string;
 }
 
 export interface DailyCashup {
