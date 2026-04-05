@@ -97,7 +97,7 @@ export function DailySummaryReport({ filterMonth }: Props) {
       totalPayouts: 0, totalReceipts: 0,
       cashBanking: 0, easyPay: 0, coins: 0, cashConnectTotal: 0,
       totalSpeedpoints: 0, totalAccounts: 0, totalOtherAdj: 0,
-      returnsMop: 0, attendantShortOver: 0,
+      returnsMop: 0, returnsNotCaptured: 0, attendantShortOver: 0,
     }
   );
 
