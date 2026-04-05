@@ -41,6 +41,9 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
     let totalCashDepositedBanking = 0;
     let totalCoins = 0;
     let totalSpeedpointsExclVPlus = 0;
+    let totalAccounts = 0;
+    let totalOtherAdjustments = 0;
+    let totalCashierBalance = 0;
 
     for (const c of monthlyCashups) {
       // Receipts
@@ -54,9 +57,8 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
       // Lotto payouts
       totalLottoPayouts += c.shop.lottoPayouts ?? 0;
       // Total payouts
-      for (const p of c.shop.payouts ?? []) {
-        totalPayouts += p.amount;
-      }
+      const shopPayoutsTotal = (c.shop.payouts ?? []).reduce((s, p) => s + p.amount, 0);
+      totalPayouts += shopPayoutsTotal;
       // Cash deposited for banking
       totalCashDepositedBanking += c.shop.cashDepositedBanking ?? 0;
       // Coins
@@ -67,6 +69,25 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
           totalSpeedpointsExclVPlus += (sp.shopAmount ?? 0) + (sp.optAmount ?? 0);
         }
       }
+      // Accounts (shop + opt)
+      const shopAccTotal = (c.shop.accounts ?? []).reduce((s, a) => s + a.amount, 0);
+      const optAccTotal = (c.opt.accounts ?? []).reduce((s, a) => s + a.amount, 0);
+      totalAccounts += shopAccTotal + optAccTotal;
+      // Other adjustments total (section 8 manual items only)
+      const otherAdj = (c.shop.otherAdjustments ?? []).reduce((s, o) => s + o.amount, 0);
+      totalOtherAdjustments += otherAdj;
+      // Cashier balance (shop + opt short/over)
+      const shopNetSales = (c.shop.income ?? 0) - (c.shop.returns ?? 0) - (c.shop.returns_today ?? 0);
+      const shopTotalReceipts = (c.shop.receipts ?? []).reduce((s, r) => s + r.amount, 0);
+      const shopTotalTakings = shopNetSales - shopPayoutsTotal - (c.shop.lottoPayouts ?? 0) + shopTotalReceipts;
+      const cashConnectTotal = (c.shop.cashDepositedBanking ?? 0) + (c.shop.easyPay ?? 0) + (c.shop.coins ?? 0);
+      const shopSpTotal = (c.shop.speedpoints ?? []).reduce((s, sp) => s + sp.shopAmount, 0);
+      const shopSection8 = otherAdj + (c.shop.returns_mop ?? 0) + (c.shop.returnsNotCaptured ?? 0) + (c.shop.attendantShortOver ?? 0);
+      const shopDiff = shopTotalTakings - cashConnectTotal - shopSpTotal - shopAccTotal - shopSection8;
+      const optNetSales = (c.opt.income ?? 0) - (c.opt.returns ?? 0);
+      const optSpTotal = (c.opt.speedpoints ?? []).reduce((s, sp) => s + sp.optAmount, 0);
+      const optDiff = optNetSales - optSpTotal - optAccTotal;
+      totalCashierBalance += shopDiff + optDiff;
     }
 
     credits.push({ description: "Prov Blue Label", amount: totalBlueLabel });
@@ -85,7 +106,22 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
       { description: "Shift Clearing", amount: totalCashDepositedBanking - totalBankCharges },
       { description: "Petty Cash", amount: totalCoins },
       { description: "EFT Clearing", amount: totalSpeedpointsExclVPlus },
+      { description: "Accounts", amount: totalAccounts },
     ];
+
+    // Other Adjustments: debit if positive, credit if negative
+    if (totalOtherAdjustments >= 0) {
+      debits.push({ description: "Other Adjustments", amount: totalOtherAdjustments });
+    } else {
+      credits.push({ description: "Other Adjustments", amount: Math.abs(totalOtherAdjustments) });
+    }
+
+    // Cashier Balance: debit if positive, credit if negative
+    if (totalCashierBalance >= 0) {
+      debits.push({ description: "Cashier Balance", amount: totalCashierBalance });
+    } else {
+      credits.push({ description: "Cashier Balance", amount: Math.abs(totalCashierBalance) });
+    }
 
     const totalCredits = credits.reduce((s, c) => s + c.amount, 0);
     const totalDebits = debits.reduce((s, d) => s + d.amount, 0);
