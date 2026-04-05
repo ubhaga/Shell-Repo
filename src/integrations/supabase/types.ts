@@ -308,6 +308,33 @@ export type Database = {
         }
         Relationships: []
       }
+      other_adjustment_categories: {
+        Row: {
+          adjustment_id: string
+          cashup_date: string
+          category: string
+          created_at: string
+          id: string
+          month: string
+        }
+        Insert: {
+          adjustment_id: string
+          cashup_date: string
+          category?: string
+          created_at?: string
+          id?: string
+          month: string
+        }
+        Update: {
+          adjustment_id?: string
+          cashup_date?: string
+          category?: string
+          created_at?: string
+          id?: string
+          month?: string
+        }
+        Relationships: []
+      }
       speedpoint_diff_clearances: {
         Row: {
           amount: number

@@ -14,6 +14,7 @@ import { DailySummaryReport } from './DailySummaryReport';
 import { CreditorsRecon } from '@/components/recons/CreditorsRecon';
 import { AirtimeRecon } from '@/components/recons/AirtimeRecon';
 import { CashRecon } from '@/components/recons/CashRecon';
+import { OtherAdjustmentsRecon } from '@/components/recons/OtherAdjustmentsRecon';
 
 export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
   const { cashups, managerEntries } = useCashupStore();
@@ -601,11 +602,12 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
           <TabsTrigger value="bank">Bank</TabsTrigger>
         </TabsList>
         ) : (
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+        <TabsList className="grid grid-cols-5 w-full max-w-3xl">
           <TabsTrigger value="speedpoints">Speedpoints</TabsTrigger>
           <TabsTrigger value="creditors">Creditors</TabsTrigger>
           <TabsTrigger value="airtime">Airtime</TabsTrigger>
           <TabsTrigger value="cash">Cash CC & Coins</TabsTrigger>
+          <TabsTrigger value="other-adj">Other Adj.</TabsTrigger>
         </TabsList>
         )}
 
@@ -1286,6 +1288,11 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
         {/* Airtime */}
         <TabsContent value="airtime">
           <AirtimeRecon filterMonth={filterMonth} />
+        </TabsContent>
+
+        {/* Other Adjustments */}
+        <TabsContent value="other-adj">
+          <OtherAdjustmentsRecon filterMonth={filterMonth} />
         </TabsContent>
 
         {/* Cash Connect & Coins */}
