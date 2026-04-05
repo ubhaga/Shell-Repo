@@ -26,6 +26,7 @@ import {
 import { Plus, Trash2, Save, CheckCircle, AlertCircle, Lock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const blankShopShift = (): DailyCashup["shop"] => ({
   income: 0,
@@ -49,6 +50,7 @@ const blankShopShift = (): DailyCashup["shop"] => ({
   returns_mop: 0,
   returnsNotCaptured: 0,
   attendantShortOver: 0,
+  attendantName: '',
 });
 
 const blankOptShift = (): DailyCashup["opt"] => ({
@@ -211,6 +213,15 @@ export function CashierDailyForm({ selectedDate }: Props) {
       toast({
         title: "Speedpoint Batch # required",
         description: `Please enter a Batch # for: ${allSpBad.join(", ")}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    // --- Attendant name mandatory if short/over is non-zero ---
+    if (form.shop.attendantShortOver !== 0 && !form.shop.attendantName.trim()) {
+      toast({
+        title: "Attendant Name required",
+        description: "Please select the attendant name when Attendant Short/(Over) is entered.",
         variant: "destructive",
       });
       return;
@@ -661,13 +672,30 @@ export function CashierDailyForm({ selectedDate }: Props) {
           <span className="text-muted-foreground italic">Returns not captured (to be captured tomorrow)</span>
           <CurrencyInput value={form.shop.returnsNotCaptured} onChange={(v) => setShop({ returnsNotCaptured: v })} allowNegative />
         </div>
-        <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
-          <span className="text-muted-foreground">Attendant Short/(Over)</span>
-          <CurrencyInput
-            value={form.shop.attendantShortOver}
-            onChange={(v) => setShop({ attendantShortOver: v })}
-            allowNegative
-          />
+        <div className="px-3 py-1.5 border-b text-sm space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Attendant Short/(Over)</span>
+            <CurrencyInput
+              value={form.shop.attendantShortOver}
+              onChange={(v) => setShop({ attendantShortOver: v })}
+              allowNegative
+            />
+          </div>
+          {form.shop.attendantShortOver !== 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Attendant:</span>
+              <Select value={form.shop.attendantName} onValueChange={(v) => setShop({ attendantName: v })}>
+                <SelectTrigger className="h-7 text-xs w-44">
+                  <SelectValue placeholder="Select attendant" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CASHIER_NAMES.map((name) => (
+                    <SelectItem key={name} value={name}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
         <div className="px-3 py-1.5">
           <Button variant="outline" size="sm" onClick={addOther} className="text-xs h-7">
