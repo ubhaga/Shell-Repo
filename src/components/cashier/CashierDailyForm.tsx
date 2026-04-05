@@ -217,6 +217,15 @@ export function CashierDailyForm({ selectedDate }: Props) {
       });
       return;
     }
+    // --- Attendant name mandatory if short/over is non-zero ---
+    if (form.shop.attendantShortOver !== 0 && !form.shop.attendantName.trim()) {
+      toast({
+        title: "Attendant Name required",
+        description: "Please select the attendant name when Attendant Short/(Over) is entered.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // --- Over (negative balance) confirmation ---
     const shopOver = shopDifference < -0.01;
