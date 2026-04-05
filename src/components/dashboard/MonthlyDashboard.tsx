@@ -43,7 +43,7 @@ function computeDayMetrics(
     const shopSP = cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0);
     const shopAcc = cashup.shop.accounts.reduce((s, a) => s + a.amount, 0);
     const shopOther = cashup.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0);
-    shopDiff = shopTakings - cashConnectTotal - shopSP - shopAcc - shopOther - cashup.shop.returns_mop - cashup.shop.attendantShortOver;
+    shopDiff = shopTakings - cashConnectTotal - shopSP - shopAcc - shopOther - cashup.shop.returns_mop - (cashup.shop.returnsNotCaptured ?? 0) - cashup.shop.attendantShortOver;
 
     const optNetSales = cashup.opt.income - cashup.opt.returns;
     const optSP = cashup.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0);
