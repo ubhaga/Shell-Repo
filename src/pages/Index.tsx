@@ -53,13 +53,23 @@ export default function Index() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={selectedDate}
-              min="2026-01-01"
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="text-sm border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+            {activeTab === 'manager-monthly' ? (
+              <input
+                type="month"
+                value={selectedDate.slice(0, 7)}
+                min="2026-01"
+                onChange={(e) => setSelectedDate(e.target.value + '-01')}
+                className="text-sm border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            ) : (
+              <input
+                type="date"
+                value={selectedDate}
+                min="2026-01-01"
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="text-sm border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            )}
           </div>
         </div>
       </header>
