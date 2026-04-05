@@ -69,6 +69,11 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
           totalSpeedpointsExclVPlus += (sp.shopAmount ?? 0) + (sp.optAmount ?? 0);
         }
       }
+      for (const sp of c.opt.speedpoints ?? []) {
+        if (sp.terminal !== "V Plus") {
+          totalSpeedpointsExclVPlus += (sp.optAmount ?? 0);
+        }
+      }
       // Accounts (shop + opt)
       const shopAccTotal = (c.shop.accounts ?? []).reduce((s, a) => s + a.amount, 0);
       const optAccTotal = (c.opt.accounts ?? []).reduce((s, a) => s + a.amount, 0);
