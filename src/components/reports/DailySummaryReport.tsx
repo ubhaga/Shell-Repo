@@ -146,6 +146,7 @@ export function DailySummaryReport({ filterMonth }: Props) {
               <TableHead className="text-xs text-right whitespace-nowrap">Accounts</TableHead>
               <TableHead className="text-xs text-right whitespace-nowrap">Other Adj</TableHead>
               <TableHead className="text-xs text-right whitespace-nowrap">Returns MOP</TableHead>
+              <TableHead className="text-xs text-right whitespace-nowrap">Returns N/C</TableHead>
               <TableHead className="text-xs text-right whitespace-nowrap">Short/Over</TableHead>
             </TableRow>
           </TableHeader>
