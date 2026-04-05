@@ -105,11 +105,11 @@ export function DailySummaryReport({ filterMonth }: Props) {
   const formatDate = (d: string) => { try { return format(new Date(d), 'dd MMM'); } catch { return d; } };
 
   const exportCSV = () => {
-    const headers = ['Date', 'Cashier', 'Income', 'Returns (Yest)', 'Returns (Today)', 'Net Sales', 'Payouts', 'Receipts', 'Banking', 'EasyPay', 'Coins', 'Cash Connect', 'Speedpoints', 'Accounts', 'Other Adj', 'Returns MOP', 'Short/Over'];
+    const headers = ['Date', 'Cashier', 'Income', 'Returns (Yest)', 'Returns (Today)', 'Net Sales', 'Payouts', 'Receipts', 'Banking', 'EasyPay', 'Coins', 'Cash Connect', 'Speedpoints', 'Accounts', 'Other Adj', 'Returns MOP', 'Returns Not Captured', 'Short/Over'];
     const csvRows = rows.map(r => [
       r.date, r.cashier, r.totalIncome, r.totalReturnsYest, r.totalReturnsToday, r.netSales,
       r.totalPayouts, r.totalReceipts, r.cashBanking, r.easyPay, r.coins, r.cashConnectTotal,
-      r.totalSpeedpoints, r.totalAccounts, r.totalOtherAdj, r.returnsMop, r.attendantShortOver,
+      r.totalSpeedpoints, r.totalAccounts, r.totalOtherAdj, r.returnsMop, r.returnsNotCaptured, r.attendantShortOver,
     ].join(','));
     const csv = [headers.join(','), ...csvRows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
