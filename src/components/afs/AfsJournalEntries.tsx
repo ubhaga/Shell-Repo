@@ -99,16 +99,10 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
     credits.push({ description: "Prov for Flash", amount: totalEasypayReceipts - totalEasypayMop });
     credits.push({ description: "Prov for Lotto", amount: totalLottoReceipts - totalLottoPayouts });
 
-    // --- Bank charges from manager entries ---
-    let totalBankCharges = 0;
-    for (const me of monthlyManagers) {
-      totalBankCharges += me.bankCharges ?? 0;
-    }
-
     // --- Debits ---
     const debits: { description: string; amount: number }[] = [
       { description: "Payouts", amount: totalPayouts },
-      { description: "Shift Clearing", amount: totalCashDepositedBanking - totalBankCharges },
+      { description: "Shift Clearing", amount: totalCashDepositedBanking },
       { description: "Petty Cash", amount: totalCoins },
       { description: "EFT Clearing", amount: totalSpeedpointsExclVPlus },
       { description: "Accounts", amount: totalAccounts },
