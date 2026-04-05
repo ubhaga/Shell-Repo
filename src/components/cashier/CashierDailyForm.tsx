@@ -675,6 +675,10 @@ export function CashierDailyForm({ selectedDate }: Props) {
             Add Adjustment
           </Button>
         </div>
+        <div className="flex items-center justify-between px-3 py-2 bg-secondary font-semibold text-sm border-t">
+          <span>Total Other Adjustments</span>
+          <CurrencyDisplay value={shopSection8Total} highlight />
+        </div>
       </div>
 
       {/* ─── CASHIER BALANCE (Short/Over) ─── */}
