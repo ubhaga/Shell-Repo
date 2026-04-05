@@ -53,6 +53,7 @@ export interface CashierShift {
   // Other adjustments
   otherAdjustments: OtherAdjustment[];
   returns_mop: number;
+  returnsNotCaptured: number;
   attendantShortOver: number;
 }
 
