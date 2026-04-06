@@ -112,24 +112,48 @@ export function OtherAdjustmentsRecon({ filterMonth }: Props) {
     });
 
     // Detect returns that net each other off on consecutive days
-    // Look for pairs where explanation matches and amounts cancel out
+    // 1) Same explanation pairs that cancel out
+    // 2) Cross-match: "Returns not captured" on day N nets with "Returns MOP (Yesterday)" on day N+1
+    const isReturnsNC = (id: string) => id === '__returns_not_captured__';
+    const isReturnsMOP = (id: string) => id === '__returns_mop__';
+
     for (let i = 0; i < allLines.length; i++) {
       if (allLines[i].isNetted) continue;
       for (let j = i + 1; j < allLines.length; j++) {
         if (allLines[j].isNetted) continue;
         const a = allLines[i];
         const b = allLines[j];
-        // Check if amounts cancel and explanations match (case-insensitive)
+
+        // Check if amounts cancel
+        if (Math.abs(a.amount + b.amount) >= 0.01) continue;
+
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        const diffDays = Math.abs(dateB.getTime() - dateA.getTime()) / (1000 * 60 * 60 * 24);
+
+        // Case 1: Same explanation, consecutive days
         if (
-          Math.abs(a.amount + b.amount) < 0.01 &&
+          diffDays <= 1 &&
           a.explanation.trim().toLowerCase() === b.explanation.trim().toLowerCase() &&
           a.explanation.trim() !== ''
         ) {
-          // Check consecutive days
-          const dateA = new Date(a.date);
-          const dateB = new Date(b.date);
-          const diffDays = Math.abs(dateB.getTime() - dateA.getTime()) / (1000 * 60 * 60 * 24);
-          if (diffDays <= 1) {
+          allLines[i].isNetted = true;
+          allLines[j].isNetted = true;
+          continue;
+        }
+
+        // Case 2: Returns not captured (day N) nets with Returns MOP (day N+1)
+        const aIsNC = isReturnsNC(a.adjustmentId);
+        const bIsMOP = isReturnsMOP(b.adjustmentId);
+        const aIsMOP = isReturnsMOP(a.adjustmentId);
+        const bIsNC = isReturnsNC(b.adjustmentId);
+
+        if ((aIsNC && bIsMOP) || (aIsMOP && bIsNC)) {
+          // Ensure MOP date is exactly 1 day after NC date
+          const ncDate = aIsNC ? dateA : dateB;
+          const mopDate = aIsMOP ? dateA : dateB;
+          const dayDiff = (mopDate.getTime() - ncDate.getTime()) / (1000 * 60 * 60 * 24);
+          if (dayDiff >= 0 && dayDiff <= 1) {
             allLines[i].isNetted = true;
             allLines[j].isNetted = true;
           }
