@@ -67,6 +67,34 @@ export function OtherAdjustmentsRecon({ filterMonth }: Props) {
           isNetted: false,
         });
       });
+
+      // Include Attendant Short/(Over) as a line item
+      const attendant = c.shop.attendantShortOver ?? 0;
+      if (Math.abs(attendant) >= 0.01) {
+        const attKey = `${c.date}|__attendant_short_over__`;
+        allLines.push({
+          date: c.date,
+          adjustmentId: '__attendant_short_over__',
+          explanation: 'Attendant Short/(Over)',
+          amount: attendant,
+          category: savedCategories[attKey] || '',
+          isNetted: false,
+        });
+      }
+
+      // Include Returns not captured as a line item
+      const returnsNC = c.shop.returnsNotCaptured ?? 0;
+      if (Math.abs(returnsNC) >= 0.01) {
+        const rncKey = `${c.date}|__returns_not_captured__`;
+        allLines.push({
+          date: c.date,
+          adjustmentId: '__returns_not_captured__',
+          explanation: 'Returns not captured',
+          amount: returnsNC,
+          category: savedCategories[rncKey] || '',
+          isNetted: false,
+        });
+      }
     });
 
     // Detect returns that net each other off on consecutive days
