@@ -32,35 +32,38 @@ function computeDaySummary(c: DailyCashup) {
 
   const totalReceipts = c.shop.receipts.reduce((s, r) => s + r.amount, 0);
 
-  // MOP Cash
   const cashBanking = c.shop.cashDepositedBanking;
   const easyPay = c.shop.easyPay;
   const coins = c.shop.coins;
-  const cashConnectTotal = c.shop.cashConnectTotal;
+  const cashConnectTotal = cashBanking + easyPay + coins;
 
-  // Speedpoints per terminal (shop + opt combined for display)
   const shopSP = c.shop.speedpoints.reduce((s, sp) => s + (sp.shopAmount || 0), 0);
   const optSP = c.opt.speedpoints.reduce((s, sp) => s + (sp.optAmount || 0), 0);
   const totalSpeedpoints = shopSP + optSP;
 
-  // MOP Account combined
   const shopAccounts = c.shop.accounts.reduce((s, a) => s + a.amount, 0);
   const optAccounts = c.opt.accounts.reduce((s, a) => s + a.amount, 0);
   const totalAccounts = shopAccounts + optAccounts;
 
-  // Total Other Adjustments = manual adjustments + returns_mop + returnsNotCaptured + attendantShortOver
   const manualOtherAdj = c.shop.otherAdjustments.reduce((s, a) => s + a.amount, 0);
   const returnsMop = c.shop.returns_mop;
   const returnsNotCaptured = c.shop.returnsNotCaptured ?? 0;
   const attendantShortOver = c.shop.attendantShortOver;
   const totalOtherAdj = manualOtherAdj + returnsMop + returnsNotCaptured + attendantShortOver;
 
-  // Calculate actual short/over matching the cashier daily form
-  const shopNetSales = shopIncome - shopReturnsYest - shopReturnsToday;
-  const shopTakings = shopNetSales - totalPayouts + totalReceipts;
-  const shopBalance = shopTakings - cashConnectTotal - shopSP - shopAccounts - manualOtherAdj - returnsMop - returnsNotCaptured - attendantShortOver;
+  const shopNetSales = c.shop.income - c.shop.returns - c.shop.returns_today;
+  const shopTakings = shopNetSales - payoutsTotal - lottoPayouts + totalReceipts;
+  const shopBalance =
+    shopTakings -
+    cashConnectTotal -
+    shopSP -
+    shopAccounts -
+    manualOtherAdj -
+    returnsMop -
+    returnsNotCaptured -
+    attendantShortOver;
 
-  const optNetSales = optIncome - optReturnsYest - optReturnsToday;
+  const optNetSales = c.opt.income - c.opt.returns;
   const optBalance = optNetSales - optSP - optAccounts;
 
   const combinedShortOver = shopBalance + optBalance;
