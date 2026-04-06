@@ -117,7 +117,7 @@ export function DailySummaryReport({ filterMonth }: Props) {
     const csvRows = rows.map(r => [
       r.date, r.cashier, r.totalIncome, r.totalReturnsYest, r.totalReturnsToday, r.netSales,
       r.totalPayouts, r.totalReceipts, r.cashBanking, r.easyPay, r.coins, r.cashConnectTotal,
-      r.totalSpeedpoints, r.totalAccounts, r.totalOtherAdj, r.returnsMop, r.returnsNotCaptured, r.attendantShortOver,
+      r.totalSpeedpoints, r.totalAccounts, r.totalOtherAdj, r.returnsMop, r.returnsNotCaptured, r.shortOver,
     ].join(','));
     const csv = [headers.join(','), ...csvRows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
