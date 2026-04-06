@@ -95,6 +95,20 @@ export function OtherAdjustmentsRecon({ filterMonth }: Props) {
           isNetted: false,
         });
       }
+
+      // Include Returns MOP (Returns from Yesterday) as a line item
+      const returnsMop = c.shop.returns_mop ?? 0;
+      if (Math.abs(returnsMop) >= 0.01) {
+        const mopKey = `${c.date}|__returns_mop__`;
+        allLines.push({
+          date: c.date,
+          adjustmentId: '__returns_mop__',
+          explanation: 'Returns MOP (Yesterday)',
+          amount: returnsMop,
+          category: savedCategories[mopKey] || '',
+          isNetted: false,
+        });
+      }
     });
 
     // Detect returns that net each other off on consecutive days
