@@ -112,24 +112,25 @@ export function OtherAdjustmentsRecon({ filterMonth }: Props) {
     });
 
     // Detect returns that net each other off on consecutive days
-    // Look for pairs where explanation matches and amounts cancel out
     for (let i = 0; i < allLines.length; i++) {
       if (allLines[i].isNetted) continue;
       for (let j = i + 1; j < allLines.length; j++) {
         if (allLines[j].isNetted) continue;
         const a = allLines[i];
         const b = allLines[j];
-        // Check if amounts cancel and explanations match (case-insensitive)
-        if (
-          Math.abs(a.amount + b.amount) < 0.01 &&
-          a.explanation.trim().toLowerCase() === b.explanation.trim().toLowerCase() &&
-          a.explanation.trim() !== ''
-        ) {
-          // Check consecutive days
+        if (Math.abs(a.amount + b.amount) < 0.01) {
           const dateA = new Date(a.date);
           const dateB = new Date(b.date);
           const diffDays = Math.abs(dateB.getTime() - dateA.getTime()) / (1000 * 60 * 60 * 24);
-          if (diffDays <= 1) {
+          // Same explanation match (consecutive days)
+          const sameExplanation =
+            a.explanation.trim().toLowerCase() === b.explanation.trim().toLowerCase() &&
+            a.explanation.trim() !== '';
+          // Cross-type match: Returns not captured (Day N) vs Returns MOP (Day N+1)
+          const crossMatch =
+            (a.adjustmentId === '__returns_not_captured__' && b.adjustmentId === '__returns_mop__' && diffDays === 1 && dateB > dateA) ||
+            (a.adjustmentId === '__returns_mop__' && b.adjustmentId === '__returns_not_captured__' && diffDays === 1 && dateA > dateB);
+          if ((sameExplanation && diffDays <= 1) || crossMatch) {
             allLines[i].isNetted = true;
             allLines[j].isNetted = true;
           }
