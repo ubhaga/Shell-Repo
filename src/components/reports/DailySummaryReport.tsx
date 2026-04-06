@@ -105,7 +105,7 @@ export function DailySummaryReport({ filterMonth }: Props) {
       totalPayouts: 0, totalReceipts: 0,
       cashBanking: 0, easyPay: 0, coins: 0, cashConnectTotal: 0,
       totalSpeedpoints: 0, totalAccounts: 0, totalOtherAdj: 0,
-      returnsMop: 0, returnsNotCaptured: 0, attendantShortOver: 0,
+      returnsMop: 0, returnsNotCaptured: 0, shortOver: 0,
     }
   );
 
@@ -181,7 +181,7 @@ export function DailySummaryReport({ filterMonth }: Props) {
                 <TableCell className="text-right"><CurrencyDisplay value={r.totalOtherAdj} /></TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={r.returnsMop} /></TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={r.returnsNotCaptured} /></TableCell>
-                <TableCell className="text-right"><CurrencyDisplay value={r.attendantShortOver} /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={r.shortOver} /></TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -205,7 +205,7 @@ export function DailySummaryReport({ filterMonth }: Props) {
                 <TableCell className="text-right"><CurrencyDisplay value={totals.totalOtherAdj} highlight /></TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={totals.returnsMop} highlight /></TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={totals.returnsNotCaptured} highlight /></TableCell>
-                <TableCell className="text-right"><CurrencyDisplay value={totals.attendantShortOver} highlight /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={totals.shortOver} highlight /></TableCell>
               </TableRow>
             </TableFooter>
           )}
