@@ -645,13 +645,14 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
                   <TableHead>Date</TableHead>
                   <TableHead>Cashier</TableHead>
                   <TableHead>Vendor</TableHead>
+                  <TableHead>Category</TableHead>
                   <TableHead className="text-right">Amount (Incl.)</TableHead>
                   <TableHead className="text-center">Invoice</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {payoutReport.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No payout data for this month</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No payout data for this month</TableCell></TableRow>
                 ) : (
                   <>
                     {payoutReport.map((r, i) => (
@@ -659,6 +660,7 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
                         <TableCell className="text-sm">{formatDate(r.date)}</TableCell>
                         <TableCell className="text-sm">{r.cashier}</TableCell>
                         <TableCell className="text-sm">{r.vendor}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{r.category || '—'}</TableCell>
                         <TableCell className="text-right"><CurrencyDisplay value={r.amount} /></TableCell>
                         <TableCell className="text-center">
                           {r.status === 'matched'
@@ -670,7 +672,7 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
                       </TableRow>
                     ))}
                     <TableRow className="bg-secondary font-semibold">
-                      <TableCell colSpan={4}>TOTAL</TableCell>
+                      <TableCell colSpan={5}>TOTAL</TableCell>
                       <TableCell className="text-right"><CurrencyDisplay value={payoutTotal} highlight /></TableCell>
                     </TableRow>
                   </>
