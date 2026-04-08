@@ -16,7 +16,7 @@ import { AirtimeRecon } from '@/components/recons/AirtimeRecon';
 import { CashRecon } from '@/components/recons/CashRecon';
 import { OtherAdjustmentsRecon } from '@/components/recons/OtherAdjustmentsRecon';
 
-export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
+export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'reports' | 'recons'; onNavigateToDate?: (date: string) => void }) {
   const { cashups, managerEntries } = useCashupStore();
   const [filterMonth, setFilterMonth] = useState(() => new Date().toISOString().slice(0, 7));
 
@@ -659,7 +659,17 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
                       <TableRow key={i}>
                         <TableCell className="text-sm">{formatDate(r.date)}</TableCell>
                         <TableCell className="text-sm">{r.cashier}</TableCell>
-                        <TableCell className="text-sm">{r.vendor}</TableCell>
+                        <TableCell className="text-sm">
+                          {onNavigateToDate ? (
+                            <button
+                              type="button"
+                              className="text-primary underline hover:text-primary/80 cursor-pointer text-left"
+                              onClick={() => onNavigateToDate(r.date)}
+                            >
+                              {r.vendor}
+                            </button>
+                          ) : r.vendor}
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{r.category || '—'}</TableCell>
                         <TableCell className="text-right"><CurrencyDisplay value={r.amount} /></TableCell>
                         <TableCell className="text-center">
