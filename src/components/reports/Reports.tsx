@@ -704,6 +704,56 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
                 </div>
               </div>
             )}
+            {payoutReport.length > 0 && (
+              <div className="border-t p-4">
+                <h4 className="text-sm font-semibold mb-2">Summary by Category</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Category</TableHead>
+                      <TableHead className="text-right">Incl. Amount</TableHead>
+                      <TableHead className="text-right">VAT</TableHead>
+                      <TableHead className="text-right">Excl. Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(() => {
+                      const catTotals = payoutReport.reduce((acc, r) => {
+                        const cat = r.category || 'Uncategorised';
+                        acc[cat] = (acc[cat] || 0) + r.amount;
+                        return acc;
+                      }, {} as Record<string, number>);
+                      const sorted = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+                      const grandIncl = sorted.reduce((s, [, v]) => s + v, 0);
+                      const grandVat = grandIncl * 15 / 115;
+                      const grandExcl = grandIncl - grandVat;
+                      return (
+                        <>
+                          {sorted.map(([cat, incl]) => {
+                            const vat = incl * 15 / 115;
+                            const excl = incl - vat;
+                            return (
+                              <TableRow key={cat}>
+                                <TableCell className="text-sm">{cat}</TableCell>
+                                <TableCell className="text-right"><CurrencyDisplay value={incl} /></TableCell>
+                                <TableCell className="text-right"><CurrencyDisplay value={vat} /></TableCell>
+                                <TableCell className="text-right"><CurrencyDisplay value={excl} /></TableCell>
+                              </TableRow>
+                            );
+                          })}
+                          <TableRow className="bg-secondary font-semibold">
+                            <TableCell>TOTAL</TableCell>
+                            <TableCell className="text-right"><CurrencyDisplay value={grandIncl} highlight /></TableCell>
+                            <TableCell className="text-right"><CurrencyDisplay value={grandVat} highlight /></TableCell>
+                            <TableCell className="text-right"><CurrencyDisplay value={grandExcl} highlight /></TableCell>
+                          </TableRow>
+                        </>
+                      );
+                    })()}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
         </TabsContent>
 
