@@ -124,7 +124,7 @@ export default function Index() {
             <ManagerMonthlyForm selectedDate={selectedDate} />
           </TabsContent>
           <TabsContent value="reports">
-            <Reports mode="reports" />
+            <Reports mode="reports" onNavigateToDate={(date) => { setSelectedDate(date); setActiveTab('manager-daily'); }} />
           </TabsContent>
           <TabsContent value="recons">
             <Reports mode="recons" />
