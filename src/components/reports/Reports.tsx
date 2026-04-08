@@ -167,14 +167,17 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
     }
   };
 
-  // Build lookup: vendor -> array of dates with invoices
-  const managerPayoutByVendor = new Map<string, Map<string, number>>();
+  // Build lookup: vendor -> array of dates with invoices (and categories)
+  const managerPayoutByVendor = new Map<string, Map<string, { count: number; categories: string[] }>>();
   monthManagers.forEach(e => {
     e.payoutInvoices.forEach(inv => {
       const vendor = inv.supplier.toLowerCase().trim();
       if (!managerPayoutByVendor.has(vendor)) managerPayoutByVendor.set(vendor, new Map());
       const dateMap = managerPayoutByVendor.get(vendor)!;
-      dateMap.set(e.date, (dateMap.get(e.date) ?? 0) + 1);
+      const existing = dateMap.get(e.date) ?? { count: 0, categories: [] };
+      existing.count += 1;
+      existing.categories.push(inv.category || '');
+      dateMap.set(e.date, existing);
     });
   });
   // Track consumption: vendor+date -> consumed count
@@ -182,44 +185,55 @@ export function Reports({ mode = 'reports' }: { mode?: 'reports' | 'recons' }) {
 
   type MatchStatus = 'matched' | 'matched-other-day' | 'unmatched';
 
-  const matchPayout = (payoutDate: string, vendor: string): MatchStatus => {
+  const matchPayout = (payoutDate: string, vendor: string): { status: MatchStatus; category: string } => {
     const v = vendor.toLowerCase().trim();
     const dateMap = managerPayoutByVendor.get(v);
-    if (!dateMap) return 'unmatched';
+    if (!dateMap) return { status: 'unmatched', category: '' };
     // Try same-day first
     const sameKey = `${v}|${payoutDate}`;
-    const sameAvail = (dateMap.get(payoutDate) ?? 0) - (invoiceConsumed.get(sameKey) ?? 0);
+    const sameEntry = dateMap.get(payoutDate);
+    const sameAvail = sameEntry ? sameEntry.count - (invoiceConsumed.get(sameKey) ?? 0) : 0;
     if (sameAvail > 0) {
-      invoiceConsumed.set(sameKey, (invoiceConsumed.get(sameKey) ?? 0) + 1);
-      return 'matched';
+      const idx = invoiceConsumed.get(sameKey) ?? 0;
+      invoiceConsumed.set(sameKey, idx + 1);
+      return { status: 'matched', category: sameEntry!.categories[idx] || '' };
     }
     // Try other days
-    for (const [date, count] of dateMap) {
+    for (const [date, entry] of dateMap) {
       const otherKey = `${v}|${date}`;
-      const otherAvail = count - (invoiceConsumed.get(otherKey) ?? 0);
+      const idx = invoiceConsumed.get(otherKey) ?? 0;
+      const otherAvail = entry.count - idx;
       if (otherAvail > 0) {
-        invoiceConsumed.set(otherKey, (invoiceConsumed.get(otherKey) ?? 0) + 1);
-        return 'matched-other-day';
+        invoiceConsumed.set(otherKey, idx + 1);
+        return { status: 'matched-other-day', category: entry.categories[idx] || '' };
       }
     }
-    return 'unmatched';
+    return { status: 'unmatched', category: '' };
   };
 
   const payoutReport = monthCashups.flatMap(c =>
-    c.shop.payouts.map(p => ({
+    c.shop.payouts.map(p => {
+      const match = matchPayout(c.date, p.vendor);
+      return {
+        date: c.date,
+        cashier: c.cashierName,
+        vendor: p.vendor,
+        category: match.category,
+        amount: p.amount,
+        status: match.status as MatchStatus,
+      };
+    })
+  ).concat(monthCashups.map(c => {
+    const match = matchPayout(c.date, 'Lotto');
+    return {
       date: c.date,
       cashier: c.cashierName,
-      vendor: p.vendor,
-      amount: p.amount,
-      status: matchPayout(c.date, p.vendor) as MatchStatus,
-    }))
-  ).concat(monthCashups.map(c => ({
-    date: c.date,
-    cashier: c.cashierName,
-    vendor: 'Lotto',
-    amount: c.shop.lottoPayouts,
-    status: matchPayout(c.date, 'Lotto') as MatchStatus,
-  })).filter(r => r.amount > 0));
+      vendor: 'Lotto',
+      category: match.category,
+      amount: c.shop.lottoPayouts,
+      status: match.status as MatchStatus,
+    };
+  }).filter(r => r.amount > 0));
   const payoutTotal = payoutReport.reduce((s, r) => s + r.amount, 0);
 
   // Receipts report
