@@ -15,6 +15,7 @@ import { CreditorsRecon } from '@/components/recons/CreditorsRecon';
 import { AirtimeRecon } from '@/components/recons/AirtimeRecon';
 import { CashRecon } from '@/components/recons/CashRecon';
 import { OtherAdjustmentsRecon } from '@/components/recons/OtherAdjustmentsRecon';
+import { DebtorsRecon } from '@/components/recons/DebtorsRecon';
 
 export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'reports' | 'recons'; onNavigateToDate?: (date: string) => void }) {
   const { cashups, managerEntries } = useCashupStore();
@@ -630,9 +631,10 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
           <TabsTrigger value="bank">Bank</TabsTrigger>
         </TabsList>
         ) : (
-        <TabsList className="grid grid-cols-5 w-full max-w-3xl">
+        <TabsList className="grid grid-cols-6 w-full max-w-4xl">
           <TabsTrigger value="speedpoints">Speedpoints</TabsTrigger>
           <TabsTrigger value="creditors">Creditors</TabsTrigger>
+          <TabsTrigger value="debtors">Debtors</TabsTrigger>
           <TabsTrigger value="airtime">Airtime</TabsTrigger>
           <TabsTrigger value="cash">Cash CC & Coins</TabsTrigger>
           <TabsTrigger value="other-adj">Other Adj.</TabsTrigger>
@@ -1403,6 +1405,11 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
         {/* Creditors */}
         <TabsContent value="creditors">
           <CreditorsRecon filterMonth={filterMonth} />
+        </TabsContent>
+
+        {/* Debtors */}
+        <TabsContent value="debtors">
+          <DebtorsRecon filterMonth={filterMonth} />
         </TabsContent>
 
         {/* Airtime */}
