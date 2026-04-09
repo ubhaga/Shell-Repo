@@ -83,9 +83,10 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
       const shopAccTotal = (c.shop.accounts ?? []).reduce((s, a) => s + a.amount, 0);
       const optAccTotal = (c.opt.accounts ?? []).reduce((s, a) => s + a.amount, 0);
       totalAccounts += shopAccTotal + optAccTotal;
-      // Other adjustments total (section 8 manual items only)
+      // Other adjustments total (all Section 8 items)
       const otherAdj = (c.shop.otherAdjustments ?? []).reduce((s, o) => s + o.amount, 0);
-      totalOtherAdjustments += otherAdj;
+      const section8Total = otherAdj + (c.shop.returns_mop ?? 0) + (c.shop.returnsNotCaptured ?? 0) + (c.shop.attendantShortOver ?? 0);
+      totalOtherAdjustments += section8Total;
       // Cashier balance (shop + opt short/over)
       const shopNetSales = (c.shop.income ?? 0) - (c.shop.returns ?? 0) - (c.shop.returns_today ?? 0);
       const shopTotalReceipts = (c.shop.receipts ?? []).reduce((s, r) => s + r.amount, 0);
