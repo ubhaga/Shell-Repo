@@ -5,7 +5,7 @@ import { useMasterDataStore } from "@/store/masterDataStore";
 import type { ManagerDailyEntry, InvoiceLine } from "@/types/cashup";
 import { Section, DataRow, CurrencyInput, CurrencyDisplay } from "@/components/ui/CashupUI";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Save, AlertCircle, CheckCircle, Lock } from "lucide-react";
+import { Plus, Trash2, Save, AlertCircle, CheckCircle, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format, subDays, addDays, parseISO } from "date-fns";
 
@@ -207,9 +207,10 @@ const blankEntry = (date: string): Omit<ManagerDailyEntry, "id"> => ({
 
 interface Props {
   selectedDate: string;
+  onDateChange?: (date: string) => void;
 }
 
-export function ManagerDailyForm({ selectedDate }: Props) {
+export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   const { getManagerEntryByDate, addManagerEntry, updateManagerEntry, getCashupByDate, managerEntries } =
     useCashupStore();
   const {
@@ -509,8 +510,27 @@ export function ManagerDailyForm({ selectedDate }: Props) {
       })()
     : null;
 
+  const goDay = (offset: number) => {
+    if (onDateChange) {
+      const d = addDays(parseISO(selectedDate), offset);
+      if (d >= parseISO("2026-01-01")) onDateChange(format(d, "yyyy-MM-dd"));
+    }
+  };
+
   return (
     <div className="space-y-3">
+      {/* Date navigation */}
+      {onDateChange && (
+        <div className="flex items-center justify-between bg-card border rounded-lg px-4 py-2">
+          <Button variant="ghost" size="sm" onClick={() => goDay(-1)} disabled={selectedDate <= "2026-01-01"}>
+            <ChevronLeft className="h-4 w-4" /> Previous Day
+          </Button>
+          <span className="text-sm font-semibold">{format(parseISO(selectedDate), "EEEE, dd MMMM yyyy")}</span>
+          <Button variant="ghost" size="sm" onClick={() => goDay(1)}>
+            Next Day <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
       {isLocked && (
         <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/40 rounded-lg text-destructive">
           <Lock className="h-5 w-5 shrink-0" />

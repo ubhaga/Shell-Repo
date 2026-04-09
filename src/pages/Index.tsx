@@ -115,10 +115,10 @@ export default function Index() {
             <Dashboard selectedDate={selectedDate} />
           </TabsContent>
           <TabsContent value="cashier">
-            <CashierDailyForm selectedDate={selectedDate} />
+            <CashierDailyForm selectedDate={selectedDate} onDateChange={setSelectedDate} />
           </TabsContent>
           <TabsContent value="manager-daily">
-            <ManagerDailyForm selectedDate={selectedDate} />
+            <ManagerDailyForm selectedDate={selectedDate} onDateChange={setSelectedDate} />
           </TabsContent>
           <TabsContent value="manager-monthly">
             <ManagerMonthlyForm selectedDate={selectedDate} />
