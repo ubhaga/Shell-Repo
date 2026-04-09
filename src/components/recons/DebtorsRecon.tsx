@@ -146,17 +146,26 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
 
   const totalJe3 = Object.values(je3Adjustments).reduce((s, v) => s + v, 0);
 
-  // Build rows
+  // Build rows — JE3 writeoffs distributed as adjustments per debtor
+  // Generator and Shop Expense are general writeoffs, spread as a single total adjustment row
   const rows = DEBTOR_ACCOUNTS.map(name => {
     const ob = openingBalances[name] ?? editingOB[name] ?? 0;
     const purchase = purchases[name] || 0;
     const bankPmt = (bankPayments[name] || 0) + (roaPerDebtor[name] || 0);
-    const adjustment = 0;
+    const adjustment = 0; // individual debtors don't have JE3 adjustments
     const closing = ob + purchase - bankPmt - adjustment;
     return { name, ob, purchase, bankPmt, adjustment, closing };
   });
 
-  const totals = rows.reduce(
+  // Add JE3 writeoff accounts as adjustment rows
+  const je3Rows = JE3_WRITEOFF_ACCOUNTS.map(name => {
+    const amount = je3Adjustments[name] || 0;
+    return { name, ob: 0, purchase: 0, bankPmt: 0, adjustment: amount, closing: -amount };
+  });
+
+  const allRows = [...rows, ...je3Rows.filter(r => r.adjustment > 0)];
+
+  const totals = allRows.reduce(
     (acc, r) => ({
       ob: acc.ob + r.ob,
       purchase: acc.purchase + r.purchase,
@@ -166,15 +175,6 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     }),
     { ob: 0, purchase: 0, bankPmt: 0, adjustment: 0, closing: 0 }
   );
-
-  // JE3 writeoff row totals
-  const je3Rows = JE3_WRITEOFF_ACCOUNTS.map(name => ({
-    name,
-    amount: je3Adjustments[name] || 0,
-  }));
-
-  // Grand total closing = total debtors closing - JE3
-  const grandClosing = totals.closing - totalJe3;
 
   const handleSaveOB = async () => {
     setSaving(true);
@@ -218,7 +218,8 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
             <TableHead className="text-xs">Debtor</TableHead>
             <TableHead className="text-xs text-right">Opening Balance</TableHead>
             <TableHead className="text-xs text-right">Purchases</TableHead>
-            <TableHead className="text-xs text-right">Payments (Bank)</TableHead>
+            <TableHead className="text-xs text-right">Payments</TableHead>
+            <TableHead className="text-xs text-right">Adjustments (JE3)</TableHead>
             <TableHead className="text-xs text-right">Closing Balance</TableHead>
           </TableRow>
         </TableHeader>
@@ -239,31 +240,30 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
               </TableCell>
               <TableCell className="text-right"><CurrencyDisplay value={r.purchase} /></TableCell>
               <TableCell className="text-right"><CurrencyDisplay value={r.bankPmt} /></TableCell>
+              <TableCell className="text-right"><CurrencyDisplay value={r.adjustment} /></TableCell>
               <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.closing} /></TableCell>
             </TableRow>
           ))}
-          {/* Subtotal */}
-          <TableRow className="bg-secondary font-semibold">
-            <TableCell>Subtotal Debtors</TableCell>
-            <TableCell className="text-right"><CurrencyDisplay value={totals.ob} highlight /></TableCell>
-            <TableCell className="text-right"><CurrencyDisplay value={totals.purchase} highlight /></TableCell>
-            <TableCell className="text-right"><CurrencyDisplay value={totals.bankPmt} highlight /></TableCell>
-            <TableCell className="text-right"><CurrencyDisplay value={totals.closing} highlight /></TableCell>
-          </TableRow>
-
-          {/* JE3 Writeoffs */}
-          {je3Rows.filter(r => r.amount > 0).map(r => (
-            <TableRow key={r.name}>
-              <TableCell className="text-sm text-muted-foreground" colSpan={3}>Less: JE3 Writeoff — {r.name}</TableCell>
-              <TableCell className="text-right"><CurrencyDisplay value={r.amount} /></TableCell>
-              <TableCell />
+          {/* JE3 Writeoff rows */}
+          {je3Rows.filter(r => r.adjustment > 0).map(r => (
+            <TableRow key={r.name} className="text-muted-foreground">
+              <TableCell className="text-sm">{r.name} (JE3)</TableCell>
+              <TableCell className="text-right"><CurrencyDisplay value={0} /></TableCell>
+              <TableCell className="text-right"><CurrencyDisplay value={0} /></TableCell>
+              <TableCell className="text-right"><CurrencyDisplay value={0} /></TableCell>
+              <TableCell className="text-right"><CurrencyDisplay value={r.adjustment} /></TableCell>
+              <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.closing} /></TableCell>
             </TableRow>
           ))}
         </TableBody>
         <TableFooter>
           <TableRow>
-            <TableCell className="font-semibold text-sm" colSpan={4}>Net Debtors Closing Balance</TableCell>
-            <TableCell className="text-right"><CurrencyDisplay value={grandClosing} highlight /></TableCell>
+            <TableCell className="font-semibold text-sm">Net Debtors Closing Balance</TableCell>
+            <TableCell className="text-right"><CurrencyDisplay value={totals.ob} highlight /></TableCell>
+            <TableCell className="text-right"><CurrencyDisplay value={totals.purchase} highlight /></TableCell>
+            <TableCell className="text-right"><CurrencyDisplay value={totals.bankPmt} highlight /></TableCell>
+            <TableCell className="text-right"><CurrencyDisplay value={totals.adjustment} highlight /></TableCell>
+            <TableCell className="text-right"><CurrencyDisplay value={totals.closing} highlight /></TableCell>
           </TableRow>
         </TableFooter>
       </Table>
