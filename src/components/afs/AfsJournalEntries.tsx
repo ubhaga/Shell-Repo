@@ -182,39 +182,56 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       return "";
     };
 
-    // Payouts summary by category
-    const payoutCatMap: Record<string, number> = {};
+    // Payouts summary by category with individual transactions
+    const payoutCatMap: Record<string, { total: number; transactions: { date: string; vendor: string; amount: number }[] }> = {};
     monthlyCashups.forEach((c) => {
       c.shop.payouts.forEach((p) => {
         const cat = matchPayout(c.date, p.vendor) || "Uncategorised";
-        payoutCatMap[cat] = (payoutCatMap[cat] || 0) + p.amount;
+        if (!payoutCatMap[cat]) payoutCatMap[cat] = { total: 0, transactions: [] };
+        payoutCatMap[cat].total += p.amount;
+        payoutCatMap[cat].transactions.push({ date: c.date, vendor: p.vendor, amount: p.amount });
       });
       if (c.shop.lottoPayouts > 0) {
         const cat = matchPayout(c.date, "Lotto") || "Uncategorised";
-        payoutCatMap[cat] = (payoutCatMap[cat] || 0) + c.shop.lottoPayouts;
+        if (!payoutCatMap[cat]) payoutCatMap[cat] = { total: 0, transactions: [] };
+        payoutCatMap[cat].total += c.shop.lottoPayouts;
+        payoutCatMap[cat].transactions.push({ date: c.date, vendor: "Lotto", amount: c.shop.lottoPayouts });
       }
     });
     const payoutCategories = Object.entries(payoutCatMap)
-      .sort((a, b) => b[1] - a[1])
-      .map(([category, incl]) => ({ category, incl, vat: incl * 15 / 115, excl: incl - incl * 15 / 115 }));
+      .sort((a, b) => b[1].total - a[1].total)
+      .map(([category, data]) => ({
+        category,
+        incl: data.total,
+        vat: data.total * 15 / 115,
+        excl: data.total - data.total * 15 / 115,
+        transactions: data.transactions.sort((a, b) => a.date.localeCompare(b.date)),
+      }));
     const payoutTotals = payoutCategories.reduce(
       (a, r) => ({ incl: a.incl + r.incl, vat: a.vat + r.vat, excl: a.excl + r.excl }),
       { incl: 0, vat: 0, excl: 0 }
     );
 
-    // EFTs summary by category
-    const eftCatMap: Record<string, { incl: number; vat: number }> = {};
+    // EFTs summary by category with individual transactions
+    const eftCatMap: Record<string, { incl: number; vat: number; transactions: { date: string; supplier: string; inclusive: number; vat: number }[] }> = {};
     monthlyManagers.forEach((e) => {
       e.eftInvoices.forEach((inv) => {
         const key = inv.category || "Uncategorised";
-        if (!eftCatMap[key]) eftCatMap[key] = { incl: 0, vat: 0 };
+        if (!eftCatMap[key]) eftCatMap[key] = { incl: 0, vat: 0, transactions: [] };
         eftCatMap[key].incl += inv.inclusive;
         eftCatMap[key].vat += inv.vat;
+        eftCatMap[key].transactions.push({ date: e.date, supplier: inv.supplier, inclusive: inv.inclusive, vat: inv.vat });
       });
     });
     const eftCategories = Object.entries(eftCatMap)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([category, v]) => ({ category, incl: v.incl, vat: v.vat, excl: v.incl - v.vat }));
+      .map(([category, v]) => ({
+        category,
+        incl: v.incl,
+        vat: v.vat,
+        excl: v.incl - v.vat,
+        transactions: v.transactions.sort((a, b) => a.date.localeCompare(b.date)),
+      }));
     const eftTotals = eftCategories.reduce(
       (a, r) => ({ incl: a.incl + r.incl, vat: a.vat + r.vat, excl: a.excl + r.excl }),
       { incl: 0, vat: 0, excl: 0 }
