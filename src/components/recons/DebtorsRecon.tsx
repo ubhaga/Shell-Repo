@@ -107,16 +107,25 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     return totals;
   }, [bankLines]);
 
-  // Debtors Received on Account ROA from receipts
-  const roaPayments = useMemo(() => {
+  // ROA payments allocated per debtor using seqNo as debtor reference
+  const roaPerDebtor = useMemo(() => {
     const monthlyCashups = cashups.filter(c => c.month === filterMonth);
-    let total = 0;
+    const totals: Record<string, number> = {};
+    DEBTOR_ACCOUNTS.forEach(a => { totals[a] = 0; });
     for (const c of monthlyCashups) {
       for (const r of c.shop.receipts ?? []) {
-        if (r.type === 'Debtors Received on Account ROA') total += r.amount;
+        if (r.type === 'Debtors Received on Account ROA' && r.amount > 0) {
+          // seqNo contains debtor name reference
+          const ref = (r.seqNo || '').trim();
+          // Match seqNo to a debtor account (case-insensitive)
+          const matched = DEBTOR_ACCOUNTS.find(a => a.toLowerCase() === ref.toLowerCase());
+          if (matched) {
+            totals[matched] = (totals[matched] || 0) + r.amount;
+          }
+        }
       }
     }
-    return total;
+    return totals;
   }, [filterMonth, cashups]);
 
   // JE3 adjustments (writeoffs treated as payments)
