@@ -107,16 +107,25 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     return totals;
   }, [bankLines]);
 
-  // Debtors Received on Account ROA from receipts
-  const roaPayments = useMemo(() => {
+  // ROA payments allocated per debtor using seqNo as debtor reference
+  const roaPerDebtor = useMemo(() => {
     const monthlyCashups = cashups.filter(c => c.month === filterMonth);
-    let total = 0;
+    const totals: Record<string, number> = {};
+    DEBTOR_ACCOUNTS.forEach(a => { totals[a] = 0; });
     for (const c of monthlyCashups) {
       for (const r of c.shop.receipts ?? []) {
-        if (r.type === 'Debtors Received on Account ROA') total += r.amount;
+        if (r.type === 'Debtors Received on Account ROA' && r.amount > 0) {
+          // seqNo contains debtor name reference
+          const ref = (r.seqNo || '').trim();
+          // Match seqNo to a debtor account (case-insensitive)
+          const matched = DEBTOR_ACCOUNTS.find(a => a.toLowerCase() === ref.toLowerCase());
+          if (matched) {
+            totals[matched] = (totals[matched] || 0) + r.amount;
+          }
+        }
       }
     }
-    return total;
+    return totals;
   }, [filterMonth, cashups]);
 
   // JE3 adjustments (writeoffs treated as payments)
@@ -141,9 +150,8 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
   const rows = DEBTOR_ACCOUNTS.map(name => {
     const ob = openingBalances[name] ?? editingOB[name] ?? 0;
     const purchase = purchases[name] || 0;
-    const bankPmt = bankPayments[name] || 0;
-    // ROA is a general payment, not per-debtor, so we don't allocate here
-    const adjustment = 0; // JE3 writeoffs only apply to Generator/Shop Expense which aren't debtors
+    const bankPmt = (bankPayments[name] || 0) + (roaPerDebtor[name] || 0);
+    const adjustment = 0;
     const closing = ob + purchase - bankPmt - adjustment;
     return { name, ob, purchase, bankPmt, adjustment, closing };
   });
@@ -165,8 +173,8 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     amount: je3Adjustments[name] || 0,
   }));
 
-  // Grand total closing = total debtors closing - ROA - JE3
-  const grandClosing = totals.closing - roaPayments - totalJe3;
+  // Grand total closing = total debtors closing - JE3
+  const grandClosing = totals.closing - totalJe3;
 
   const handleSaveOB = async () => {
     setSaving(true);
@@ -241,13 +249,6 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
             <TableCell className="text-right"><CurrencyDisplay value={totals.purchase} highlight /></TableCell>
             <TableCell className="text-right"><CurrencyDisplay value={totals.bankPmt} highlight /></TableCell>
             <TableCell className="text-right"><CurrencyDisplay value={totals.closing} highlight /></TableCell>
-          </TableRow>
-
-          {/* ROA Payments */}
-          <TableRow>
-            <TableCell className="text-sm text-muted-foreground" colSpan={3}>Less: Debtors Received on Account (ROA)</TableCell>
-            <TableCell className="text-right"><CurrencyDisplay value={roaPayments} /></TableCell>
-            <TableCell />
           </TableRow>
 
           {/* JE3 Writeoffs */}
