@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CurrencyDisplay } from "@/components/ui/CashupUI";
@@ -335,7 +335,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
               </TableHeader>
               <TableBody>
                 {je2.payoutCategories.map((r) => (
-                  <>
+                  <React.Fragment key={r.category}>
                     <TableRow key={r.category} className="cursor-pointer hover:bg-muted/50" onClick={() => togglePayoutCat(r.category)}>
                       <TableCell className="text-sm py-1.5">
                         <span className="inline-flex items-center gap-1">
@@ -369,7 +369,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                         </TableCell>
                       </TableRow>
                     ))}
-                  </>
+                  </React.Fragment>
                 ))}
               </TableBody>
               <TableFooter>
@@ -403,7 +403,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
               </TableHeader>
               <TableBody>
                 {je2.eftCategories.map((r) => (
-                  <>
+                  <React.Fragment key={r.category}>
                     <TableRow key={r.category} className="cursor-pointer hover:bg-muted/50" onClick={() => toggleEftCat(r.category)}>
                       <TableCell className="text-sm py-1.5">
                         <span className="inline-flex items-center gap-1">
@@ -437,7 +437,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                         </TableCell>
                       </TableRow>
                     ))}
-                  </>
+                  </React.Fragment>
                 ))}
               </TableBody>
               <TableFooter>
