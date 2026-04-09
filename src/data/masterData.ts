@@ -20,8 +20,8 @@ export const PAYOUT_VENDORS = [
 
 export const ACCOUNTS = [
   'Shop Expense', 'Mahindra', 'Lancaster Pharmacy', 'Hyde Park Toyota', 'Hltc',
-  'St Theresas', 'Sayinile', 'Red cross', 'Umesh', 'Isuzu bakie', 'Bp Zoolake',
-  'Generator', 'House tech', 'Moses bpzl',
+  'St Theresas', 'Sayinile', 'Red cross', 'Umesh', 'Isuzu bakkie', 'Bp Zoolake',
+  'Bp Zoolake Account Customer', 'Shell Parkhurst', 'Generator', 'House tech', 'Moses bpzl',
 ];
 
 export const CATEGORIES = [
