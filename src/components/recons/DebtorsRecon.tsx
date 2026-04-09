@@ -251,13 +251,6 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
             <TableCell className="text-right"><CurrencyDisplay value={totals.closing} highlight /></TableCell>
           </TableRow>
 
-          {/* ROA Payments */}
-          <TableRow>
-            <TableCell className="text-sm text-muted-foreground" colSpan={3}>Less: Debtors Received on Account (ROA)</TableCell>
-            <TableCell className="text-right"><CurrencyDisplay value={roaPayments} /></TableCell>
-            <TableCell />
-          </TableRow>
-
           {/* JE3 Writeoffs */}
           {je3Rows.filter(r => r.amount > 0).map(r => (
             <TableRow key={r.name}>
