@@ -1,14 +1,16 @@
-import { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CurrencyDisplay } from "@/components/ui/CashupUI";
 import { useCashupStore } from "@/store/cashupStore";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface AfsJournalEntriesProps {
   selectedDate: string;
+  onNavigateToDate?: (date: string) => void;
 }
 
-export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
+export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournalEntriesProps) {
   const month = selectedDate.slice(0, 7);
   const cashups = useCashupStore((s) => s.cashups);
   const managerEntries = useCashupStore((s) => s.managerEntries);
@@ -180,39 +182,56 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
       return "";
     };
 
-    // Payouts summary by category
-    const payoutCatMap: Record<string, number> = {};
+    // Payouts summary by category with individual transactions
+    const payoutCatMap: Record<string, { total: number; transactions: { date: string; vendor: string; amount: number }[] }> = {};
     monthlyCashups.forEach((c) => {
       c.shop.payouts.forEach((p) => {
         const cat = matchPayout(c.date, p.vendor) || "Uncategorised";
-        payoutCatMap[cat] = (payoutCatMap[cat] || 0) + p.amount;
+        if (!payoutCatMap[cat]) payoutCatMap[cat] = { total: 0, transactions: [] };
+        payoutCatMap[cat].total += p.amount;
+        payoutCatMap[cat].transactions.push({ date: c.date, vendor: p.vendor, amount: p.amount });
       });
       if (c.shop.lottoPayouts > 0) {
         const cat = matchPayout(c.date, "Lotto") || "Uncategorised";
-        payoutCatMap[cat] = (payoutCatMap[cat] || 0) + c.shop.lottoPayouts;
+        if (!payoutCatMap[cat]) payoutCatMap[cat] = { total: 0, transactions: [] };
+        payoutCatMap[cat].total += c.shop.lottoPayouts;
+        payoutCatMap[cat].transactions.push({ date: c.date, vendor: "Lotto", amount: c.shop.lottoPayouts });
       }
     });
     const payoutCategories = Object.entries(payoutCatMap)
-      .sort((a, b) => b[1] - a[1])
-      .map(([category, incl]) => ({ category, incl, vat: incl * 15 / 115, excl: incl - incl * 15 / 115 }));
+      .sort((a, b) => b[1].total - a[1].total)
+      .map(([category, data]) => ({
+        category,
+        incl: data.total,
+        vat: data.total * 15 / 115,
+        excl: data.total - data.total * 15 / 115,
+        transactions: data.transactions.sort((a, b) => a.date.localeCompare(b.date)),
+      }));
     const payoutTotals = payoutCategories.reduce(
       (a, r) => ({ incl: a.incl + r.incl, vat: a.vat + r.vat, excl: a.excl + r.excl }),
       { incl: 0, vat: 0, excl: 0 }
     );
 
-    // EFTs summary by category
-    const eftCatMap: Record<string, { incl: number; vat: number }> = {};
+    // EFTs summary by category with individual transactions
+    const eftCatMap: Record<string, { incl: number; vat: number; transactions: { date: string; supplier: string; inclusive: number; vat: number }[] }> = {};
     monthlyManagers.forEach((e) => {
       e.eftInvoices.forEach((inv) => {
         const key = inv.category || "Uncategorised";
-        if (!eftCatMap[key]) eftCatMap[key] = { incl: 0, vat: 0 };
+        if (!eftCatMap[key]) eftCatMap[key] = { incl: 0, vat: 0, transactions: [] };
         eftCatMap[key].incl += inv.inclusive;
         eftCatMap[key].vat += inv.vat;
+        eftCatMap[key].transactions.push({ date: e.date, supplier: inv.supplier, inclusive: inv.inclusive, vat: inv.vat });
       });
     });
     const eftCategories = Object.entries(eftCatMap)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([category, v]) => ({ category, incl: v.incl, vat: v.vat, excl: v.incl - v.vat }));
+      .map(([category, v]) => ({
+        category,
+        incl: v.incl,
+        vat: v.vat,
+        excl: v.incl - v.vat,
+        transactions: v.transactions.sort((a, b) => a.date.localeCompare(b.date)),
+      }));
     const eftTotals = eftCategories.reduce(
       (a, r) => ({ incl: a.incl + r.incl, vat: a.vat + r.vat, excl: a.excl + r.excl }),
       { incl: 0, vat: 0, excl: 0 }
@@ -220,6 +239,24 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
 
     return { payoutCategories, payoutTotals, eftCategories, eftTotals };
   }, [month, cashups, managerEntries]);
+
+  const [expandedPayoutCats, setExpandedPayoutCats] = useState<Set<string>>(new Set());
+  const [expandedEftCats, setExpandedEftCats] = useState<Set<string>>(new Set());
+
+  const togglePayoutCat = (cat: string) => {
+    setExpandedPayoutCats((prev) => {
+      const next = new Set(prev);
+      next.has(cat) ? next.delete(cat) : next.add(cat);
+      return next;
+    });
+  };
+  const toggleEftCat = (cat: string) => {
+    setExpandedEftCats((prev) => {
+      const next = new Set(prev);
+      next.has(cat) ? next.delete(cat) : next.add(cat);
+      return next;
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -298,16 +335,41 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
               </TableHeader>
               <TableBody>
                 {je2.payoutCategories.map((r) => (
-                  <TableRow key={r.category}>
-                    <TableCell className="text-sm py-1.5">{r.category}</TableCell>
-                    <TableCell className="text-right py-1.5">
-                      <CurrencyDisplay value={r.excl} />
-                    </TableCell>
-                    <TableCell className="text-right py-1.5">
-                      <CurrencyDisplay value={r.vat} />
-                    </TableCell>
-                    <TableCell className="text-right py-1.5" />
-                  </TableRow>
+                  <React.Fragment key={r.category}>
+                    <TableRow key={r.category} className="cursor-pointer hover:bg-muted/50" onClick={() => togglePayoutCat(r.category)}>
+                      <TableCell className="text-sm py-1.5">
+                        <span className="inline-flex items-center gap-1">
+                          {expandedPayoutCats.has(r.category) ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                          {r.category}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right py-1.5">
+                        <CurrencyDisplay value={r.excl} />
+                      </TableCell>
+                      <TableCell className="text-right py-1.5">
+                        <CurrencyDisplay value={r.vat} />
+                      </TableCell>
+                      <TableCell className="text-right py-1.5" />
+                    </TableRow>
+                    {expandedPayoutCats.has(r.category) && r.transactions.map((t, i) => (
+                      <TableRow
+                        key={`${r.category}-${i}`}
+                        className="cursor-pointer hover:bg-accent/50 bg-muted/30"
+                        onClick={() => onNavigateToDate?.(t.date)}
+                      >
+                        <TableCell className="text-xs py-1 pl-10 text-muted-foreground">{t.date} — {t.vendor}</TableCell>
+                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                          <CurrencyDisplay value={t.amount - t.amount * 15 / 115} />
+                        </TableCell>
+                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                          <CurrencyDisplay value={t.amount * 15 / 115} />
+                        </TableCell>
+                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                          <CurrencyDisplay value={t.amount} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </React.Fragment>
                 ))}
               </TableBody>
               <TableFooter>
@@ -341,16 +403,41 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
               </TableHeader>
               <TableBody>
                 {je2.eftCategories.map((r) => (
-                  <TableRow key={r.category}>
-                    <TableCell className="text-sm py-1.5">{r.category}</TableCell>
-                    <TableCell className="text-right py-1.5">
-                      <CurrencyDisplay value={r.excl} />
-                    </TableCell>
-                    <TableCell className="text-right py-1.5">
-                      <CurrencyDisplay value={r.vat} />
-                    </TableCell>
-                    <TableCell className="text-right py-1.5" />
-                  </TableRow>
+                  <React.Fragment key={r.category}>
+                    <TableRow key={r.category} className="cursor-pointer hover:bg-muted/50" onClick={() => toggleEftCat(r.category)}>
+                      <TableCell className="text-sm py-1.5">
+                        <span className="inline-flex items-center gap-1">
+                          {expandedEftCats.has(r.category) ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                          {r.category}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right py-1.5">
+                        <CurrencyDisplay value={r.excl} />
+                      </TableCell>
+                      <TableCell className="text-right py-1.5">
+                        <CurrencyDisplay value={r.vat} />
+                      </TableCell>
+                      <TableCell className="text-right py-1.5" />
+                    </TableRow>
+                    {expandedEftCats.has(r.category) && r.transactions.map((t, i) => (
+                      <TableRow
+                        key={`${r.category}-${i}`}
+                        className="cursor-pointer hover:bg-accent/50 bg-muted/30"
+                        onClick={() => onNavigateToDate?.(t.date)}
+                      >
+                        <TableCell className="text-xs py-1 pl-10 text-muted-foreground">{t.date} — {t.supplier}</TableCell>
+                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                          <CurrencyDisplay value={t.inclusive - t.vat} />
+                        </TableCell>
+                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                          <CurrencyDisplay value={t.vat} />
+                        </TableCell>
+                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                          <CurrencyDisplay value={t.inclusive} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </React.Fragment>
                 ))}
               </TableBody>
               <TableFooter>
