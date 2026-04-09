@@ -11,6 +11,7 @@ import type { OtherAdjustment } from '@/types/cashup';
 
 interface Props {
   filterMonth: string;
+  onNavigateToDate?: (date: string) => void;
 }
 
 type AdjLine = {
@@ -22,7 +23,7 @@ type AdjLine = {
   isNetted: boolean; // returns that net each other off
 };
 
-export function OtherAdjustmentsRecon({ filterMonth }: Props) {
+export function OtherAdjustmentsRecon({ filterMonth, onNavigateToDate }: Props) {
   const { cashups } = useCashupStore();
   const { categories } = useMasterDataStore();
 
@@ -166,9 +167,11 @@ export function OtherAdjustmentsRecon({ filterMonth }: Props) {
     try { return format(new Date(d), 'dd MMM'); } catch { return d; }
   };
 
+  const activeLines = lines.filter(l => !l.isNetted);
+  const nettedLines = lines.filter(l => l.isNetted);
   const total = lines.reduce((s, l) => s + l.amount, 0);
-  const nettedTotal = lines.filter(l => l.isNetted).reduce((s, l) => s + l.amount, 0);
-  const nonNettedTotal = lines.filter(l => !l.isNetted).reduce((s, l) => s + l.amount, 0);
+  const nonNettedTotal = activeLines.reduce((s, l) => s + l.amount, 0);
+  const nettedTotal = nettedLines.reduce((s, l) => s + l.amount, 0);
 
   // Group by category for summary
   const categoryTotals = useMemo(() => {
