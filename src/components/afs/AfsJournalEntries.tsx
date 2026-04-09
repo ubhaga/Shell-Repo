@@ -96,7 +96,10 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
     }
 
     credits.push({ description: "Prov Blue Label", amount: totalBlueLabel });
-    credits.push({ description: "Prov for Flash", amount: totalEasypayReceipts - totalEasypayMop });
+    credits.push({ description: "Prov for Flash (Receipts)", amount: totalEasypayReceipts });
+
+    // Easypay MOP Cash goes to debits
+    debits.push({ description: "Prov for Flash (EasyPay MOP)", amount: totalEasypayMop });
     credits.push({ description: "Prov for Lotto", amount: totalLottoReceipts - totalLottoPayouts });
 
     // --- Debits ---
