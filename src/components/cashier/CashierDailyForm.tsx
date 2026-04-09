@@ -764,16 +764,28 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
         </div>
       </div>
 
-      {/* ─── SAVE BUTTON ─── */}
-      <div className="flex flex-col items-center gap-2 pt-2 pb-4">
-        <Button onClick={handleSave} size="lg" className="px-12" disabled={isLocked}>
-          <Save className="h-4 w-4 mr-2" /> Save Cashup
-        </Button>
-        {savedAt && (
-          <p className="text-xs text-muted-foreground">
-            Originally saved: <span className="font-semibold text-foreground">{savedAt}</span>
-          </p>
-        )}
+      {/* ─── SAVE BUTTON + NAV ─── */}
+      <div className="flex items-center justify-between gap-2 pt-2 pb-4">
+        {onDateChange ? (
+          <Button variant="ghost" size="sm" onClick={() => goDay(-1)} disabled={selectedDate <= "2026-01-01"}>
+            <ChevronLeft className="h-4 w-4" /> Previous Day
+          </Button>
+        ) : <div />}
+        <div className="flex flex-col items-center gap-1">
+          <Button onClick={handleSave} size="lg" className="px-12" disabled={isLocked}>
+            <Save className="h-4 w-4 mr-2" /> Save Cashup
+          </Button>
+          {savedAt && (
+            <p className="text-xs text-muted-foreground">
+              Originally saved: <span className="font-semibold text-foreground">{savedAt}</span>
+            </p>
+          )}
+        </div>
+        {onDateChange ? (
+          <Button variant="ghost" size="sm" onClick={() => goDay(1)}>
+            Next Day <ChevronRight className="h-4 w-4" />
+          </Button>
+        ) : <div />}
       </div>
 
       {/* ─── OVER CONFIRMATION DIALOG ─── */}

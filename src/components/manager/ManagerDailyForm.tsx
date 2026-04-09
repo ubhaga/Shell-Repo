@@ -868,17 +868,29 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
         </DataRow>
       </Section>
 
-      {/* Save button at bottom */}
-      <div className="flex flex-col items-center gap-2 pt-2 pb-4">
-        <Button onClick={handleSave} size="lg" className="w-full max-w-xs" disabled={isLocked}>
-          <Save className="h-4 w-4 mr-2" />
-          Save Entry
-        </Button>
-        {savedAt && (
-          <p className="text-xs text-muted-foreground">
-            Originally saved: <span className="font-medium">{savedAt}</span>
-          </p>
-        )}
+      {/* Save button + nav at bottom */}
+      <div className="flex items-center justify-between gap-2 pt-2 pb-4">
+        {onDateChange ? (
+          <Button variant="ghost" size="sm" onClick={() => goDay(-1)} disabled={selectedDate <= "2026-01-01"}>
+            <ChevronLeft className="h-4 w-4" /> Previous Day
+          </Button>
+        ) : <div />}
+        <div className="flex flex-col items-center gap-1">
+          <Button onClick={handleSave} size="lg" className="w-full max-w-xs" disabled={isLocked}>
+            <Save className="h-4 w-4 mr-2" />
+            Save Entry
+          </Button>
+          {savedAt && (
+            <p className="text-xs text-muted-foreground">
+              Originally saved: <span className="font-medium">{savedAt}</span>
+            </p>
+          )}
+        </div>
+        {onDateChange ? (
+          <Button variant="ghost" size="sm" onClick={() => goDay(1)}>
+            Next Day <ChevronRight className="h-4 w-4" />
+          </Button>
+        ) : <div />}
       </div>
     </div>
   );
