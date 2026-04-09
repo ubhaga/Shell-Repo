@@ -222,17 +222,6 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
               <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.closing} /></TableCell>
             </TableRow>
           ))}
-          {/* JE3 Writeoff rows */}
-          {je3Rows.filter(r => r.adjustment > 0).map(r => (
-            <TableRow key={r.name} className="text-muted-foreground">
-              <TableCell className="text-sm">{r.name} (JE3)</TableCell>
-              <TableCell className="text-right"><CurrencyDisplay value={0} /></TableCell>
-              <TableCell className="text-right"><CurrencyDisplay value={0} /></TableCell>
-              <TableCell className="text-right"><CurrencyDisplay value={0} /></TableCell>
-              <TableCell className="text-right"><CurrencyDisplay value={r.adjustment} /></TableCell>
-              <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.closing} /></TableCell>
-            </TableRow>
-          ))}
         </TableBody>
         <TableFooter>
           <TableRow>
