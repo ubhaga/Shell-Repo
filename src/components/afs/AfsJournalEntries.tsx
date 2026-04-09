@@ -138,61 +138,239 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
     return { credits, debits, totalCredits, totalDebits };
   }, [month, cashups, managerEntries, monthlyFigures]);
 
+  // ── JE 2 — Invoices & Payouts ──
+  const je2 = useMemo(() => {
+    const monthlyManagers = managerEntries.filter((e) => e.date.startsWith(month));
+    const monthlyCashups = cashups.filter((c) => c.month === month);
+
+    // Build payout report with category matching (same logic as Reports)
+    const managerPayoutByVendor = new Map<string, Map<string, { count: number; categories: string[] }>>();
+    monthlyManagers.forEach((e) => {
+      e.payoutInvoices.forEach((inv) => {
+        const vendor = inv.supplier.toLowerCase().trim();
+        if (!managerPayoutByVendor.has(vendor)) managerPayoutByVendor.set(vendor, new Map());
+        const dateMap = managerPayoutByVendor.get(vendor)!;
+        const existing = dateMap.get(e.date) ?? { count: 0, categories: [] };
+        existing.count += 1;
+        existing.categories.push(inv.category || "");
+        dateMap.set(e.date, existing);
+      });
+    });
+    const invoiceConsumed = new Map<string, number>();
+    const matchPayout = (payoutDate: string, vendor: string): string => {
+      const v = vendor.toLowerCase().trim();
+      const dateMap = managerPayoutByVendor.get(v);
+      if (!dateMap) return "";
+      const sameKey = `${v}|${payoutDate}`;
+      const sameEntry = dateMap.get(payoutDate);
+      const sameAvail = sameEntry ? sameEntry.count - (invoiceConsumed.get(sameKey) ?? 0) : 0;
+      if (sameAvail > 0) {
+        const idx = invoiceConsumed.get(sameKey) ?? 0;
+        invoiceConsumed.set(sameKey, idx + 1);
+        return sameEntry!.categories[idx] || "";
+      }
+      for (const [date, entry] of dateMap) {
+        const otherKey = `${v}|${date}`;
+        const idx = invoiceConsumed.get(otherKey) ?? 0;
+        if (entry.count - idx > 0) {
+          invoiceConsumed.set(otherKey, idx + 1);
+          return entry.categories[idx] || "";
+        }
+      }
+      return "";
+    };
+
+    // Payouts summary by category
+    const payoutCatMap: Record<string, number> = {};
+    monthlyCashups.forEach((c) => {
+      c.shop.payouts.forEach((p) => {
+        const cat = matchPayout(c.date, p.vendor) || "Uncategorised";
+        payoutCatMap[cat] = (payoutCatMap[cat] || 0) + p.amount;
+      });
+      if (c.shop.lottoPayouts > 0) {
+        const cat = matchPayout(c.date, "Lotto") || "Uncategorised";
+        payoutCatMap[cat] = (payoutCatMap[cat] || 0) + c.shop.lottoPayouts;
+      }
+    });
+    const payoutCategories = Object.entries(payoutCatMap)
+      .sort((a, b) => b[1] - a[1])
+      .map(([category, incl]) => ({ category, incl, vat: incl * 15 / 115, excl: incl - incl * 15 / 115 }));
+    const payoutTotals = payoutCategories.reduce(
+      (a, r) => ({ incl: a.incl + r.incl, vat: a.vat + r.vat, excl: a.excl + r.excl }),
+      { incl: 0, vat: 0, excl: 0 }
+    );
+
+    // EFTs summary by category
+    const eftCatMap: Record<string, { incl: number; vat: number }> = {};
+    monthlyManagers.forEach((e) => {
+      e.eftInvoices.forEach((inv) => {
+        const key = inv.category || "Uncategorised";
+        if (!eftCatMap[key]) eftCatMap[key] = { incl: 0, vat: 0 };
+        eftCatMap[key].incl += inv.inclusive;
+        eftCatMap[key].vat += inv.vat;
+      });
+    });
+    const eftCategories = Object.entries(eftCatMap)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([category, v]) => ({ category, incl: v.incl, vat: v.vat, excl: v.incl - v.vat }));
+    const eftTotals = eftCategories.reduce(
+      (a, r) => ({ incl: a.incl + r.incl, vat: a.vat + r.vat, excl: a.excl + r.excl }),
+      { incl: 0, vat: 0, excl: 0 }
+    );
+
+    return { payoutCategories, payoutTotals, eftCategories, eftTotals };
+  }, [month, cashups, managerEntries]);
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">JE 1 — Monthly Turnover ({month})</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-xs">Description</TableHead>
-              <TableHead className="text-xs text-right">Debit</TableHead>
-              <TableHead className="text-xs text-right">Credit</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {/* Debits */}
-            {je1.debits.map((d) => (
-              <TableRow key={d.description}>
-                <TableCell className="text-sm py-1.5">{d.description}</TableCell>
-                <TableCell className="text-right py-1.5">
-                  <CurrencyDisplay value={d.amount} />
-                </TableCell>
-                <TableCell className="text-right py-1.5" />
+    <div className="space-y-6">
+      {/* JE 1 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">JE 1 — Monthly Turnover ({month})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Description</TableHead>
+                <TableHead className="text-xs text-right">Debit</TableHead>
+                <TableHead className="text-xs text-right">Credit</TableHead>
               </TableRow>
-            ))}
-            {/* Credits */}
-            {je1.credits.map((c) => (
-              <TableRow key={c.description}>
-                <TableCell className="text-sm py-1.5">{c.description}</TableCell>
-                <TableCell className="text-right py-1.5" />
-                <TableCell className="text-right py-1.5">
-                  <CurrencyDisplay value={c.amount} />
+            </TableHeader>
+            <TableBody>
+              {je1.debits.map((d) => (
+                <TableRow key={d.description}>
+                  <TableCell className="text-sm py-1.5">{d.description}</TableCell>
+                  <TableCell className="text-right py-1.5">
+                    <CurrencyDisplay value={d.amount} />
+                  </TableCell>
+                  <TableCell className="text-right py-1.5" />
+                </TableRow>
+              ))}
+              {je1.credits.map((c) => (
+                <TableRow key={c.description}>
+                  <TableCell className="text-sm py-1.5">{c.description}</TableCell>
+                  <TableCell className="text-right py-1.5" />
+                  <TableCell className="text-right py-1.5">
+                    <CurrencyDisplay value={c.amount} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell className="font-semibold text-sm">Totals</TableCell>
+                <TableCell className="text-right">
+                  <CurrencyDisplay value={je1.totalDebits} highlight />
+                </TableCell>
+                <TableCell className="text-right">
+                  <CurrencyDisplay value={je1.totalCredits} highlight />
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-          <TableFooter>
-            <TableRow>
-              <TableCell className="font-semibold text-sm">Totals</TableCell>
-              <TableCell className="text-right">
-                <CurrencyDisplay value={je1.totalDebits} highlight />
-              </TableCell>
-              <TableCell className="text-right">
-                <CurrencyDisplay value={je1.totalCredits} highlight />
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className="font-semibold text-sm">Difference</TableCell>
-              <TableCell className="text-right" colSpan={2}>
-                <CurrencyDisplay value={je1.totalDebits - je1.totalCredits} highlight />
-              </TableCell>
-            </TableRow>
-          </TableFooter>
-        </Table>
-      </CardContent>
-    </Card>
+              <TableRow>
+                <TableCell className="font-semibold text-sm">Difference</TableCell>
+                <TableCell className="text-right" colSpan={2}>
+                  <CurrencyDisplay value={je1.totalDebits - je1.totalCredits} highlight />
+                </TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* JE 2 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">JE 2 — Invoices & Payouts ({month})</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Payouts by Category */}
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Payouts — Summary by Category</h4>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Category</TableHead>
+                  <TableHead className="text-xs text-right">Debit (Excl.)</TableHead>
+                  <TableHead className="text-xs text-right">Debit (VAT)</TableHead>
+                  <TableHead className="text-xs text-right">Credit (Payouts)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {je2.payoutCategories.map((r) => (
+                  <TableRow key={r.category}>
+                    <TableCell className="text-sm py-1.5">{r.category}</TableCell>
+                    <TableCell className="text-right py-1.5">
+                      <CurrencyDisplay value={r.excl} />
+                    </TableCell>
+                    <TableCell className="text-right py-1.5">
+                      <CurrencyDisplay value={r.vat} />
+                    </TableCell>
+                    <TableCell className="text-right py-1.5" />
+                  </TableRow>
+                ))}
+              </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell className="font-semibold text-sm">Payouts Total</TableCell>
+                  <TableCell className="text-right">
+                    <CurrencyDisplay value={je2.payoutTotals.excl} highlight />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <CurrencyDisplay value={je2.payoutTotals.vat} highlight />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <CurrencyDisplay value={je2.payoutTotals.incl} highlight />
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
+            </Table>
+          </div>
+
+          {/* EFTs by Category */}
+          <div>
+            <h4 className="text-sm font-semibold mb-2">EFTs — Summary by Category</h4>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Category</TableHead>
+                  <TableHead className="text-xs text-right">Debit (Excl.)</TableHead>
+                  <TableHead className="text-xs text-right">Debit (VAT)</TableHead>
+                  <TableHead className="text-xs text-right">Credit (Bank)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {je2.eftCategories.map((r) => (
+                  <TableRow key={r.category}>
+                    <TableCell className="text-sm py-1.5">{r.category}</TableCell>
+                    <TableCell className="text-right py-1.5">
+                      <CurrencyDisplay value={r.excl} />
+                    </TableCell>
+                    <TableCell className="text-right py-1.5">
+                      <CurrencyDisplay value={r.vat} />
+                    </TableCell>
+                    <TableCell className="text-right py-1.5" />
+                  </TableRow>
+                ))}
+              </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell className="font-semibold text-sm">EFTs Total</TableCell>
+                  <TableCell className="text-right">
+                    <CurrencyDisplay value={je2.eftTotals.excl} highlight />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <CurrencyDisplay value={je2.eftTotals.vat} highlight />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <CurrencyDisplay value={je2.eftTotals.incl} highlight />
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
