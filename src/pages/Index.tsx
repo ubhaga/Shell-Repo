@@ -7,7 +7,7 @@ import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Reports } from "@/components/reports/Reports";
 import { MasterDataSettings } from "@/components/settings/MasterDataSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2, GitCompareArrows, FileSpreadsheet } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2, GitCompareArrows, FileSpreadsheet, ChevronLeft, ChevronRight } from "lucide-react";
 import { AfsJournalEntries } from "@/components/afs/AfsJournalEntries";
 import { AfsMonthly } from "@/components/afs/AfsMonthly";
 import { useCashupStore } from "@/store/cashupStore";
