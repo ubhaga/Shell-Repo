@@ -136,7 +136,7 @@ export default function Index() {
                 <TabsTrigger value="afs-monthly" className="text-xs">AFS Monthly</TabsTrigger>
               </TabsList>
               <TabsContent value="jes">
-                <AfsJournalEntries selectedDate={selectedDate} />
+                <AfsJournalEntries selectedDate={selectedDate} onNavigateToDate={(date) => { setSelectedDate(date); setActiveTab('manager-daily'); }} />
               </TabsContent>
               <TabsContent value="afs-monthly">
                 <AfsMonthly selectedDate={selectedDate} />

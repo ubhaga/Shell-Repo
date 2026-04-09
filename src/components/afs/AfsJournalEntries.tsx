@@ -1,14 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CurrencyDisplay } from "@/components/ui/CashupUI";
 import { useCashupStore } from "@/store/cashupStore";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface AfsJournalEntriesProps {
   selectedDate: string;
+  onNavigateToDate?: (date: string) => void;
 }
 
-export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
+export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournalEntriesProps) {
   const month = selectedDate.slice(0, 7);
   const cashups = useCashupStore((s) => s.cashups);
   const managerEntries = useCashupStore((s) => s.managerEntries);
