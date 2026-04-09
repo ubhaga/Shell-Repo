@@ -7,7 +7,7 @@ import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Reports } from "@/components/reports/Reports";
 import { MasterDataSettings } from "@/components/settings/MasterDataSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2, GitCompareArrows, FileSpreadsheet } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2, GitCompareArrows, FileSpreadsheet, ChevronLeft, ChevronRight } from "lucide-react";
 import { AfsJournalEntries } from "@/components/afs/AfsJournalEntries";
 import { AfsMonthly } from "@/components/afs/AfsMonthly";
 import { useCashupStore } from "@/store/cashupStore";
@@ -131,10 +131,42 @@ export default function Index() {
           </TabsContent>
           <TabsContent value="afs">
             <Tabs value={afsSubTab} onValueChange={setAfsSubTab}>
-              <TabsList className="mb-4">
-                <TabsTrigger value="jes" className="text-xs">JE's</TabsTrigger>
-                <TabsTrigger value="afs-monthly" className="text-xs">AFS Monthly</TabsTrigger>
-              </TabsList>
+              <div className="flex items-center justify-between mb-4">
+                <TabsList>
+                  <TabsTrigger value="jes" className="text-xs">JE's</TabsTrigger>
+                  <TabsTrigger value="afs-monthly" className="text-xs">AFS Monthly</TabsTrigger>
+                </TabsList>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const d = new Date(selectedDate.slice(0, 7) + '-01');
+                      d.setMonth(d.getMonth() - 1);
+                      if (d >= new Date('2026-01-01')) setSelectedDate(format(d, 'yyyy-MM') + '-01');
+                    }}
+                    className="p-1.5 rounded-md hover:bg-muted border"
+                    disabled={selectedDate.slice(0, 7) <= '2026-01'}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <input
+                    type="month"
+                    value={selectedDate.slice(0, 7)}
+                    min="2026-01"
+                    onChange={(e) => setSelectedDate(e.target.value + '-01')}
+                    className="text-sm border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <button
+                    onClick={() => {
+                      const d = new Date(selectedDate.slice(0, 7) + '-01');
+                      d.setMonth(d.getMonth() + 1);
+                      setSelectedDate(format(d, 'yyyy-MM') + '-01');
+                    }}
+                    className="p-1.5 rounded-md hover:bg-muted border"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
               <TabsContent value="jes">
                 <AfsJournalEntries selectedDate={selectedDate} onNavigateToDate={(date) => { setSelectedDate(date); setActiveTab('manager-daily'); }} />
               </TabsContent>
