@@ -146,56 +146,62 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     const monthlyCashups = cashups.filter((c) => c.month === month);
 
     // Build payout report with category matching (same logic as Reports)
-    const managerPayoutByVendor = new Map<string, Map<string, { count: number; categories: string[] }>>();
+    const managerPayoutByVendor = new Map<string, Map<string, { count: number; entries: { category: string; vat: number }[] }>>();
     monthlyManagers.forEach((e) => {
       e.payoutInvoices.forEach((inv) => {
         const vendor = inv.supplier.toLowerCase().trim();
         if (!managerPayoutByVendor.has(vendor)) managerPayoutByVendor.set(vendor, new Map());
         const dateMap = managerPayoutByVendor.get(vendor)!;
-        const existing = dateMap.get(e.date) ?? { count: 0, categories: [] };
+        const existing = dateMap.get(e.date) ?? { count: 0, entries: [] };
         existing.count += 1;
-        existing.categories.push(inv.category || "");
+        existing.entries.push({ category: inv.category || "", vat: inv.vat });
         dateMap.set(e.date, existing);
       });
     });
     const invoiceConsumed = new Map<string, number>();
-    const matchPayout = (payoutDate: string, vendor: string): string => {
+    const matchPayout = (payoutDate: string, vendor: string): { category: string; vat: number } => {
       const v = vendor.toLowerCase().trim();
       const dateMap = managerPayoutByVendor.get(v);
-      if (!dateMap) return "";
+      if (!dateMap) return { category: "", vat: 0 };
       const sameKey = `${v}|${payoutDate}`;
       const sameEntry = dateMap.get(payoutDate);
       const sameAvail = sameEntry ? sameEntry.count - (invoiceConsumed.get(sameKey) ?? 0) : 0;
       if (sameAvail > 0) {
         const idx = invoiceConsumed.get(sameKey) ?? 0;
         invoiceConsumed.set(sameKey, idx + 1);
-        return sameEntry!.categories[idx] || "";
+        const e = sameEntry!.entries[idx];
+        return { category: e.category, vat: e.vat };
       }
       for (const [date, entry] of dateMap) {
         const otherKey = `${v}|${date}`;
         const idx = invoiceConsumed.get(otherKey) ?? 0;
         if (entry.count - idx > 0) {
           invoiceConsumed.set(otherKey, idx + 1);
-          return entry.categories[idx] || "";
+          const e = entry.entries[idx];
+          return { category: e.category, vat: e.vat };
         }
       }
-      return "";
+      return { category: "", vat: 0 };
     };
 
     // Payouts summary by category with individual transactions
-    const payoutCatMap: Record<string, { total: number; transactions: { date: string; vendor: string; amount: number }[] }> = {};
+    const payoutCatMap: Record<string, { total: number; totalVat: number; transactions: { date: string; vendor: string; amount: number; vat: number }[] }> = {};
     monthlyCashups.forEach((c) => {
       c.shop.payouts.forEach((p) => {
-        const cat = matchPayout(c.date, p.vendor) || "Uncategorised";
-        if (!payoutCatMap[cat]) payoutCatMap[cat] = { total: 0, transactions: [] };
+        const match = matchPayout(c.date, p.vendor);
+        const cat = match.category || "Uncategorised";
+        if (!payoutCatMap[cat]) payoutCatMap[cat] = { total: 0, totalVat: 0, transactions: [] };
         payoutCatMap[cat].total += p.amount;
-        payoutCatMap[cat].transactions.push({ date: c.date, vendor: p.vendor, amount: p.amount });
+        payoutCatMap[cat].totalVat += match.vat;
+        payoutCatMap[cat].transactions.push({ date: c.date, vendor: p.vendor, amount: p.amount, vat: match.vat });
       });
       if (c.shop.lottoPayouts > 0) {
-        const cat = matchPayout(c.date, "Lotto") || "Uncategorised";
-        if (!payoutCatMap[cat]) payoutCatMap[cat] = { total: 0, transactions: [] };
+        const match = matchPayout(c.date, "Lotto");
+        const cat = match.category || "Uncategorised";
+        if (!payoutCatMap[cat]) payoutCatMap[cat] = { total: 0, totalVat: 0, transactions: [] };
         payoutCatMap[cat].total += c.shop.lottoPayouts;
-        payoutCatMap[cat].transactions.push({ date: c.date, vendor: "Lotto", amount: c.shop.lottoPayouts });
+        payoutCatMap[cat].totalVat += match.vat;
+        payoutCatMap[cat].transactions.push({ date: c.date, vendor: "Lotto", amount: c.shop.lottoPayouts, vat: match.vat });
       }
     });
     const payoutCategories = Object.entries(payoutCatMap)
@@ -203,8 +209,8 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       .map(([category, data]) => ({
         category,
         incl: data.total,
-        vat: data.total * 15 / 115,
-        excl: data.total - data.total * 15 / 115,
+        vat: data.totalVat,
+        excl: data.total - data.totalVat,
         transactions: data.transactions.sort((a, b) => a.date.localeCompare(b.date)),
       }));
     const payoutTotals = payoutCategories.reduce(
@@ -359,10 +365,10 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                       >
                         <TableCell className="text-xs py-1 pl-10 text-muted-foreground">{t.date} — {t.vendor}</TableCell>
                         <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                          <CurrencyDisplay value={t.amount - t.amount * 15 / 115} />
+                          <CurrencyDisplay value={t.amount - t.vat} />
                         </TableCell>
                         <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                          <CurrencyDisplay value={t.amount * 15 / 115} />
+                          <CurrencyDisplay value={t.vat} />
                         </TableCell>
                         <TableCell className="text-right text-xs py-1 text-muted-foreground">
                           <CurrencyDisplay value={t.amount} />
