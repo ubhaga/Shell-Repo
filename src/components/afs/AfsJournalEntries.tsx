@@ -36,6 +36,7 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
     let totalEasypayReceipts = 0;
     let totalEasypayMop = 0;
     let totalLottoReceipts = 0;
+    let totalDebtorsReceived = 0;
     let totalLottoPayouts = 0;
     let totalPayouts = 0;
     let totalCashDepositedBanking = 0;
