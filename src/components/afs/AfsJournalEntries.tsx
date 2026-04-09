@@ -36,6 +36,7 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
     let totalEasypayReceipts = 0;
     let totalEasypayMop = 0;
     let totalLottoReceipts = 0;
+    let totalDebtorsReceived = 0;
     let totalLottoPayouts = 0;
     let totalPayouts = 0;
     let totalCashDepositedBanking = 0;
@@ -52,6 +53,7 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
         if (r.type === "Blue Label") totalBlueLabel += r.amount;
         if (r.type === "Easypay") totalEasypayReceipts += r.amount;
         if (r.type === "Lotto Receipts") totalLottoReceipts += r.amount;
+        if (r.type === "Debtors Received on Account") totalDebtorsReceived += r.amount;
       }
       // Easypay MOP Cash
       totalEasypayMop += c.shop.easyPay ?? 0;
@@ -103,6 +105,7 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
     credits.push({ description: "Prov Blue Label", amount: totalBlueLabel });
     credits.push({ description: "Prov for Flash (Receipts)", amount: totalEasypayReceipts });
     credits.push({ description: "Prov for Lotto", amount: totalLottoReceipts - totalLottoPayouts });
+    credits.push({ description: "Debtors Received on Account", amount: totalDebtorsReceived });
 
     // --- Debits ---
     const debits: { description: string; amount: number }[] = [
