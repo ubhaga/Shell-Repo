@@ -41,6 +41,7 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
     let totalCashDepositedBanking = 0;
     let totalCoins = 0;
     let totalSpeedpointsExclVPlus = 0;
+    let totalVPlus = 0;
     let totalAccounts = 0;
     let totalOtherAdjustments = 0;
     let totalCashierBalance = 0;
