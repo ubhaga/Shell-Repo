@@ -26,6 +26,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
 
   const BLD_OPENING = -11906.34;
   const EASYPAY_OPENING = 14392.59;
+  const LOTTO_OPENING = 0;
 
   const monthStart = startOfMonth(new Date(filterMonth + '-01'));
   const monthEnd = endOfMonth(monthStart);
@@ -45,6 +46,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     } catch { return null; }
   };
 
+  // BLD payments from bank
   const bldPaymentsByDate = new Map<string, number>();
   bankLines.forEach(line => {
     const desc = line.description.toUpperCase().trim();
@@ -56,12 +58,26 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     }
   });
 
+  // Lotto payments from bank (ITHUCOLL)
+  const lottoPaymentsByDate = new Map<string, number>();
+  bankLines.forEach(line => {
+    const desc = line.description.toUpperCase().trim();
+    if (desc.includes('ITHUCOLL')) {
+      const dateStr = parseBankDate(line.transaction_date);
+      if (dateStr) {
+        lottoPaymentsByDate.set(dateStr, (lottoPaymentsByDate.get(dateStr) ?? 0) + Math.abs(line.amount));
+      }
+    }
+  });
+
   type DayRow = {
     date: string;
-    bldInvoice: number;      // Receipts → Blue Label
-    bldPayment: number;      // Bank statement → BLD DO
-    easypayInvoice: number;  // Receipts → Easypay
-    easypayCollection: number; // MOP Cash → EasyPay
+    bldInvoice: number;
+    bldPayment: number;
+    easypayInvoice: number;
+    easypayCollection: number;
+    lottoInvoice: number;
+    lottoPayment: number;
   };
 
   const dailyRows: DayRow[] = days.map(day => {
@@ -74,6 +90,9 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     const easypayInvoice = cashup
       ? cashup.shop.receipts.filter(r => r.type === 'Easypay').reduce((s, r) => s + r.amount, 0)
       : 0;
+    const lottoInvoice = cashup
+      ? cashup.shop.receipts.filter(r => r.type === 'Lotto Receipts').reduce((s, r) => s + r.amount, 0)
+      : 0;
 
     return {
       date: dateStr,
@@ -81,11 +100,14 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       bldPayment: bldPaymentsByDate.get(dateStr) ?? 0,
       easypayInvoice,
       easypayCollection: cashup?.shop.easyPay ?? 0,
+      lottoInvoice,
+      lottoPayment: lottoPaymentsByDate.get(dateStr) ?? 0,
     };
   });
 
   let bldBalance = BLD_OPENING;
   let easypayBalance = EASYPAY_OPENING;
+  let lottoBalance = LOTTO_OPENING;
 
   return (
     <div className="space-y-4">
@@ -106,6 +128,9 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 <TableHead colSpan={3} className="text-center border-l bg-primary/5">
                   Easypay (Debtor)
                 </TableHead>
+                <TableHead colSpan={3} className="text-center border-l bg-accent/30">
+                  Lotto (Creditor)
+                </TableHead>
               </TableRow>
               <TableRow>
                 <TableHead className="text-right text-xs border-l min-w-[90px]">+ Invoice</TableHead>
@@ -113,6 +138,9 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 <TableHead className="text-right text-xs font-semibold min-w-[100px]">Balance</TableHead>
                 <TableHead className="text-right text-xs border-l min-w-[90px]">+ Invoice</TableHead>
                 <TableHead className="text-right text-xs min-w-[90px]">− Collection</TableHead>
+                <TableHead className="text-right text-xs font-semibold min-w-[100px]">Balance</TableHead>
+                <TableHead className="text-right text-xs border-l min-w-[90px]">+ Invoice</TableHead>
+                <TableHead className="text-right text-xs min-w-[90px]">− Payment</TableHead>
                 <TableHead className="text-right text-xs font-semibold min-w-[100px]">Balance</TableHead>
               </TableRow>
             </TableHeader>
@@ -130,14 +158,19 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 <TableCell className="text-right text-xs">
                   <CurrencyDisplay value={EASYPAY_OPENING} />
                 </TableCell>
+                <TableCell className="border-l"></TableCell>
+                <TableCell></TableCell>
+                <TableCell className="text-right text-xs">
+                  <CurrencyDisplay value={LOTTO_OPENING} />
+                </TableCell>
               </TableRow>
               {dailyRows.map(row => {
-                // BLD creditor: invoices increase debt, payments reduce it
                 bldBalance = bldBalance - row.bldInvoice + row.bldPayment;
-                // Easypay debtor: invoices increase what they owe, collections reduce it
                 easypayBalance = easypayBalance + row.easypayInvoice - row.easypayCollection;
+                // Lotto creditor: invoices increase debt, payments reduce it
+                lottoBalance = lottoBalance - row.lottoInvoice + row.lottoPayment;
 
-                const hasData = row.bldInvoice > 0 || row.bldPayment > 0 || row.easypayInvoice > 0 || row.easypayCollection > 0;
+                const hasData = row.bldInvoice > 0 || row.bldPayment > 0 || row.easypayInvoice > 0 || row.easypayCollection > 0 || row.lottoInvoice > 0 || row.lottoPayment > 0;
 
                 return (
                   <TableRow key={row.date} className={!hasData ? 'opacity-50' : ''}>
@@ -170,6 +203,20 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                     <TableCell className="text-right text-xs font-semibold bg-primary/10">
                       <CurrencyDisplay value={easypayBalance} />
                     </TableCell>
+                    {/* Lotto */}
+                    <TableCell className="text-right text-xs border-l">
+                      {row.lottoInvoice > 0
+                        ? <CurrencyDisplay value={row.lottoInvoice} />
+                        : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-right text-xs">
+                      {row.lottoPayment > 0
+                        ? <span className="text-destructive"><CurrencyDisplay value={row.lottoPayment} /></span>
+                        : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-right text-xs font-semibold bg-accent/20">
+                      <CurrencyDisplay value={lottoBalance} />
+                    </TableCell>
                   </TableRow>
                 );
               })}
@@ -193,6 +240,15 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 </TableCell>
                 <TableCell className="text-right text-xs font-bold">
                   <CurrencyDisplay value={easypayBalance} highlight />
+                </TableCell>
+                <TableCell className="text-right text-xs border-l">
+                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.lottoInvoice, 0)} highlight />
+                </TableCell>
+                <TableCell className="text-right text-xs">
+                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.lottoPayment, 0)} highlight />
+                </TableCell>
+                <TableCell className="text-right text-xs font-bold">
+                  <CurrencyDisplay value={lottoBalance} highlight />
                 </TableCell>
               </TableRow>
             </TableBody>
