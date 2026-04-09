@@ -468,8 +468,50 @@ export function AfsMonthly({ selectedDate }: AfsMonthlyProps) {
     return { tradeTotal, fuelTotal };
   }, [month, managerEntries, bankLines, creditorOBs, eftSuppliers]);
 
-  const totalCurrentAssets = shiftClearing.reduce((s, r) => s + r.amount, 0) + eftClearing.total;
-  const totalCurrentLiabilities = creditors.tradeTotal + creditors.fuelTotal;
+  // ── Balance Sheet: BLD Creditor & Easypay Debtor (from Airtime Recon logic) ──
+  const airtimeBalances = useMemo(() => {
+    const BLD_OPENING = -11906.34;
+    const EASYPAY_OPENING = 14392.59;
+    const monthlyCashups = cashups.filter((c) => c.month === month);
+
+    const parseBankDate = (dateStr: string): string | null => {
+      try {
+        const parts = dateStr.split('/');
+        if (parts.length === 3) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        return null;
+      } catch { return null; }
+    };
+
+    // BLD payments from bank
+    let totalBldPayments = 0;
+    bankLines.forEach(line => {
+      const desc = line.description.toUpperCase().trim();
+      if (desc.includes('BLD DO') || desc.includes('BLUE LABEL')) {
+        totalBldPayments += Math.abs(line.amount);
+      }
+    });
+
+    // BLD invoices (Blue Label receipts) & Easypay invoices/collections from cashups
+    let totalBldInvoices = 0;
+    let totalEasypayInvoices = 0;
+    let totalEasypayCollections = 0;
+
+    monthlyCashups.forEach(c => {
+      c.shop.receipts.forEach(r => {
+        if (r.type === 'Blue Label') totalBldInvoices += r.amount;
+        if (r.type === 'Easypay') totalEasypayInvoices += r.amount;
+      });
+      totalEasypayCollections += c.shop.easyPay ?? 0;
+    });
+
+    const bldClosing = BLD_OPENING - totalBldInvoices + totalBldPayments;
+    const easypayClosing = EASYPAY_OPENING + totalEasypayInvoices - totalEasypayCollections;
+
+    return { bldClosing, easypayClosing };
+  }, [month, cashups, bankLines]);
+
+  const totalCurrentAssets = shiftClearing.reduce((s, r) => s + r.amount, 0) + eftClearing.total + airtimeBalances.easypayClosing;
+  const totalCurrentLiabilities = creditors.tradeTotal + creditors.fuelTotal + Math.abs(airtimeBalances.bldClosing);
   const netBalanceSheet = totalCurrentAssets - totalCurrentLiabilities;
 
   return (
@@ -593,6 +635,14 @@ export function AfsMonthly({ selectedDate }: AfsMonthlyProps) {
                 </TableCell>
               </TableRow>
 
+              {/* Easypay (Debtor) */}
+              <TableRow>
+                <TableCell className="text-sm py-1.5 pl-4">Easypay (Debtor)</TableCell>
+                <TableCell className="text-right py-1.5">
+                  <CurrencyDisplay value={airtimeBalances.easypayClosing} />
+                </TableCell>
+              </TableRow>
+
               {/* Total Current Assets */}
               <TableRow className="bg-primary/10 border-t-2">
                 <TableCell className="text-sm font-bold py-2">Total Current Assets</TableCell>
@@ -625,7 +675,15 @@ export function AfsMonthly({ selectedDate }: AfsMonthlyProps) {
               <TableRow className="bg-secondary">
                 <TableCell className="text-sm font-semibold py-1.5 pl-4">Total Creditors</TableCell>
                 <TableCell className="text-right py-1.5">
-                  <CurrencyDisplay value={totalCurrentLiabilities} highlight />
+                  <CurrencyDisplay value={creditors.tradeTotal + creditors.fuelTotal} highlight />
+                </TableCell>
+              </TableRow>
+
+              {/* BLD Creditor */}
+              <TableRow>
+                <TableCell className="text-sm py-1.5 pl-4">BLD Creditor</TableCell>
+                <TableCell className="text-right py-1.5">
+                  <CurrencyDisplay value={Math.abs(airtimeBalances.bldClosing)} />
                 </TableCell>
               </TableRow>
 
