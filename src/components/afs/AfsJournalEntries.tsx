@@ -64,14 +64,18 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
       totalCashDepositedBanking += c.shop.cashDepositedBanking ?? 0;
       // Coins
       totalCoins += c.shop.coins ?? 0;
-      // Speedpoints (except V Plus) - shop + opt amounts
+      // Speedpoints - separate V Plus from others
       for (const sp of c.shop.speedpoints ?? []) {
-        if (sp.terminal !== "V Plus") {
+        if (sp.terminal === "V Plus") {
+          totalVPlus += (sp.shopAmount ?? 0) + (sp.optAmount ?? 0);
+        } else {
           totalSpeedpointsExclVPlus += (sp.shopAmount ?? 0) + (sp.optAmount ?? 0);
         }
       }
       for (const sp of c.opt.speedpoints ?? []) {
-        if (sp.terminal !== "V Plus") {
+        if (sp.terminal === "V Plus") {
+          totalVPlus += (sp.optAmount ?? 0);
+        } else {
           totalSpeedpointsExclVPlus += (sp.optAmount ?? 0);
         }
       }
