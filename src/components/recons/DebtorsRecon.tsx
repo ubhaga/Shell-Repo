@@ -21,7 +21,7 @@ const BANK_PAYMENT_RULES: { pattern: RegExp; account: string }[] = [
   { pattern: /CR BP ZOO.*LAKE.*DSL|BP ZOO LAKE DSL/i, account: 'Bp Zoolake' },
 ];
 
-// The debtors we track (excluding Generator and Shop Expense which are JE3 writeoffs)
+// The debtors we track
 const DEBTOR_ACCOUNTS = [
   'Mahindra',
   'Lancaster Pharmacy',
@@ -37,9 +37,11 @@ const DEBTOR_ACCOUNTS = [
   'Shell Parkhurst',
   'House tech',
   'Moses bpzl',
+  'Generator',
+  'Shop Expense',
 ];
 
-// JE3 writeoff accounts — these are treated as adjustments (reducing debtor balance)
+// JE3 writeoff accounts — their purchases are also shown as adjustments (reducing closing balance)
 const JE3_WRITEOFF_ACCOUNTS = ['Generator', 'Shop Expense'];
 
 export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
@@ -98,7 +100,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     const totals: Record<string, number> = {};
     DEBTOR_ACCOUNTS.forEach(a => { totals[a] = 0; });
     for (const line of bankLines) {
-      if (line.amount <= 0) continue; // payments are credits (positive amounts)
+      if (line.amount <= 0) continue;
       for (const rule of BANK_PAYMENT_RULES) {
         if (rule.pattern.test(line.description)) {
           totals[rule.account] = (totals[rule.account] || 0) + line.amount;
@@ -117,9 +119,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     for (const c of monthlyCashups) {
       for (const r of c.shop.receipts ?? []) {
         if (r.type === 'Debtors Received on Account ROA' && r.amount > 0) {
-          // seqNo contains debtor name reference
           const ref = (r.seqNo || '').trim();
-          // Match seqNo to a debtor account (case-insensitive)
           const matched = DEBTOR_ACCOUNTS.find(a => a.toLowerCase() === ref.toLowerCase());
           if (matched) {
             totals[matched] = (totals[matched] || 0) + r.amount;
@@ -130,42 +130,18 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     return totals;
   }, [filterMonth, cashups]);
 
-  // JE3 adjustments (writeoffs treated as payments)
-  const je3Adjustments = useMemo(() => {
-    const monthlyCashups = cashups.filter(c => c.month === filterMonth);
-    const totals: Record<string, number> = {};
-    JE3_WRITEOFF_ACCOUNTS.forEach(a => { totals[a] = 0; });
-    for (const c of monthlyCashups) {
-      for (const a of c.shop.accounts ?? []) {
-        if (totals[a.name] !== undefined) totals[a.name] += a.amount;
-      }
-      for (const a of c.opt.accounts ?? []) {
-        if (totals[a.name] !== undefined) totals[a.name] += a.amount;
-      }
-    }
-    return totals;
-  }, [filterMonth, cashups]);
-
-  const totalJe3 = Object.values(je3Adjustments).reduce((s, v) => s + v, 0);
-
-  // Build rows — JE3 writeoffs distributed as adjustments per debtor
-  // Generator and Shop Expense are general writeoffs, spread as a single total adjustment row
+  // Build rows — JE3 accounts get their purchases as adjustments too
   const rows = DEBTOR_ACCOUNTS.map(name => {
     const ob = openingBalances[name] ?? editingOB[name] ?? 0;
     const purchase = purchases[name] || 0;
     const bankPmt = (bankPayments[name] || 0) + (roaPerDebtor[name] || 0);
-    const adjustment = 0; // individual debtors don't have JE3 adjustments
+    const isJe3 = JE3_WRITEOFF_ACCOUNTS.includes(name);
+    const adjustment = isJe3 ? purchase : 0; // JE3 purchases are written off as adjustments
     const closing = ob + purchase - bankPmt - adjustment;
     return { name, ob, purchase, bankPmt, adjustment, closing };
   });
 
-  // Add JE3 writeoff accounts as adjustment rows
-  const je3Rows = JE3_WRITEOFF_ACCOUNTS.map(name => {
-    const amount = je3Adjustments[name] || 0;
-    return { name, ob: 0, purchase: 0, bankPmt: 0, adjustment: amount, closing: -amount };
-  });
-
-  const allRows = [...rows, ...je3Rows.filter(r => r.adjustment > 0)];
+  const allRows = rows;
 
   const totals = allRows.reduce(
     (acc, r) => ({
@@ -242,17 +218,6 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
               </TableCell>
               <TableCell className="text-right"><CurrencyDisplay value={r.purchase} /></TableCell>
               <TableCell className="text-right"><CurrencyDisplay value={r.bankPmt} /></TableCell>
-              <TableCell className="text-right"><CurrencyDisplay value={r.adjustment} /></TableCell>
-              <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.closing} /></TableCell>
-            </TableRow>
-          ))}
-          {/* JE3 Writeoff rows */}
-          {je3Rows.filter(r => r.adjustment > 0).map(r => (
-            <TableRow key={r.name} className="text-muted-foreground">
-              <TableCell className="text-sm">{r.name} (JE3)</TableCell>
-              <TableCell className="text-right"><CurrencyDisplay value={0} /></TableCell>
-              <TableCell className="text-right"><CurrencyDisplay value={0} /></TableCell>
-              <TableCell className="text-right"><CurrencyDisplay value={0} /></TableCell>
               <TableCell className="text-right"><CurrencyDisplay value={r.adjustment} /></TableCell>
               <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.closing} /></TableCell>
             </TableRow>
