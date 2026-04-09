@@ -333,16 +333,20 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">Category</TableHead>
-                  <TableHead className="text-xs text-right">Debit (Excl.)</TableHead>
+                 <TableHead className="text-xs">Category</TableHead>
+                  <TableHead className="text-xs text-right">Debit (Excl. VAT)</TableHead>
                   <TableHead className="text-xs text-right">Debit (VAT)</TableHead>
+                  <TableHead className="text-xs text-right">Debit (No VAT)</TableHead>
                   <TableHead className="text-xs text-right">Credit (Payouts)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {je2.payoutCategories.map((r) => (
+                {je2.payoutCategories.map((r) => {
+                  const exclVat = r.vat / 0.15;
+                  const noVat = r.incl - exclVat - r.vat;
+                  return (
                   <React.Fragment key={r.category}>
-                    <TableRow key={r.category} className="cursor-pointer hover:bg-muted/50" onClick={() => togglePayoutCat(r.category)}>
+                    <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => togglePayoutCat(r.category)}>
                       <TableCell className="text-sm py-1.5">
                         <span className="inline-flex items-center gap-1">
                           {expandedPayoutCats.has(r.category) ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
@@ -350,14 +354,20 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                         </span>
                       </TableCell>
                       <TableCell className="text-right py-1.5">
-                        <CurrencyDisplay value={r.excl} />
+                        <CurrencyDisplay value={exclVat} />
                       </TableCell>
                       <TableCell className="text-right py-1.5">
                         <CurrencyDisplay value={r.vat} />
                       </TableCell>
+                      <TableCell className="text-right py-1.5">
+                        <CurrencyDisplay value={noVat} />
+                      </TableCell>
                       <TableCell className="text-right py-1.5" />
                     </TableRow>
-                    {expandedPayoutCats.has(r.category) && r.transactions.map((t, i) => (
+                    {expandedPayoutCats.has(r.category) && r.transactions.map((t, i) => {
+                      const tExclVat = t.vat / 0.15;
+                      const tNoVat = t.amount - tExclVat - t.vat;
+                      return (
                       <TableRow
                         key={`${r.category}-${i}`}
                         className="cursor-pointer hover:bg-accent/50 bg-muted/30"
@@ -365,27 +375,35 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                       >
                         <TableCell className="text-xs py-1 pl-10 text-muted-foreground">{t.date} — {t.vendor}</TableCell>
                         <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                          <CurrencyDisplay value={t.amount - t.vat} />
+                          <CurrencyDisplay value={tExclVat} />
                         </TableCell>
                         <TableCell className="text-right text-xs py-1 text-muted-foreground">
                           <CurrencyDisplay value={t.vat} />
                         </TableCell>
                         <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                          <CurrencyDisplay value={tNoVat} />
+                        </TableCell>
+                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
                           <CurrencyDisplay value={t.amount} />
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </React.Fragment>
-                ))}
+                  );
+                })}
               </TableBody>
               <TableFooter>
                 <TableRow>
                   <TableCell className="font-semibold text-sm">Payouts Total</TableCell>
                   <TableCell className="text-right">
-                    <CurrencyDisplay value={je2.payoutTotals.excl} highlight />
+                    <CurrencyDisplay value={je2.payoutTotals.vat / 0.15} highlight />
                   </TableCell>
                   <TableCell className="text-right">
                     <CurrencyDisplay value={je2.payoutTotals.vat} highlight />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <CurrencyDisplay value={je2.payoutTotals.incl - je2.payoutTotals.vat / 0.15 - je2.payoutTotals.vat} highlight />
                   </TableCell>
                   <TableCell className="text-right">
                     <CurrencyDisplay value={je2.payoutTotals.incl} highlight />
@@ -401,16 +419,20 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">Category</TableHead>
-                  <TableHead className="text-xs text-right">Debit (Excl.)</TableHead>
+                 <TableHead className="text-xs">Category</TableHead>
+                  <TableHead className="text-xs text-right">Debit (Excl. VAT)</TableHead>
                   <TableHead className="text-xs text-right">Debit (VAT)</TableHead>
+                  <TableHead className="text-xs text-right">Debit (No VAT)</TableHead>
                   <TableHead className="text-xs text-right">Credit (Bank)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {je2.eftCategories.map((r) => (
+                {je2.eftCategories.map((r) => {
+                  const exclVat = r.vat / 0.15;
+                  const noVat = r.incl - exclVat - r.vat;
+                  return (
                   <React.Fragment key={r.category}>
-                    <TableRow key={r.category} className="cursor-pointer hover:bg-muted/50" onClick={() => toggleEftCat(r.category)}>
+                    <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => toggleEftCat(r.category)}>
                       <TableCell className="text-sm py-1.5">
                         <span className="inline-flex items-center gap-1">
                           {expandedEftCats.has(r.category) ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
@@ -418,14 +440,20 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                         </span>
                       </TableCell>
                       <TableCell className="text-right py-1.5">
-                        <CurrencyDisplay value={r.excl} />
+                        <CurrencyDisplay value={exclVat} />
                       </TableCell>
                       <TableCell className="text-right py-1.5">
                         <CurrencyDisplay value={r.vat} />
                       </TableCell>
+                      <TableCell className="text-right py-1.5">
+                        <CurrencyDisplay value={noVat} />
+                      </TableCell>
                       <TableCell className="text-right py-1.5" />
                     </TableRow>
-                    {expandedEftCats.has(r.category) && r.transactions.map((t, i) => (
+                    {expandedEftCats.has(r.category) && r.transactions.map((t, i) => {
+                      const tExclVat = t.vat / 0.15;
+                      const tNoVat = t.inclusive - tExclVat - t.vat;
+                      return (
                       <TableRow
                         key={`${r.category}-${i}`}
                         className="cursor-pointer hover:bg-accent/50 bg-muted/30"
@@ -433,27 +461,35 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                       >
                         <TableCell className="text-xs py-1 pl-10 text-muted-foreground">{t.date} — {t.supplier}</TableCell>
                         <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                          <CurrencyDisplay value={t.inclusive - t.vat} />
+                          <CurrencyDisplay value={tExclVat} />
                         </TableCell>
                         <TableCell className="text-right text-xs py-1 text-muted-foreground">
                           <CurrencyDisplay value={t.vat} />
                         </TableCell>
                         <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                          <CurrencyDisplay value={tNoVat} />
+                        </TableCell>
+                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
                           <CurrencyDisplay value={t.inclusive} />
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </React.Fragment>
-                ))}
+                  );
+                })}
               </TableBody>
               <TableFooter>
                 <TableRow>
                   <TableCell className="font-semibold text-sm">EFTs Total</TableCell>
                   <TableCell className="text-right">
-                    <CurrencyDisplay value={je2.eftTotals.excl} highlight />
+                    <CurrencyDisplay value={je2.eftTotals.vat / 0.15} highlight />
                   </TableCell>
                   <TableCell className="text-right">
                     <CurrencyDisplay value={je2.eftTotals.vat} highlight />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <CurrencyDisplay value={je2.eftTotals.incl - je2.eftTotals.vat / 0.15 - je2.eftTotals.vat} highlight />
                   </TableCell>
                   <TableCell className="text-right">
                     <CurrencyDisplay value={je2.eftTotals.incl} highlight />
