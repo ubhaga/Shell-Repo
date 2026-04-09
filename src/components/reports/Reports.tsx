@@ -635,7 +635,7 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
           <TabsTrigger value="speedpoints">Speedpoints</TabsTrigger>
           <TabsTrigger value="creditors">Creditors</TabsTrigger>
           <TabsTrigger value="debtors">Debtors</TabsTrigger>
-          <TabsTrigger value="airtime">Airtime</TabsTrigger>
+          <TabsTrigger value="airtime">Airtime / Lotto</TabsTrigger>
           <TabsTrigger value="cash">Cash CC & Coins</TabsTrigger>
           <TabsTrigger value="other-adj">Other Adj.</TabsTrigger>
         </TabsList>
