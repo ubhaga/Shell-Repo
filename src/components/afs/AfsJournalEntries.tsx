@@ -96,7 +96,7 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
     }
 
     credits.push({ description: "Prov Blue Label", amount: totalBlueLabel });
-    credits.push({ description: "Prov for Flash", amount: totalEasypayReceipts - totalEasypayMop });
+    credits.push({ description: "Prov for Flash (Receipts)", amount: totalEasypayReceipts });
     credits.push({ description: "Prov for Lotto", amount: totalLottoReceipts - totalLottoPayouts });
 
     // --- Debits ---
@@ -106,6 +106,7 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
       { description: "Petty Cash", amount: totalCoins },
       { description: "EFT Clearing", amount: totalSpeedpointsExclVPlus },
       { description: "Accounts", amount: totalAccounts },
+      { description: "Prov for Flash (EasyPay MOP)", amount: totalEasypayMop },
     ];
 
     // Other Adjustments: debit if positive, credit if negative
