@@ -468,14 +468,9 @@ export function AfsMonthly({ selectedDate }: AfsMonthlyProps) {
     return { tradeTotal, fuelTotal };
   }, [month, managerEntries, bankLines, creditorOBs, eftSuppliers]);
 
-  // Combine balance sheet items
-  const balanceSheetItems = [
-    ...shiftClearing,
-    ...eftClearing.items,
-    { description: "Trade Creditors", amount: creditors.tradeTotal },
-    { description: "Fuel Creditors", amount: creditors.fuelTotal },
-  ];
-  const balanceSheetTotal = balanceSheetItems.reduce((s, r) => s + r.amount, 0);
+  const totalCurrentAssets = shiftClearing.reduce((s, r) => s + r.amount, 0) + eftClearing.total;
+  const totalCurrentLiabilities = creditors.tradeTotal + creditors.fuelTotal;
+  const netBalanceSheet = totalCurrentAssets - totalCurrentLiabilities;
 
   return (
     <div className="space-y-6">
@@ -555,72 +550,98 @@ export function AfsMonthly({ selectedDate }: AfsMonthlyProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* Shift Clearing section */}
+              {/* Current Assets header */}
+              <TableRow className="bg-primary/10">
+                <TableCell colSpan={2} className="text-sm font-bold py-2">Current Assets</TableCell>
+              </TableRow>
+
+              {/* Shift Clearing */}
               <TableRow className="bg-muted/50">
-                <TableCell colSpan={2} className="text-sm font-semibold py-1.5">Shift Clearing</TableCell>
+                <TableCell colSpan={2} className="text-sm font-semibold py-1.5 pl-4">Shift Clearing</TableCell>
               </TableRow>
               {shiftClearing.map((r) => (
                 <TableRow key={r.description}>
-                  <TableCell className="text-sm py-1.5 pl-6">{r.description}</TableCell>
+                  <TableCell className="text-sm py-1.5 pl-8">{r.description}</TableCell>
                   <TableCell className="text-right py-1.5">
                     <CurrencyDisplay value={r.amount} />
                   </TableCell>
                 </TableRow>
               ))}
               <TableRow className="bg-secondary">
-                <TableCell className="text-sm font-semibold py-1.5">Total Shift Clearing</TableCell>
+                <TableCell className="text-sm font-semibold py-1.5 pl-4">Total Shift Clearing</TableCell>
                 <TableCell className="text-right py-1.5">
                   <CurrencyDisplay value={shiftClearing.reduce((s, r) => s + r.amount, 0)} highlight />
                 </TableCell>
               </TableRow>
 
-              {/* EFT Clearing section */}
+              {/* EFT Clearing */}
               <TableRow className="bg-muted/50">
-                <TableCell colSpan={2} className="text-sm font-semibold py-1.5">EFT Clearing</TableCell>
+                <TableCell colSpan={2} className="text-sm font-semibold py-1.5 pl-4">EFT Clearing</TableCell>
               </TableRow>
               {eftClearing.items.map((r) => (
                 <TableRow key={r.description}>
-                  <TableCell className="text-sm py-1.5 pl-6">{r.description}</TableCell>
+                  <TableCell className="text-sm py-1.5 pl-8">{r.description}</TableCell>
                   <TableCell className="text-right py-1.5">
                     <CurrencyDisplay value={r.amount} />
                   </TableCell>
                 </TableRow>
               ))}
               <TableRow className="bg-secondary">
-                <TableCell className="text-sm font-semibold py-1.5">Total EFT Clearing</TableCell>
+                <TableCell className="text-sm font-semibold py-1.5 pl-4">Total EFT Clearing</TableCell>
                 <TableCell className="text-right py-1.5">
                   <CurrencyDisplay value={eftClearing.total} highlight />
                 </TableCell>
               </TableRow>
 
-              {/* Trade & Fuel Creditors */}
+              {/* Total Current Assets */}
+              <TableRow className="bg-primary/10 border-t-2">
+                <TableCell className="text-sm font-bold py-2">Total Current Assets</TableCell>
+                <TableCell className="text-right py-2">
+                  <CurrencyDisplay value={totalCurrentAssets} highlight />
+                </TableCell>
+              </TableRow>
+
+              {/* Current Liabilities header */}
+              <TableRow className="bg-destructive/10">
+                <TableCell colSpan={2} className="text-sm font-bold py-2">Current Liabilities</TableCell>
+              </TableRow>
+
+              {/* Creditors */}
               <TableRow className="bg-muted/50">
-                <TableCell colSpan={2} className="text-sm font-semibold py-1.5">Creditors</TableCell>
+                <TableCell colSpan={2} className="text-sm font-semibold py-1.5 pl-4">Creditors</TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="text-sm py-1.5 pl-6">Trade Creditors</TableCell>
+                <TableCell className="text-sm py-1.5 pl-8">Trade Creditors</TableCell>
                 <TableCell className="text-right py-1.5">
                   <CurrencyDisplay value={creditors.tradeTotal} />
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="text-sm py-1.5 pl-6">Fuel Creditors</TableCell>
+                <TableCell className="text-sm py-1.5 pl-8">Fuel Creditors</TableCell>
                 <TableCell className="text-right py-1.5">
                   <CurrencyDisplay value={creditors.fuelTotal} />
                 </TableCell>
               </TableRow>
               <TableRow className="bg-secondary">
-                <TableCell className="text-sm font-semibold py-1.5">Total Creditors</TableCell>
+                <TableCell className="text-sm font-semibold py-1.5 pl-4">Total Creditors</TableCell>
                 <TableCell className="text-right py-1.5">
-                  <CurrencyDisplay value={creditors.tradeTotal + creditors.fuelTotal} highlight />
+                  <CurrencyDisplay value={totalCurrentLiabilities} highlight />
+                </TableCell>
+              </TableRow>
+
+              {/* Total Current Liabilities */}
+              <TableRow className="bg-destructive/10 border-t-2">
+                <TableCell className="text-sm font-bold py-2">Total Current Liabilities</TableCell>
+                <TableCell className="text-right py-2">
+                  <CurrencyDisplay value={totalCurrentLiabilities} highlight />
                 </TableCell>
               </TableRow>
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell className="font-semibold text-sm">Balance Sheet Total</TableCell>
+                <TableCell className="font-semibold text-sm">Net Assets (Assets − Liabilities)</TableCell>
                 <TableCell className="text-right">
-                  <CurrencyDisplay value={balanceSheetTotal} highlight />
+                  <CurrencyDisplay value={netBalanceSheet} highlight />
                 </TableCell>
               </TableRow>
             </TableFooter>
