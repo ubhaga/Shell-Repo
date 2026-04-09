@@ -15,6 +15,7 @@ import { CreditorsRecon } from '@/components/recons/CreditorsRecon';
 import { AirtimeRecon } from '@/components/recons/AirtimeRecon';
 import { CashRecon } from '@/components/recons/CashRecon';
 import { OtherAdjustmentsRecon } from '@/components/recons/OtherAdjustmentsRecon';
+import { DebtorsRecon } from '@/components/recons/DebtorsRecon';
 
 export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'reports' | 'recons'; onNavigateToDate?: (date: string) => void }) {
   const { cashups, managerEntries } = useCashupStore();
