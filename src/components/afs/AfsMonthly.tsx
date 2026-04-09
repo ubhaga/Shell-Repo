@@ -468,14 +468,9 @@ export function AfsMonthly({ selectedDate }: AfsMonthlyProps) {
     return { tradeTotal, fuelTotal };
   }, [month, managerEntries, bankLines, creditorOBs, eftSuppliers]);
 
-  // Combine balance sheet items
-  const balanceSheetItems = [
-    ...shiftClearing,
-    ...eftClearing.items,
-    { description: "Trade Creditors", amount: creditors.tradeTotal },
-    { description: "Fuel Creditors", amount: creditors.fuelTotal },
-  ];
-  const balanceSheetTotal = balanceSheetItems.reduce((s, r) => s + r.amount, 0);
+  const totalCurrentAssets = shiftClearing.reduce((s, r) => s + r.amount, 0) + eftClearing.total;
+  const totalCurrentLiabilities = creditors.tradeTotal + creditors.fuelTotal;
+  const netBalanceSheet = totalCurrentAssets - totalCurrentLiabilities;
 
   return (
     <div className="space-y-6">
