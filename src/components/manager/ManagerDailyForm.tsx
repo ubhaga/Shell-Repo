@@ -207,9 +207,10 @@ const blankEntry = (date: string): Omit<ManagerDailyEntry, "id"> => ({
 
 interface Props {
   selectedDate: string;
+  onDateChange?: (date: string) => void;
 }
 
-export function ManagerDailyForm({ selectedDate }: Props) {
+export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   const { getManagerEntryByDate, addManagerEntry, updateManagerEntry, getCashupByDate, managerEntries } =
     useCashupStore();
   const {

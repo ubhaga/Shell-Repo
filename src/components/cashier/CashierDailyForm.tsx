@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Trash2, Save, CheckCircle, AlertCircle, Lock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, addDays, subDays, parseISO } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const blankShopShift = (): DailyCashup["shop"] => ({
@@ -68,6 +68,7 @@ const blankOptShift = (): DailyCashup["opt"] => ({
 
 interface Props {
   selectedDate: string;
+  onDateChange?: (date: string) => void;
 }
 
 // Header row for two-column sections
@@ -80,7 +81,7 @@ function ColHeader({ left, right }: { left: string; right: string }) {
   );
 }
 
-export function CashierDailyForm({ selectedDate }: Props) {
+export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
   const { getCashupByDate, addCashup, updateCashup } = useCashupStore();
   const { payoutSuppliers, accounts: ACCOUNTS, cashierNames: CASHIER_NAMES } = useMasterDataStore();
   const SUPPLIERS = payoutSuppliers;
