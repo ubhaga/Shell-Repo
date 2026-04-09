@@ -631,9 +631,10 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
           <TabsTrigger value="bank">Bank</TabsTrigger>
         </TabsList>
         ) : (
-        <TabsList className="grid grid-cols-5 w-full max-w-3xl">
+        <TabsList className="grid grid-cols-6 w-full max-w-4xl">
           <TabsTrigger value="speedpoints">Speedpoints</TabsTrigger>
           <TabsTrigger value="creditors">Creditors</TabsTrigger>
+          <TabsTrigger value="debtors">Debtors</TabsTrigger>
           <TabsTrigger value="airtime">Airtime</TabsTrigger>
           <TabsTrigger value="cash">Cash CC & Coins</TabsTrigger>
           <TabsTrigger value="other-adj">Other Adj.</TabsTrigger>
