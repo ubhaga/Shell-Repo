@@ -335,16 +335,41 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
               </TableHeader>
               <TableBody>
                 {je2.payoutCategories.map((r) => (
-                  <TableRow key={r.category}>
-                    <TableCell className="text-sm py-1.5">{r.category}</TableCell>
-                    <TableCell className="text-right py-1.5">
-                      <CurrencyDisplay value={r.excl} />
-                    </TableCell>
-                    <TableCell className="text-right py-1.5">
-                      <CurrencyDisplay value={r.vat} />
-                    </TableCell>
-                    <TableCell className="text-right py-1.5" />
-                  </TableRow>
+                  <>
+                    <TableRow key={r.category} className="cursor-pointer hover:bg-muted/50" onClick={() => togglePayoutCat(r.category)}>
+                      <TableCell className="text-sm py-1.5">
+                        <span className="inline-flex items-center gap-1">
+                          {expandedPayoutCats.has(r.category) ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                          {r.category}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right py-1.5">
+                        <CurrencyDisplay value={r.excl} />
+                      </TableCell>
+                      <TableCell className="text-right py-1.5">
+                        <CurrencyDisplay value={r.vat} />
+                      </TableCell>
+                      <TableCell className="text-right py-1.5" />
+                    </TableRow>
+                    {expandedPayoutCats.has(r.category) && r.transactions.map((t, i) => (
+                      <TableRow
+                        key={`${r.category}-${i}`}
+                        className="cursor-pointer hover:bg-accent/50 bg-muted/30"
+                        onClick={() => onNavigateToDate?.(t.date)}
+                      >
+                        <TableCell className="text-xs py-1 pl-10 text-muted-foreground">{t.date} — {t.vendor}</TableCell>
+                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                          <CurrencyDisplay value={t.amount - t.amount * 15 / 115} />
+                        </TableCell>
+                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                          <CurrencyDisplay value={t.amount * 15 / 115} />
+                        </TableCell>
+                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                          <CurrencyDisplay value={t.amount} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
                 ))}
               </TableBody>
               <TableFooter>
@@ -378,16 +403,41 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
               </TableHeader>
               <TableBody>
                 {je2.eftCategories.map((r) => (
-                  <TableRow key={r.category}>
-                    <TableCell className="text-sm py-1.5">{r.category}</TableCell>
-                    <TableCell className="text-right py-1.5">
-                      <CurrencyDisplay value={r.excl} />
-                    </TableCell>
-                    <TableCell className="text-right py-1.5">
-                      <CurrencyDisplay value={r.vat} />
-                    </TableCell>
-                    <TableCell className="text-right py-1.5" />
-                  </TableRow>
+                  <>
+                    <TableRow key={r.category} className="cursor-pointer hover:bg-muted/50" onClick={() => toggleEftCat(r.category)}>
+                      <TableCell className="text-sm py-1.5">
+                        <span className="inline-flex items-center gap-1">
+                          {expandedEftCats.has(r.category) ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                          {r.category}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right py-1.5">
+                        <CurrencyDisplay value={r.excl} />
+                      </TableCell>
+                      <TableCell className="text-right py-1.5">
+                        <CurrencyDisplay value={r.vat} />
+                      </TableCell>
+                      <TableCell className="text-right py-1.5" />
+                    </TableRow>
+                    {expandedEftCats.has(r.category) && r.transactions.map((t, i) => (
+                      <TableRow
+                        key={`${r.category}-${i}`}
+                        className="cursor-pointer hover:bg-accent/50 bg-muted/30"
+                        onClick={() => onNavigateToDate?.(t.date)}
+                      >
+                        <TableCell className="text-xs py-1 pl-10 text-muted-foreground">{t.date} — {t.supplier}</TableCell>
+                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                          <CurrencyDisplay value={t.inclusive - t.vat} />
+                        </TableCell>
+                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                          <CurrencyDisplay value={t.vat} />
+                        </TableCell>
+                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                          <CurrencyDisplay value={t.inclusive} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
                 ))}
               </TableBody>
               <TableFooter>
