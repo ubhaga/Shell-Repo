@@ -365,10 +365,10 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                       >
                         <TableCell className="text-xs py-1 pl-10 text-muted-foreground">{t.date} — {t.vendor}</TableCell>
                         <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                          <CurrencyDisplay value={t.amount - t.amount * 15 / 115} />
+                          <CurrencyDisplay value={t.amount - t.vat} />
                         </TableCell>
                         <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                          <CurrencyDisplay value={t.amount * 15 / 115} />
+                          <CurrencyDisplay value={t.vat} />
                         </TableCell>
                         <TableCell className="text-right text-xs py-1 text-muted-foreground">
                           <CurrencyDisplay value={t.amount} />
