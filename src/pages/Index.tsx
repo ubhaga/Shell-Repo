@@ -127,7 +127,7 @@ export default function Index() {
             <Reports mode="reports" onNavigateToDate={(date) => { setSelectedDate(date); setActiveTab('manager-daily'); }} />
           </TabsContent>
           <TabsContent value="recons">
-            <Reports mode="recons" />
+            <Reports mode="recons" onNavigateToDate={(date) => { setSelectedDate(date); setActiveTab('cashier'); }} />
           </TabsContent>
           <TabsContent value="afs">
             <Tabs value={afsSubTab} onValueChange={setAfsSubTab}>

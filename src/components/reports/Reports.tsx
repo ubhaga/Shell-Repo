@@ -1458,7 +1458,7 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
 
         {/* Other Adjustments */}
         <TabsContent value="other-adj">
-          <OtherAdjustmentsRecon filterMonth={filterMonth} />
+          <OtherAdjustmentsRecon filterMonth={filterMonth} onNavigateToDate={onNavigateToDate} />
         </TabsContent>
 
         {/* Cash Connect & Coins */}
