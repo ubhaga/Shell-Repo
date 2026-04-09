@@ -93,8 +93,7 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
       const shopTotalTakings = shopNetSales - shopPayoutsTotal - (c.shop.lottoPayouts ?? 0) + shopTotalReceipts;
       const cashConnectTotal = (c.shop.cashDepositedBanking ?? 0) + (c.shop.easyPay ?? 0) + (c.shop.coins ?? 0);
       const shopSpTotal = (c.shop.speedpoints ?? []).reduce((s, sp) => s + sp.shopAmount, 0);
-      const shopSection8 = otherAdj + (c.shop.returns_mop ?? 0) + (c.shop.returnsNotCaptured ?? 0) + (c.shop.attendantShortOver ?? 0);
-      const shopDiff = shopTotalTakings - cashConnectTotal - shopSpTotal - shopAccTotal - shopSection8;
+      const shopDiff = shopTotalTakings - cashConnectTotal - shopSpTotal - shopAccTotal - section8Total;
       const optNetSales = (c.opt.income ?? 0) - (c.opt.returns ?? 0);
       const optSpTotal = (c.opt.speedpoints ?? []).reduce((s, sp) => s + sp.optAmount, 0);
       const optDiff = optNetSales - optSpTotal - optAccTotal;
