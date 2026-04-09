@@ -105,13 +105,14 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
     credits.push({ description: "Prov for Lotto", amount: totalLottoReceipts - totalLottoPayouts });
 
     // --- Debits ---
+    credits.push({ description: "Debtors Received on Account", amount: totalAccounts });
+
     const debits: { description: string; amount: number }[] = [
       { description: "Payouts", amount: totalPayouts },
       { description: "Shift Clearing", amount: totalCashDepositedBanking },
       { description: "Petty Cash", amount: totalCoins },
       { description: "EFT Clearing", amount: totalSpeedpointsExclVPlus },
       { description: "V Plus", amount: totalVPlus },
-      { description: "Accounts", amount: totalAccounts },
       { description: "Prov for Flash (EasyPay MOP)", amount: totalEasypayMop },
     ];
 
