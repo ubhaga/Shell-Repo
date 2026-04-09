@@ -1305,65 +1305,34 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
                       <TableCell className="text-right"><CurrencyDisplay value={invoiceVatTotal} /></TableCell>
                     </TableRow>
 
-                    {/* Summary by Vendor — Payouts */}
+                    {/* Summary by Category — EFTs */}
                     {(() => {
-                      const payoutLines = invoiceReport.filter(r => r.type === 'Payout');
                       const eftLines = invoiceReport.filter(r => r.type === 'EFT');
-                      const summarise = (lines: typeof invoiceReport) => {
-                        const map: Record<string, { incl: number; vat: number }> = {};
-                        lines.forEach(r => {
-                          const key = r.supplier || 'Unknown';
-                          if (!map[key]) map[key] = { incl: 0, vat: 0 };
-                          map[key].incl += r.inclusive;
-                          map[key].vat += r.vat;
-                        });
-                        return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0])).map(([vendor, v]) => ({
-                          vendor, incl: v.incl, vat: v.vat, excl: v.incl - v.vat,
-                        }));
-                      };
-                      const payoutSummary = summarise(payoutLines);
-                      const eftSummary = summarise(eftLines);
-                      const payoutTotals = payoutSummary.reduce((a, r) => ({ incl: a.incl + r.incl, vat: a.vat + r.vat, excl: a.excl + r.excl }), { incl: 0, vat: 0, excl: 0 });
-                      const eftTotals = eftSummary.reduce((a, r) => ({ incl: a.incl + r.incl, vat: a.vat + r.vat, excl: a.excl + r.excl }), { incl: 0, vat: 0, excl: 0 });
+                      const catMap: Record<string, { incl: number; vat: number }> = {};
+                      eftLines.forEach(r => {
+                        const key = r.category || 'Uncategorised';
+                        if (!catMap[key]) catMap[key] = { incl: 0, vat: 0 };
+                        catMap[key].incl += r.inclusive;
+                        catMap[key].vat += r.vat;
+                      });
+                      const catSummary = Object.entries(catMap).sort((a, b) => a[0].localeCompare(b[0])).map(([category, v]) => ({
+                        category, incl: v.incl, vat: v.vat, excl: v.incl - v.vat,
+                      }));
+                      const catTotals = catSummary.reduce((a, r) => ({ incl: a.incl + r.incl, vat: a.vat + r.vat, excl: a.excl + r.excl }), { incl: 0, vat: 0, excl: 0 });
 
                       return (
                         <>
-                          <TableRow><TableCell colSpan={7} className="pt-6 pb-1"><span className="font-semibold text-sm">Summary by Vendor — Payouts</span></TableCell></TableRow>
+                          <TableRow><TableCell colSpan={7} className="pt-6 pb-1"><span className="font-semibold text-sm">Summary by Category — EFTs</span></TableCell></TableRow>
                           <TableRow className="bg-muted/30">
-                            <TableCell colSpan={3} className="font-medium text-xs text-muted-foreground">Vendor</TableCell>
+                            <TableCell colSpan={3} className="font-medium text-xs text-muted-foreground">Category</TableCell>
                             <TableCell className="text-right font-medium text-xs text-muted-foreground">Incl. Amount</TableCell>
                             <TableCell className="text-right font-medium text-xs text-muted-foreground">VAT</TableCell>
                             <TableCell className="text-right font-medium text-xs text-muted-foreground">Excl. Amount</TableCell>
                             <TableCell />
                           </TableRow>
-                          {payoutSummary.map((r, i) => (
-                            <TableRow key={`pv-${i}`}>
-                              <TableCell colSpan={3} className="text-sm">{r.vendor}</TableCell>
-                              <TableCell className="text-right"><CurrencyDisplay value={r.incl} /></TableCell>
-                              <TableCell className="text-right"><CurrencyDisplay value={r.vat} /></TableCell>
-                              <TableCell className="text-right"><CurrencyDisplay value={r.excl} /></TableCell>
-                              <TableCell />
-                            </TableRow>
-                          ))}
-                          <TableRow className="bg-secondary font-semibold">
-                            <TableCell colSpan={3}>Payouts Total</TableCell>
-                            <TableCell className="text-right"><CurrencyDisplay value={payoutTotals.incl} highlight /></TableCell>
-                            <TableCell className="text-right"><CurrencyDisplay value={payoutTotals.vat} /></TableCell>
-                            <TableCell className="text-right"><CurrencyDisplay value={payoutTotals.excl} /></TableCell>
-                            <TableCell />
-                          </TableRow>
-
-                          <TableRow><TableCell colSpan={7} className="pt-6 pb-1"><span className="font-semibold text-sm">Summary by Vendor — EFTs</span></TableCell></TableRow>
-                          <TableRow className="bg-muted/30">
-                            <TableCell colSpan={3} className="font-medium text-xs text-muted-foreground">Vendor</TableCell>
-                            <TableCell className="text-right font-medium text-xs text-muted-foreground">Incl. Amount</TableCell>
-                            <TableCell className="text-right font-medium text-xs text-muted-foreground">VAT</TableCell>
-                            <TableCell className="text-right font-medium text-xs text-muted-foreground">Excl. Amount</TableCell>
-                            <TableCell />
-                          </TableRow>
-                          {eftSummary.map((r, i) => (
-                            <TableRow key={`ev-${i}`}>
-                              <TableCell colSpan={3} className="text-sm">{r.vendor}</TableCell>
+                          {catSummary.map((r, i) => (
+                            <TableRow key={`ec-${i}`}>
+                              <TableCell colSpan={3} className="text-sm">{r.category}</TableCell>
                               <TableCell className="text-right"><CurrencyDisplay value={r.incl} /></TableCell>
                               <TableCell className="text-right"><CurrencyDisplay value={r.vat} /></TableCell>
                               <TableCell className="text-right"><CurrencyDisplay value={r.excl} /></TableCell>
@@ -1372,9 +1341,9 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
                           ))}
                           <TableRow className="bg-secondary font-semibold">
                             <TableCell colSpan={3}>EFTs Total</TableCell>
-                            <TableCell className="text-right"><CurrencyDisplay value={eftTotals.incl} highlight /></TableCell>
-                            <TableCell className="text-right"><CurrencyDisplay value={eftTotals.vat} /></TableCell>
-                            <TableCell className="text-right"><CurrencyDisplay value={eftTotals.excl} /></TableCell>
+                            <TableCell className="text-right"><CurrencyDisplay value={catTotals.incl} highlight /></TableCell>
+                            <TableCell className="text-right"><CurrencyDisplay value={catTotals.vat} /></TableCell>
+                            <TableCell className="text-right"><CurrencyDisplay value={catTotals.excl} /></TableCell>
                             <TableCell />
                           </TableRow>
                         </>
