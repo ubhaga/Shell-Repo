@@ -186,10 +186,10 @@ export function OtherAdjustmentsRecon({ filterMonth, onNavigateToDate }: Props) 
 
   return (
     <div className="space-y-4">
-      {/* Detail Table */}
+      {/* Active Items Table */}
       <div className="bg-card border rounded-lg overflow-hidden">
         <div className="px-4 py-2 border-b bg-muted/30">
-          <h3 className="font-semibold text-sm">Other Adjustments Recon — {filterMonth}</h3>
+          <h3 className="font-semibold text-sm">Items to Reconcile — {filterMonth}</h3>
         </div>
         <Table>
           <TableHeader>
@@ -202,45 +202,50 @@ export function OtherAdjustmentsRecon({ filterMonth, onNavigateToDate }: Props) 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {lines.length === 0 ? (
+            {activeLines.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                  No other adjustments for this month
+                  No items to reconcile for this month
                 </TableCell>
               </TableRow>
             ) : (
               <>
-                {lines.map((l, i) => (
-                  <TableRow key={i} className={l.isNetted ? 'bg-muted/30 opacity-70' : ''}>
+                {activeLines.map((l, i) => (
+                  <TableRow key={i}>
                     <TableCell className="text-sm">{formatDate(l.date)}</TableCell>
-                    <TableCell className="text-sm">{l.explanation}</TableCell>
+                    <TableCell className="text-sm">
+                      {onNavigateToDate ? (
+                        <button
+                          className="text-primary underline hover:text-primary/80 text-left"
+                          onClick={() => onNavigateToDate(l.date)}
+                        >
+                          {l.explanation}
+                        </button>
+                      ) : (
+                        l.explanation
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       <CurrencyDisplay value={l.amount} />
                     </TableCell>
                     <TableCell>
-                      {l.isNetted ? (
-                        <span className="text-xs text-muted-foreground italic">Netted</span>
-                      ) : (
-                        <Select
-                          value={l.category || '__none__'}
-                          onValueChange={(v) => handleCategoryChange(l.date, l.adjustmentId, v === '__none__' ? '' : v)}
-                        >
-                          <SelectTrigger className="h-7 text-xs">
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__none__">— Select —</SelectItem>
-                            {categories.map(cat => (
-                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
+                      <Select
+                        value={l.category || '__none__'}
+                        onValueChange={(v) => handleCategoryChange(l.date, l.adjustmentId, v === '__none__' ? '' : v)}
+                      >
+                        <SelectTrigger className="h-7 text-xs">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">— Select —</SelectItem>
+                          {categories.map(cat => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell className="text-center">
-                      {l.isNetted ? (
-                        <span className="text-xs bg-blue-100 text-blue-700 rounded px-1.5 py-0.5">Netted</span>
-                      ) : l.category ? (
+                      {l.category ? (
                         <span className="text-xs bg-green-100 text-green-700 rounded px-1.5 py-0.5">✓</span>
                       ) : (
                         <span className="text-xs bg-yellow-100 text-yellow-700 rounded px-1.5 py-0.5">?</span>
@@ -249,8 +254,8 @@ export function OtherAdjustmentsRecon({ filterMonth, onNavigateToDate }: Props) 
                   </TableRow>
                 ))}
                 <TableRow className="bg-secondary font-semibold">
-                  <TableCell colSpan={2}>TOTAL</TableCell>
-                  <TableCell className="text-right"><CurrencyDisplay value={total} highlight /></TableCell>
+                  <TableCell colSpan={2}>TOTAL (excl. netted)</TableCell>
+                  <TableCell className="text-right"><CurrencyDisplay value={nonNettedTotal} highlight /></TableCell>
                   <TableCell colSpan={2} />
                 </TableRow>
               </>
@@ -288,6 +293,48 @@ export function OtherAdjustmentsRecon({ filterMonth, onNavigateToDate }: Props) 
               <TableRow className="bg-secondary font-semibold">
                 <TableCell>NET TOTAL (excl. netted)</TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={nonNettedTotal} highlight /></TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {/* Netted Items Table */}
+      {nettedLines.length > 0 && (
+        <div className="bg-card border rounded-lg overflow-hidden opacity-80">
+          <div className="px-4 py-2 border-b bg-muted/30">
+            <h3 className="font-semibold text-sm text-muted-foreground">Netted Items (self-cancelling)</h3>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-24">Date</TableHead>
+                <TableHead>Explanation</TableHead>
+                <TableHead className="text-right w-28">Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {nettedLines.map((l, i) => (
+                <TableRow key={i} className="bg-muted/20">
+                  <TableCell className="text-sm">{formatDate(l.date)}</TableCell>
+                  <TableCell className="text-sm">
+                    {onNavigateToDate ? (
+                      <button
+                        className="text-primary underline hover:text-primary/80 text-left"
+                        onClick={() => onNavigateToDate(l.date)}
+                      >
+                        {l.explanation}
+                      </button>
+                    ) : (
+                      l.explanation
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right"><CurrencyDisplay value={l.amount} /></TableCell>
+                </TableRow>
+              ))}
+              <TableRow className="bg-secondary font-semibold">
+                <TableCell colSpan={2}>NETTED TOTAL</TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={nettedTotal} /></TableCell>
               </TableRow>
             </TableBody>
           </Table>
