@@ -53,6 +53,7 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
         if (r.type === "Blue Label") totalBlueLabel += r.amount;
         if (r.type === "Easypay") totalEasypayReceipts += r.amount;
         if (r.type === "Lotto Receipts") totalLottoReceipts += r.amount;
+        if (r.type === "Debtors Received on Account") totalDebtorsReceived += r.amount;
       }
       // Easypay MOP Cash
       totalEasypayMop += c.shop.easyPay ?? 0;
