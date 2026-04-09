@@ -16,7 +16,7 @@ const BANK_PAYMENT_RULES: { pattern: RegExp; account: string }[] = [
   { pattern: /ST TERESA/i, account: 'St Theresas' },
   { pattern: /OSIRIS.*LANCASTER|LANCASTER.*PHARMACY/i, account: 'Lancaster Pharmacy' },
   { pattern: /FNB OB.*HPT|HYDE PARK TOYOTA/i, account: 'Hyde Park Toyota' },
-  { pattern: /CR BP ZOO.*ISUZU/i, account: 'Isuzu bakie' },
+  { pattern: /CR BP ZOO.*ISUZU/i, account: 'Isuzu bakkie' },
   { pattern: /CR BP ZOO.*MAHINDRA|BP ZOO MAHINDRA/i, account: 'Mahindra' },
   { pattern: /CR BP ZOO.*LAKE.*DSL|BP ZOO LAKE DSL/i, account: 'Bp Zoolake' },
 ];
@@ -31,8 +31,10 @@ const DEBTOR_ACCOUNTS = [
   'Sayinile',
   'Red cross',
   'Umesh',
-  'Isuzu bakie',
+  'Isuzu bakkie',
   'Bp Zoolake',
+  'Bp Zoolake Account Customer',
+  'Shell Parkhurst',
   'House tech',
   'Moses bpzl',
 ];
