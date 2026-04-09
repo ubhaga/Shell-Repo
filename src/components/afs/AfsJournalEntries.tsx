@@ -264,6 +264,29 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     });
   };
 
+  // ── JE 3 — Debtors Writeoff ──
+  const je3 = useMemo(() => {
+    const monthlyCashups = cashups.filter((c) => c.month === month);
+    const writeoffAccounts = ["Generator", "Shop Expense"];
+    const debits: { description: string; amount: number }[] = [];
+
+    for (const accName of writeoffAccounts) {
+      let total = 0;
+      for (const c of monthlyCashups) {
+        for (const a of c.shop.accounts ?? []) {
+          if (a.name === accName) total += a.amount;
+        }
+        for (const a of c.opt.accounts ?? []) {
+          if (a.name === accName) total += a.amount;
+        }
+      }
+      debits.push({ description: accName, amount: total });
+    }
+
+    const totalDebits = debits.reduce((s, d) => s + d.amount, 0);
+    return { debits, totalDebits };
+  }, [month, cashups]);
+
   return (
     <div className="space-y-6">
       {/* JE 1 */}
@@ -498,6 +521,53 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
               </TableFooter>
             </Table>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* JE 3 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">JE 3 — Debtors Writeoff ({month})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Description</TableHead>
+                <TableHead className="text-xs text-right">Debit</TableHead>
+                <TableHead className="text-xs text-right">Credit</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {je3.debits.map((d) => (
+                <TableRow key={d.description}>
+                  <TableCell className="text-sm py-1.5">{d.description}</TableCell>
+                  <TableCell className="text-right py-1.5">
+                    <CurrencyDisplay value={d.amount} />
+                  </TableCell>
+                  <TableCell className="text-right py-1.5" />
+                </TableRow>
+              ))}
+              <TableRow>
+                <TableCell className="text-sm py-1.5">Debtors</TableCell>
+                <TableCell className="text-right py-1.5" />
+                <TableCell className="text-right py-1.5">
+                  <CurrencyDisplay value={je3.totalDebits} />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell className="font-semibold text-sm">Totals</TableCell>
+                <TableCell className="text-right">
+                  <CurrencyDisplay value={je3.totalDebits} highlight />
+                </TableCell>
+                <TableCell className="text-right">
+                  <CurrencyDisplay value={je3.totalDebits} highlight />
+                </TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
         </CardContent>
       </Card>
     </div>
