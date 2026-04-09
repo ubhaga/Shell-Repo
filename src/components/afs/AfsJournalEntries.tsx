@@ -41,6 +41,7 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
     let totalCashDepositedBanking = 0;
     let totalCoins = 0;
     let totalSpeedpointsExclVPlus = 0;
+    let totalVPlus = 0;
     let totalAccounts = 0;
     let totalOtherAdjustments = 0;
     let totalCashierBalance = 0;
@@ -63,14 +64,18 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
       totalCashDepositedBanking += c.shop.cashDepositedBanking ?? 0;
       // Coins
       totalCoins += c.shop.coins ?? 0;
-      // Speedpoints (except V Plus) - shop + opt amounts
+      // Speedpoints - separate V Plus from others
       for (const sp of c.shop.speedpoints ?? []) {
-        if (sp.terminal !== "V Plus") {
+        if (sp.terminal === "V Plus") {
+          totalVPlus += (sp.shopAmount ?? 0) + (sp.optAmount ?? 0);
+        } else {
           totalSpeedpointsExclVPlus += (sp.shopAmount ?? 0) + (sp.optAmount ?? 0);
         }
       }
       for (const sp of c.opt.speedpoints ?? []) {
-        if (sp.terminal !== "V Plus") {
+        if (sp.terminal === "V Plus") {
+          totalVPlus += (sp.optAmount ?? 0);
+        } else {
           totalSpeedpointsExclVPlus += (sp.optAmount ?? 0);
         }
       }
@@ -105,6 +110,7 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
       { description: "Shift Clearing", amount: totalCashDepositedBanking },
       { description: "Petty Cash", amount: totalCoins },
       { description: "EFT Clearing", amount: totalSpeedpointsExclVPlus },
+      { description: "V Plus", amount: totalVPlus },
       { description: "Accounts", amount: totalAccounts },
       { description: "Prov for Flash (EasyPay MOP)", amount: totalEasypayMop },
     ];
