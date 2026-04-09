@@ -240,6 +240,24 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     return { payoutCategories, payoutTotals, eftCategories, eftTotals };
   }, [month, cashups, managerEntries]);
 
+  const [expandedPayoutCats, setExpandedPayoutCats] = useState<Set<string>>(new Set());
+  const [expandedEftCats, setExpandedEftCats] = useState<Set<string>>(new Set());
+
+  const togglePayoutCat = (cat: string) => {
+    setExpandedPayoutCats((prev) => {
+      const next = new Set(prev);
+      next.has(cat) ? next.delete(cat) : next.add(cat);
+      return next;
+    });
+  };
+  const toggleEftCat = (cat: string) => {
+    setExpandedEftCats((prev) => {
+      const next = new Set(prev);
+      next.has(cat) ? next.delete(cat) : next.add(cat);
+      return next;
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* JE 1 */}
