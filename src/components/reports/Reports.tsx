@@ -1407,6 +1407,11 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
           <CreditorsRecon filterMonth={filterMonth} />
         </TabsContent>
 
+        {/* Debtors */}
+        <TabsContent value="debtors">
+          <DebtorsRecon filterMonth={filterMonth} />
+        </TabsContent>
+
         {/* Airtime */}
         <TabsContent value="airtime">
           <AirtimeRecon filterMonth={filterMonth} />
