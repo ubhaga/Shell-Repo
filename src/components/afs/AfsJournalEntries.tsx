@@ -523,6 +523,53 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
           </div>
         </CardContent>
       </Card>
+
+      {/* JE 3 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">JE 3 — Debtors Writeoff ({month})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Description</TableHead>
+                <TableHead className="text-xs text-right">Debit</TableHead>
+                <TableHead className="text-xs text-right">Credit</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {je3.debits.map((d) => (
+                <TableRow key={d.description}>
+                  <TableCell className="text-sm py-1.5">{d.description}</TableCell>
+                  <TableCell className="text-right py-1.5">
+                    <CurrencyDisplay value={d.amount} />
+                  </TableCell>
+                  <TableCell className="text-right py-1.5" />
+                </TableRow>
+              ))}
+              <TableRow>
+                <TableCell className="text-sm py-1.5">Debtors</TableCell>
+                <TableCell className="text-right py-1.5" />
+                <TableCell className="text-right py-1.5">
+                  <CurrencyDisplay value={je3.totalDebits} />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell className="font-semibold text-sm">Totals</TableCell>
+                <TableCell className="text-right">
+                  <CurrencyDisplay value={je3.totalDebits} highlight />
+                </TableCell>
+                <TableCell className="text-right">
+                  <CurrencyDisplay value={je3.totalDebits} highlight />
+                </TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
