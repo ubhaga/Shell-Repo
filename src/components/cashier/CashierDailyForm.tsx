@@ -621,6 +621,10 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
             <CurrencyDisplay value={optSpeedpointTotal} highlight />
           </div>
         </div>
+        <div className="flex items-center justify-between px-3 py-1.5 bg-primary/10 font-bold text-sm border-t">
+          <span>Combined Speedpoints Total</span>
+          <CurrencyDisplay value={shopSpeedpointTotal + optSpeedpointTotal} highlight />
+        </div>
       </div>
 
       {/* ─── SECTION 7: MOP ACCOUNT (Shop only) ─── */}
