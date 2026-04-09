@@ -105,6 +105,7 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
     credits.push({ description: "Prov Blue Label", amount: totalBlueLabel });
     credits.push({ description: "Prov for Flash (Receipts)", amount: totalEasypayReceipts });
     credits.push({ description: "Prov for Lotto", amount: totalLottoReceipts - totalLottoPayouts });
+    credits.push({ description: "Debtors Received on Account", amount: totalDebtorsReceived });
 
     // --- Debits ---
     const debits: { description: string; amount: number }[] = [
