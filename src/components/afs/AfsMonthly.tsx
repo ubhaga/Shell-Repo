@@ -635,6 +635,14 @@ export function AfsMonthly({ selectedDate }: AfsMonthlyProps) {
                 </TableCell>
               </TableRow>
 
+              {/* Easypay (Debtor) */}
+              <TableRow>
+                <TableCell className="text-sm py-1.5 pl-4">Easypay (Debtor)</TableCell>
+                <TableCell className="text-right py-1.5">
+                  <CurrencyDisplay value={airtimeBalances.easypayClosing} />
+                </TableCell>
+              </TableRow>
+
               {/* Total Current Assets */}
               <TableRow className="bg-primary/10 border-t-2">
                 <TableCell className="text-sm font-bold py-2">Total Current Assets</TableCell>
@@ -667,7 +675,15 @@ export function AfsMonthly({ selectedDate }: AfsMonthlyProps) {
               <TableRow className="bg-secondary">
                 <TableCell className="text-sm font-semibold py-1.5 pl-4">Total Creditors</TableCell>
                 <TableCell className="text-right py-1.5">
-                  <CurrencyDisplay value={totalCurrentLiabilities} highlight />
+                  <CurrencyDisplay value={creditors.tradeTotal + creditors.fuelTotal} highlight />
+                </TableCell>
+              </TableRow>
+
+              {/* BLD Creditor */}
+              <TableRow>
+                <TableCell className="text-sm py-1.5 pl-4">BLD Creditor</TableCell>
+                <TableCell className="text-right py-1.5">
+                  <CurrencyDisplay value={Math.abs(airtimeBalances.bldClosing)} />
                 </TableCell>
               </TableRow>
 
