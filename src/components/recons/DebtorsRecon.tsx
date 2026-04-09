@@ -21,7 +21,7 @@ const BANK_PAYMENT_RULES: { pattern: RegExp; account: string }[] = [
   { pattern: /CR BP ZOO.*LAKE.*DSL|BP ZOO LAKE DSL/i, account: 'Bp Zoolake' },
 ];
 
-// The debtors we track (excluding Generator and Shop Expense which are JE3 writeoffs)
+// The debtors we track
 const DEBTOR_ACCOUNTS = [
   'Mahindra',
   'Lancaster Pharmacy',
@@ -37,9 +37,11 @@ const DEBTOR_ACCOUNTS = [
   'Shell Parkhurst',
   'House tech',
   'Moses bpzl',
+  'Generator',
+  'Shop Expense',
 ];
 
-// JE3 writeoff accounts — these are treated as adjustments (reducing debtor balance)
+// JE3 writeoff accounts — their purchases are also shown as adjustments (reducing closing balance)
 const JE3_WRITEOFF_ACCOUNTS = ['Generator', 'Shop Expense'];
 
 export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
