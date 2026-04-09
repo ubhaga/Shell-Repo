@@ -705,21 +705,6 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
             </Table>
             {payoutReport.length > 0 && (
               <div className="border-t p-4">
-                <h4 className="text-sm font-semibold mb-2">Summary by Vendor</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {Object.entries(
-                    payoutReport.reduce((acc, r) => { acc[r.vendor] = (acc[r.vendor] || 0) + r.amount; return acc; }, {} as Record<string, number>)
-                  ).sort((a, b) => b[1] - a[1]).map(([vendor, total]) => (
-                    <div key={vendor} className="flex justify-between text-sm bg-muted/30 rounded px-2 py-1">
-                      <span className="text-muted-foreground truncate mr-2">{vendor}</span>
-                      <CurrencyDisplay value={total} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {payoutReport.length > 0 && (
-              <div className="border-t p-4">
                 <h4 className="text-sm font-semibold mb-2">Summary by Category</h4>
                 <Table>
                   <TableHeader>
