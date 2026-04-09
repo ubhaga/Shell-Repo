@@ -23,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Save, CheckCircle, AlertCircle, Lock } from "lucide-react";
+import { Plus, Trash2, Save, CheckCircle, AlertCircle, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format, addDays, subDays, parseISO } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -293,8 +293,27 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
     );
   };
 
+  const goDay = (offset: number) => {
+    if (onDateChange) {
+      const d = addDays(parseISO(selectedDate), offset);
+      if (d >= parseISO("2026-01-01")) onDateChange(format(d, "yyyy-MM-dd"));
+    }
+  };
+
   return (
     <div className="space-y-3">
+      {/* Date navigation */}
+      {onDateChange && (
+        <div className="flex items-center justify-between bg-card border rounded-lg px-4 py-2">
+          <Button variant="ghost" size="sm" onClick={() => goDay(-1)} disabled={selectedDate <= "2026-01-01"}>
+            <ChevronLeft className="h-4 w-4" /> Previous Day
+          </Button>
+          <span className="text-sm font-semibold">{format(parseISO(selectedDate), "EEEE, dd MMMM yyyy")}</span>
+          <Button variant="ghost" size="sm" onClick={() => goDay(1)}>
+            Next Day <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
       {isLocked && (
         <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/40 rounded-lg text-destructive">
           <Lock className="h-5 w-5 shrink-0" />
