@@ -110,6 +110,7 @@ export function AfsJournalEntries({ selectedDate }: AfsJournalEntriesProps) {
       { description: "Shift Clearing", amount: totalCashDepositedBanking },
       { description: "Petty Cash", amount: totalCoins },
       { description: "EFT Clearing", amount: totalSpeedpointsExclVPlus },
+      { description: "V Plus", amount: totalVPlus },
       { description: "Accounts", amount: totalAccounts },
       { description: "Prov for Flash (EasyPay MOP)", amount: totalEasypayMop },
     ];
