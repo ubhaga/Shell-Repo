@@ -25,29 +25,22 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   const [editingOB, setEditingOB] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
-  const [prevMonthData, setPrevMonthData] = useState<{
-    bankLines: typeof bankLines;
-    obMap: Record<string, number>;
-    prevMonth: string;
-  } | null>(null);
+  const [prevMonthBankLines, setPrevMonthBankLines] = useState<typeof bankLines>([]);
+  const [prevMonthOB, setPrevMonthOB] = useState<Record<string, number>>({});
+  const [prevMonth, setPrevMonth] = useState('');
+
+  const isFirstMonth = filterMonth <= '2026-03';
 
   const loadData = useCallback(async () => {
     const curDate = new Date(filterMonth + '-01');
     const prevDate = new Date(curDate);
     prevDate.setMonth(prevDate.getMonth() - 1);
-    const prevMonth = format(prevDate, 'yyyy-MM');
-    const isFirstMonth = filterMonth <= '2026-03';
+    const pm = format(prevDate, 'yyyy-MM');
+    setPrevMonth(pm);
 
-    const [bankRes, obRes, ...(isFirstMonth ? [] as any[] : [
-      await supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', prevMonth),
-      await supabase.from('creditor_opening_balances').select('*').eq('month', prevMonth),
-    ])] = await Promise.all([
+    const [bankRes, obRes] = await Promise.all([
       supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth),
       supabase.from('creditor_opening_balances').select('*').eq('month', filterMonth),
-      ...(!isFirstMonth ? [
-        supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', prevMonth),
-        supabase.from('creditor_opening_balances').select('*').eq('month', prevMonth),
-      ] : []),
     ]);
 
     setBankLines((bankRes.data ?? []) as typeof bankLines);
@@ -58,19 +51,20 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     setOpeningBalances(obMap);
     setEditingOB({});
 
-    if (!isFirstMonth) {
-      const allResults = await Promise.all([
-        supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', prevMonth),
-        supabase.from('creditor_opening_balances').select('*').eq('month', prevMonth),
+    if (filterMonth > '2026-03') {
+      const [prevBankRes, prevObRes] = await Promise.all([
+        supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', pm),
+        supabase.from('creditor_opening_balances').select('*').eq('month', pm),
       ]);
-      const prevBankData = (allResults[0].data ?? []) as typeof bankLines;
+      setPrevMonthBankLines((prevBankRes.data ?? []) as typeof bankLines);
       const prevObMap: Record<string, number> = {};
-      ((allResults[1].data ?? []) as { supplier: string; amount: number }[]).forEach(r => {
+      ((prevObRes.data ?? []) as { supplier: string; amount: number }[]).forEach(r => {
         prevObMap[r.supplier] = Number(r.amount);
       });
-      setPrevMonthData({ bankLines: prevBankData, obMap: prevObMap, prevMonth });
+      setPrevMonthOB(prevObMap);
     } else {
-      setPrevMonthData(null);
+      setPrevMonthBankLines([]);
+      setPrevMonthOB({});
     }
   }, [filterMonth]);
 
