@@ -4,8 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { CurrencyDisplay, CurrencyInput } from '@/components/ui/CashupUI';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { Save, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { downloadCsv } from '@/lib/csvExport';
 
 interface DebtorsReconProps {
   filterMonth: string;
@@ -184,11 +185,22 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     <div className="bg-card border rounded-lg overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
         <h3 className="font-semibold text-sm">Debtors Reconciliation — {filterMonth}</h3>
-        {isFirstMonth && hasEdits && (
-          <Button size="sm" variant="outline" onClick={handleSaveOB} disabled={saving}>
-            <Save className="h-3.5 w-3.5 mr-1" />{saving ? 'Saving...' : 'Save OB'}
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => {
+            downloadCsv(
+              ['Debtor', 'Opening Balance', 'Purchases', 'Payments', 'Adjustments (JE3)', 'Closing Balance'],
+              rows.map(r => [r.name, r.ob, r.purchase, r.bankPmt, r.adjustment, r.closing]),
+              `debtors-recon-${filterMonth}.csv`
+            );
+          }}>
+            <Download className="h-3.5 w-3.5 mr-1" />Export CSV
           </Button>
-        )}
+          {isFirstMonth && hasEdits && (
+            <Button size="sm" variant="outline" onClick={handleSaveOB} disabled={saving}>
+              <Save className="h-3.5 w-3.5 mr-1" />{saving ? 'Saving...' : 'Save OB'}
+            </Button>
+          )}
+        </div>
       </div>
       <Table>
         <TableHeader>
