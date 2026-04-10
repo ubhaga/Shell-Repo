@@ -181,6 +181,46 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     supplierWeekly[supplier] = weeks;
   });
 
+  // Compute effective opening balances: for April+, use previous month closing as default
+  const effectiveOB = useMemo(() => {
+    const result: Record<string, number> = { ...openingBalances };
+
+    if (!isFirstMonth && prevMonth) {
+      const prevMonthManagers = managerEntries.filter(e => e.date.startsWith(prevMonth));
+
+      [...suppliers, ...fuelSuppliers].forEach(supplier => {
+        // If there's already a manually-entered OB for this month, keep it
+        if (openingBalances[supplier] !== undefined) return;
+
+        // Compute previous month closing: OB + invoices - payments
+        const prevOB = prevMonthOB[supplier] ?? 0;
+        let totalInv = 0;
+        let totalPay = 0;
+
+        // Previous month invoices
+        prevMonthManagers.forEach(entry => {
+          entry.eftInvoices.forEach(inv => {
+            if (inv.supplier === supplier) totalInv += inv.inclusive;
+          });
+        });
+
+        // Previous month payments from bank
+        prevMonthBankLines.forEach(line => {
+          const matched = matchSupplier(line.description);
+          if (matched !== supplier) return;
+          totalPay += Math.abs(line.amount);
+        });
+
+        const closing = prevOB + totalInv - totalPay;
+        if (closing !== 0) {
+          result[supplier] = closing;
+        }
+      });
+    }
+
+    return result;
+  }, [openingBalances, isFirstMonth, prevMonth, prevMonthOB, prevMonthBankLines, managerEntries, suppliers, fuelSuppliers]);
+
   // Save opening balances
   const handleSaveOB = async () => {
     setSaving(true);
