@@ -254,7 +254,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   const renderTable = (title: string, supplierList: string[]) => {
     const activeSuppliers = supplierList.filter(s => {
       const weeks = supplierWeekly[s];
-      const ob = openingBalances[s] ?? 0;
+      const ob = effectiveOB[s] ?? 0;
       return ob !== 0 || weeks.some(w => w.invoices > 0 || w.payments > 0);
     });
     const inactiveSuppliers = supplierList.filter(s => !activeSuppliers.includes(s));
@@ -264,7 +264,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
       activeSuppliers={activeSuppliers}
       inactiveSuppliers={inactiveSuppliers}
       supplierWeekly={supplierWeekly}
-      openingBalances={openingBalances}
+      openingBalances={effectiveOB}
       editingOB={editingOB}
       setEditingOB={setEditingOB}
       weekLabels={weekLabels}
