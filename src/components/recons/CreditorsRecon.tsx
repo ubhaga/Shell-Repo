@@ -25,19 +25,66 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   const [editingOB, setEditingOB] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
+  const [prevMonthClosing, setPrevMonthClosing] = useState<Record<string, number>>({});
+
   const loadData = useCallback(async () => {
-    const [bankRes, obRes] = await Promise.all([
+    // Compute previous month string
+    const curDate = new Date(filterMonth + '-01');
+    const prevDate = new Date(curDate);
+    prevDate.setMonth(prevDate.getMonth() - 1);
+    const prevMonth = format(prevDate, 'yyyy-MM');
+    const isFirstMonth = filterMonth <= '2026-03';
+
+    const queries: Promise<any>[] = [
       supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth),
       supabase.from('creditor_opening_balances').select('*').eq('month', filterMonth),
-    ]);
+    ];
+
+    // For April+ load previous month data to compute carry-forward
+    if (!isFirstMonth) {
+      queries.push(
+        supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', prevMonth),
+        supabase.from('creditor_opening_balances').select('*').eq('month', prevMonth),
+      );
+    }
+
+    const results = await Promise.all(queries);
+    const bankRes = results[0];
+    const obRes = results[1];
+
     setBankLines((bankRes.data ?? []) as typeof bankLines);
     const obMap: Record<string, number> = {};
     ((obRes.data ?? []) as { supplier: string; amount: number }[]).forEach(r => {
       obMap[r.supplier] = Number(r.amount);
     });
+
+    // Compute previous month closing balances for carry-forward
+    if (!isFirstMonth) {
+      const prevBankLines = (results[2].data ?? []) as typeof bankLines;
+      const prevObMap: Record<string, number> = {};
+      ((results[3].data ?? []) as { supplier: string; amount: number }[]).forEach(r => {
+        prevObMap[r.supplier] = Number(r.amount);
+      });
+
+      // Previous month manager entries
+      const prevMonthManagers = managerEntries.filter(e => e.date.startsWith(prevMonth));
+
+      const closingMap: Record<string, number> = {};
+      // We'll compute this after suppliers are known – store raw data for now
+      setPrevMonthClosing({}); // reset
+
+      // Compute closing for each supplier using previous month data
+      // (done inline since we need supplier list which is computed below)
+      // Store prev data to compute after supplier list is ready
+      (window as any).__prevCreditorsData = { prevBankLines, prevObMap, prevMonthManagers };
+    } else {
+      setPrevMonthClosing({});
+      (window as any).__prevCreditorsData = null;
+    }
+
     setOpeningBalances(obMap);
     setEditingOB({});
-  }, [filterMonth]);
+  }, [filterMonth, managerEntries]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
