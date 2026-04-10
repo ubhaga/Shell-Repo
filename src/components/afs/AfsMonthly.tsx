@@ -468,6 +468,81 @@ export function AfsMonthly({ selectedDate }: AfsMonthlyProps) {
     return { tradeTotal, fuelTotal };
   }, [month, managerEntries, bankLines, creditorOBs, eftSuppliers]);
 
+  // ── Balance Sheet: Debtors (closing balance from Debtors Recon) ──
+  const debtorsClosing = useMemo(() => {
+    const DEBTOR_ACCOUNTS = [
+      'Mahindra', 'Lancaster Pharmacy', 'Hyde Park Toyota', 'Hltc', 'St Theresas',
+      'Sayinile', 'Red cross', 'Umesh', 'Isuzu bakkie', 'Bp Zoolake',
+      'Bp Zoolake Account Customer', 'Shell Parkhurst', 'House tech', 'Moses bpzl',
+      'Generator', 'Shop Expense',
+    ];
+    const JE3_WRITEOFF_ACCOUNTS = ['Generator', 'Shop Expense'];
+    const BANK_PAYMENT_RULES: { pattern: RegExp; account: string }[] = [
+      { pattern: /ST TERESA/i, account: 'St Theresas' },
+      { pattern: /OSIRIS.*LANCASTER|LANCASTER.*PHARMACY/i, account: 'Lancaster Pharmacy' },
+      { pattern: /FNB OB.*HPT|HYDE PARK TOYOTA/i, account: 'Hyde Park Toyota' },
+      { pattern: /CR BP ZOO.*ISUZU/i, account: 'Isuzu bakkie' },
+      { pattern: /CR BP ZOO.*MAHINDRA|BP ZOO MAHINDRA/i, account: 'Mahindra' },
+      { pattern: /CR BP ZOO.*LAKE.*DSL|BP ZOO LAKE DSL/i, account: 'Bp Zoolake' },
+    ];
+
+    const monthlyCashups = cashups.filter(c => c.month === month);
+
+    // Opening balances from creditor_opening_balances (debtor: prefix)
+    const obMap: Record<string, number> = {};
+    Object.entries(creditorOBs).forEach(([key, val]) => {
+      if (key.startsWith('debtor:')) obMap[key.replace('debtor:', '')] = val;
+    });
+
+    // Purchases from cashups
+    const purchases: Record<string, number> = {};
+    DEBTOR_ACCOUNTS.forEach(a => { purchases[a] = 0; });
+    for (const c of monthlyCashups) {
+      for (const a of c.shop.accounts ?? []) {
+        if (purchases[a.name] !== undefined) purchases[a.name] += a.amount;
+      }
+      for (const a of c.opt.accounts ?? []) {
+        if (purchases[a.name] !== undefined) purchases[a.name] += a.amount;
+      }
+    }
+
+    // Bank payments
+    const bankPmts: Record<string, number> = {};
+    DEBTOR_ACCOUNTS.forEach(a => { bankPmts[a] = 0; });
+    for (const line of bankLines) {
+      if (line.amount <= 0) continue;
+      for (const rule of BANK_PAYMENT_RULES) {
+        if (rule.pattern.test(line.description)) {
+          bankPmts[rule.account] = (bankPmts[rule.account] || 0) + line.amount;
+          break;
+        }
+      }
+    }
+
+    // ROA payments
+    for (const c of monthlyCashups) {
+      for (const r of c.shop.receipts ?? []) {
+        if (r.type === 'Debtors Received on Account ROA' && r.amount > 0) {
+          const ref = (r.seqNo || '').trim();
+          const matched = DEBTOR_ACCOUNTS.find(a => a.toLowerCase() === ref.toLowerCase());
+          if (matched) bankPmts[matched] = (bankPmts[matched] || 0) + r.amount;
+        }
+      }
+    }
+
+    // Net closing balance
+    let total = 0;
+    DEBTOR_ACCOUNTS.forEach(name => {
+      const ob = obMap[name] ?? 0;
+      const purchase = purchases[name] || 0;
+      const pmt = bankPmts[name] || 0;
+      const adj = JE3_WRITEOFF_ACCOUNTS.includes(name) ? purchase : 0;
+      total += ob + purchase - pmt - adj;
+    });
+
+    return total;
+  }, [month, cashups, bankLines, creditorOBs]);
+
   // ── Balance Sheet: BLD Creditor & Easypay Debtor (from Airtime Recon logic) ──
   const airtimeBalances = useMemo(() => {
     const BLD_OPENING = -11906.34;
@@ -510,7 +585,7 @@ export function AfsMonthly({ selectedDate }: AfsMonthlyProps) {
     return { bldClosing, easypayClosing };
   }, [month, cashups, bankLines]);
 
-  const totalCurrentAssets = shiftClearing.reduce((s, r) => s + r.amount, 0) + eftClearing.total + airtimeBalances.easypayClosing;
+  const totalCurrentAssets = shiftClearing.reduce((s, r) => s + r.amount, 0) + eftClearing.total + airtimeBalances.easypayClosing + debtorsClosing;
   const totalCurrentLiabilities = creditors.tradeTotal + creditors.fuelTotal + Math.abs(airtimeBalances.bldClosing);
   const netBalanceSheet = totalCurrentAssets - totalCurrentLiabilities;
 
@@ -640,6 +715,14 @@ export function AfsMonthly({ selectedDate }: AfsMonthlyProps) {
                 <TableCell className="text-sm py-1.5 pl-4">Easypay (Debtor)</TableCell>
                 <TableCell className="text-right py-1.5">
                   <CurrencyDisplay value={airtimeBalances.easypayClosing} />
+                </TableCell>
+              </TableRow>
+
+              {/* Debtors */}
+              <TableRow>
+                <TableCell className="text-sm py-1.5 pl-4">Debtors</TableCell>
+                <TableCell className="text-right py-1.5">
+                  <CurrencyDisplay value={debtorsClosing} />
                 </TableCell>
               </TableRow>
 
