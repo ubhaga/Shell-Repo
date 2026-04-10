@@ -16,6 +16,7 @@ interface CreditorsTableProps {
   setEditingOB: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   weekLabels: string[];
   sundays: Date[];
+  readOnlyOB?: boolean;
 }
 
 export function CreditorsTable({
@@ -28,6 +29,7 @@ export function CreditorsTable({
   setEditingOB,
   weekLabels,
   sundays,
+  readOnlyOB = false,
 }: CreditorsTableProps) {
   const [showInactive, setShowInactive] = useState(false);
   const allSuppliers = [...activeSuppliers, ...(showInactive ? inactiveSuppliers : [])];
@@ -45,12 +47,16 @@ export function CreditorsTable({
           {supplier}
         </TableCell>
         <TableCell className="text-right p-1">
-          <Input
-            type="number"
-            className="w-24 text-right text-xs h-7"
-            value={editingOB[supplier] ?? (openingBalances[supplier] ?? '')}
-            onChange={e => setEditingOB(prev => ({ ...prev, [supplier]: e.target.value }))}
-          />
+          {readOnlyOB ? (
+            <span className="text-xs px-2"><CurrencyDisplay value={openingBalances[supplier] ?? 0} /></span>
+          ) : (
+            <Input
+              type="number"
+              className="w-24 text-right text-xs h-7"
+              value={editingOB[supplier] ?? (openingBalances[supplier] ?? '')}
+              onChange={e => setEditingOB(prev => ({ ...prev, [supplier]: e.target.value }))}
+            />
+          )}
         </TableCell>
         {weeks.map((week, wi) => {
           runningBalance = runningBalance + week.invoices - week.payments;
