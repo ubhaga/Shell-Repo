@@ -6,10 +6,11 @@ import { CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { Save, Download } from 'lucide-react';
 import { CreditorsTable } from './CreditorsTable';
 import { format, startOfMonth, endOfMonth, addDays, getDay, parse } from 'date-fns';
 import { toast } from 'sonner';
+import { downloadCsv } from '@/lib/csvExport';
 
 interface CreditorsReconProps {
   filterMonth: string;
@@ -275,7 +276,24 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-2">
+        <Button size="sm" variant="outline" onClick={() => {
+          const allSup = [...suppliers, ...fuelSuppliers];
+          const headers = ['Supplier', 'Opening Balance', ...weekLabels.flatMap(l => [`Invoices (${l})`, `Payments (${l})`, `Balance (${l})`])];
+          const csvRows = allSup.map(s => {
+            const ob = effectiveOB[s] ?? 0;
+            let bal = ob;
+            const weeks = supplierWeekly[s];
+            const weekCols = weeks.flatMap(w => {
+              bal = bal + w.invoices - w.payments;
+              return [w.invoices, w.payments, bal];
+            });
+            return [s, ob, ...weekCols] as (string | number)[];
+          });
+          downloadCsv(headers, csvRows, `creditors-recon-${filterMonth}.csv`);
+        }}>
+          <Download className="h-3.5 w-3.5 mr-1" />Export CSV
+        </Button>
         {hasEdits && (
           <Button size="sm" onClick={handleSaveOB} disabled={saving}>
             <Save className="h-3.5 w-3.5 mr-1" />Save Opening Balances

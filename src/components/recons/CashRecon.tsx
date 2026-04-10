@@ -3,8 +3,11 @@ import { useCashupStore } from '@/store/cashupStore';
 import { supabase } from '@/integrations/supabase/client';
 import { CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, addDays } from 'date-fns';
 import type { ManagerDailyEntry } from '@/types/cashup';
+import { downloadCsv } from '@/lib/csvExport';
 
 interface CashReconProps {
   filterMonth: string;
@@ -206,10 +209,19 @@ export function CashRecon({ filterMonth }: CashReconProps) {
     <div className="space-y-6">
       {/* Cash Connect Recon */}
       <div className="bg-card border rounded-lg overflow-hidden">
-        <div className="px-4 py-2 border-b bg-muted/30">
+        <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
           <h3 className="font-semibold text-sm">
             Cash Connect Reconciliation — {format(monthStart, 'MMMM yyyy')}
           </h3>
+          <Button size="sm" variant="outline" onClick={() => {
+            downloadCsv(
+              ['Date', 'CC Opening', 'CC Daily Cashup', 'CC Transfer In', 'CC Bag Closure', 'CC Closing', 'Bank Charges', 'Expected Banking', 'Bank Stmt', 'Outstanding'],
+              dailyRows.map(r => [r.date, r.ccOpening, r.ccDailyCashup, r.ccTransferIn, r.ccBagClosure, r.ccClosing, r.bankCharges, r.bankingExpected, r.bankActual, r.bankRunningBalance]),
+              `cash-connect-recon-${filterMonth}.csv`
+            );
+          }}>
+            <Download className="h-3.5 w-3.5 mr-1" />Export CSV
+          </Button>
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -335,10 +347,19 @@ export function CashRecon({ filterMonth }: CashReconProps) {
 
       {/* Coins Recon */}
       <div className="bg-card border rounded-lg overflow-hidden">
-        <div className="px-4 py-2 border-b bg-muted/30">
+        <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
           <h3 className="font-semibold text-sm">
             Coins Reconciliation — {format(monthStart, 'MMMM yyyy')}
           </h3>
+          <Button size="sm" variant="outline" onClick={() => {
+            downloadCsv(
+              ['Date', 'Opening', 'Daily Cashup', 'Bag Closure', 'Transfer Out', 'Closing'],
+              dailyRows.map(r => [r.date, r.coinsOpening, r.coinsDailyCashup, r.coinsBagClosure, r.coinsTransferOut, r.coinsClosing]),
+              `coins-recon-${filterMonth}.csv`
+            );
+          }}>
+            <Download className="h-3.5 w-3.5 mr-1" />Export CSV
+          </Button>
         </div>
         <div className="overflow-x-auto">
           <Table>

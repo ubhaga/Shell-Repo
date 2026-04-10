@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addDays } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import type { OtherAdjustment } from '@/types/cashup';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
+import { downloadCsv } from '@/lib/csvExport';
 
 interface Props {
   filterMonth: string;
@@ -188,8 +191,17 @@ export function OtherAdjustmentsRecon({ filterMonth, onNavigateToDate }: Props) 
     <div className="space-y-4">
       {/* Active Items Table */}
       <div className="bg-card border rounded-lg overflow-hidden">
-        <div className="px-4 py-2 border-b bg-muted/30">
+        <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
           <h3 className="font-semibold text-sm">Items to Reconcile — {filterMonth}</h3>
+          <Button size="sm" variant="outline" onClick={() => {
+            downloadCsv(
+              ['Date', 'Explanation', 'Amount', 'Category', 'Netted'],
+              lines.map(l => [formatDate(l.date), l.explanation, l.amount, l.category || '', l.isNetted ? 'Yes' : 'No']),
+              `other-adjustments-recon-${filterMonth}.csv`
+            );
+          }}>
+            <Download className="h-3.5 w-3.5 mr-1" />Export CSV
+          </Button>
         </div>
         <Table>
           <TableHeader>
