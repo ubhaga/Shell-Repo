@@ -16,6 +16,7 @@ interface CreditorsTableProps {
   setEditingOB: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   weekLabels: string[];
   sundays: Date[];
+  readOnlyOB?: boolean;
 }
 
 export function CreditorsTable({
