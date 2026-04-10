@@ -25,11 +25,24 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   const [editingOB, setEditingOB] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
+  const [prevMonthBankLines, setPrevMonthBankLines] = useState<typeof bankLines>([]);
+  const [prevMonthOB, setPrevMonthOB] = useState<Record<string, number>>({});
+  const [prevMonth, setPrevMonth] = useState('');
+
+  const isFirstMonth = filterMonth <= '2026-03';
+
   const loadData = useCallback(async () => {
+    const curDate = new Date(filterMonth + '-01');
+    const prevDate = new Date(curDate);
+    prevDate.setMonth(prevDate.getMonth() - 1);
+    const pm = format(prevDate, 'yyyy-MM');
+    setPrevMonth(pm);
+
     const [bankRes, obRes] = await Promise.all([
       supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth),
       supabase.from('creditor_opening_balances').select('*').eq('month', filterMonth),
     ]);
+
     setBankLines((bankRes.data ?? []) as typeof bankLines);
     const obMap: Record<string, number> = {};
     ((obRes.data ?? []) as { supplier: string; amount: number }[]).forEach(r => {
@@ -37,6 +50,22 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     });
     setOpeningBalances(obMap);
     setEditingOB({});
+
+    if (filterMonth > '2026-03') {
+      const [prevBankRes, prevObRes] = await Promise.all([
+        supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', pm),
+        supabase.from('creditor_opening_balances').select('*').eq('month', pm),
+      ]);
+      setPrevMonthBankLines((prevBankRes.data ?? []) as typeof bankLines);
+      const prevObMap: Record<string, number> = {};
+      ((prevObRes.data ?? []) as { supplier: string; amount: number }[]).forEach(r => {
+        prevObMap[r.supplier] = Number(r.amount);
+      });
+      setPrevMonthOB(prevObMap);
+    } else {
+      setPrevMonthBankLines([]);
+      setPrevMonthOB({});
+    }
   }, [filterMonth]);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -152,6 +181,46 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     supplierWeekly[supplier] = weeks;
   });
 
+  // Compute effective opening balances: for April+, use previous month closing as default
+  const effectiveOB = useMemo(() => {
+    const result: Record<string, number> = { ...openingBalances };
+
+    if (!isFirstMonth && prevMonth) {
+      const prevMonthManagers = managerEntries.filter(e => e.date.startsWith(prevMonth));
+
+      [...suppliers, ...fuelSuppliers].forEach(supplier => {
+        // If there's already a manually-entered OB for this month, keep it
+        if (openingBalances[supplier] !== undefined) return;
+
+        // Compute previous month closing: OB + invoices - payments
+        const prevOB = prevMonthOB[supplier] ?? 0;
+        let totalInv = 0;
+        let totalPay = 0;
+
+        // Previous month invoices
+        prevMonthManagers.forEach(entry => {
+          entry.eftInvoices.forEach(inv => {
+            if (inv.supplier === supplier) totalInv += inv.inclusive;
+          });
+        });
+
+        // Previous month payments from bank
+        prevMonthBankLines.forEach(line => {
+          const matched = matchSupplier(line.description);
+          if (matched !== supplier) return;
+          totalPay += Math.abs(line.amount);
+        });
+
+        const closing = prevOB + totalInv - totalPay;
+        if (closing !== 0) {
+          result[supplier] = closing;
+        }
+      });
+    }
+
+    return result;
+  }, [openingBalances, isFirstMonth, prevMonth, prevMonthOB, prevMonthBankLines, managerEntries, suppliers, fuelSuppliers]);
+
   // Save opening balances
   const handleSaveOB = async () => {
     setSaving(true);
@@ -185,7 +254,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   const renderTable = (title: string, supplierList: string[]) => {
     const activeSuppliers = supplierList.filter(s => {
       const weeks = supplierWeekly[s];
-      const ob = openingBalances[s] ?? 0;
+      const ob = effectiveOB[s] ?? 0;
       return ob !== 0 || weeks.some(w => w.invoices > 0 || w.payments > 0);
     });
     const inactiveSuppliers = supplierList.filter(s => !activeSuppliers.includes(s));
@@ -195,7 +264,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
       activeSuppliers={activeSuppliers}
       inactiveSuppliers={inactiveSuppliers}
       supplierWeekly={supplierWeekly}
-      openingBalances={openingBalances}
+      openingBalances={effectiveOB}
       editingOB={editingOB}
       setEditingOB={setEditingOB}
       weekLabels={weekLabels}
