@@ -269,6 +269,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
       setEditingOB={setEditingOB}
       weekLabels={weekLabels}
       sundays={sundays}
+      readOnlyOB={!isFirstMonth}
     />;
   };
 
