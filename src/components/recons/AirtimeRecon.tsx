@@ -192,7 +192,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 // Lotto creditor: invoices increase debt, payments reduce it
                 lottoBalance = lottoBalance - row.lottoInvoice + row.lottoPayment;
 
-                const hasData = row.bldInvoice > 0 || row.bldPayment > 0 || row.easypayInvoice > 0 || row.easypayCollection > 0 || row.lottoInvoice > 0 || row.lottoPayment > 0;
+                const hasData = row.bldInvoice !== 0 || row.bldPayment > 0 || row.easypayInvoice !== 0 || row.easypayCollection > 0 || row.lottoInvoice !== 0 || row.lottoPayment > 0;
 
                 return (
                   <TableRow key={row.date} className={!hasData ? 'opacity-50' : ''}>
@@ -227,7 +227,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                     </TableCell>
                     {/* Lotto */}
                     <TableCell className="text-right text-xs border-l">
-                      {row.lottoInvoice > 0
+                      {row.lottoInvoice !== 0
                         ? <CurrencyDisplay value={row.lottoInvoice} />
                         : <span className="text-muted-foreground">—</span>}
                     </TableCell>
