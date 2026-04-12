@@ -227,7 +227,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                     </TableCell>
                     {/* Lotto */}
                     <TableCell className="text-right text-xs border-l">
-                      {row.lottoInvoice > 0
+                      {row.lottoInvoice !== 0
                         ? <CurrencyDisplay value={row.lottoInvoice} />
                         : <span className="text-muted-foreground">—</span>}
                     </TableCell>
