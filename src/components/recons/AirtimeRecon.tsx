@@ -93,9 +93,13 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     const easypayInvoice = cashup
       ? cashup.shop.receipts.filter(r => r.type === 'Easypay').reduce((s, r) => s + r.amount, 0)
       : 0;
-    const lottoInvoice = cashup
+    const lottoReceipts = cashup
       ? cashup.shop.receipts.filter(r => r.type === 'Lotto Receipts').reduce((s, r) => s + r.amount, 0)
       : 0;
+    const lottoPayouts = cashup
+      ? (cashup.shop.lottoPayouts ?? 0)
+      : 0;
+    const lottoInvoice = lottoReceipts - lottoPayouts;
 
     return {
       date: dateStr,
