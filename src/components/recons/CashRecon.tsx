@@ -260,7 +260,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                 </TableRow>
               )}
               {dailyRows.map(row => {
-                const hasData = row.ccDailyCashup > 0 || row.ccBagClosure > 0 || row.ccTransferIn > 0;
+                const hasData = row.ccDailyCashup > 0 || row.ccBagClosure > 0 || row.ccTransferIn > 0 || row.ccDeepFrozen > 0;
 
                 return (
                   <TableRow key={row.date} className={!hasData ? 'opacity-50' : ''}>
@@ -281,6 +281,11 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                     <TableCell className="text-right text-xs">
                       {row.ccBagClosure > 0
                         ? <span className="text-destructive"><CurrencyDisplay value={row.ccBagClosure} /></span>
+                        : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-right text-xs">
+                      {row.ccDeepFrozen > 0
+                        ? <span className="text-destructive"><CurrencyDisplay value={row.ccDeepFrozen} /></span>
                         : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-right text-xs font-semibold bg-primary/10">
