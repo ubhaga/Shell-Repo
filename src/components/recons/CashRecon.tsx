@@ -201,6 +201,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
   const totalCCDailyCashup = dailyRows.reduce((s, r) => s + r.ccDailyCashup, 0);
   const totalCCBagClosure = dailyRows.reduce((s, r) => s + r.ccBagClosure, 0);
   const totalCCTransferIn = dailyRows.reduce((s, r) => s + r.ccTransferIn, 0);
+  const totalCCDeepFrozen = dailyRows.reduce((s, r) => s + r.ccDeepFrozen, 0);
   const totalBankCharges = dailyRows.reduce((s, r) => s + r.bankCharges, 0);
   const totalBankingExpected = dailyRows.reduce((s, r) => s + r.bankingExpected, 0);
   const totalBankActual = dailyRows.reduce((s, r) => s + r.bankActual, 0);
