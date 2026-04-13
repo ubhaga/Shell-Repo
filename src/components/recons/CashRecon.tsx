@@ -129,12 +129,13 @@ export function CashRecon({ filterMonth }: CashReconProps) {
     ccDailyCashup: number;
     ccBagClosure: number;
     ccTransferIn: number;
+    ccDeepFrozen: number;
     ccClosing: number;
     bankCharges: number;
     bankingExpected: number;
     bankActual: number;
     bankMatched: boolean;
-    bankRunningBalance: number; // cumulative outstanding (expected - actual)
+    bankRunningBalance: number;
     coinsOpening: number;
     coinsDailyCashup: number;
     coinsBagClosure: number;
