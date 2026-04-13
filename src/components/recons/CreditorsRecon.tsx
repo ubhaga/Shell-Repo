@@ -182,6 +182,21 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
       weeks[idx].payments += paymentAmount;
     });
 
+    // Add Deep Frozen paid in CC from cashier daily as payments for "Deep frozen" supplier
+    const isDeepFrozen = supplier.toLowerCase().replace(/\s+/g, '') === 'deepfrozen';
+    if (isDeepFrozen) {
+      const monthCashups = cashups.filter(c => c.date.startsWith(filterMonth));
+      monthCashups.forEach(c => {
+        const dfAmount = (c.shop as any)?.deepFrozenCC ?? 0;
+        if (dfAmount > 0) {
+          const cashupDate = new Date(c.date);
+          const weekIdx = sundays.findIndex(sun => cashupDate <= sun);
+          const idx = weekIdx >= 0 ? weekIdx : sundays.length - 1;
+          weeks[idx].payments += dfAmount;
+        }
+      });
+    }
+
     supplierWeekly[supplier] = weeks;
   });
 
