@@ -106,12 +106,13 @@ export function CashRecon({ filterMonth }: CashReconProps) {
 
       const dailyCoins = cashup?.shop.coins ?? 0;
       const dailyCC = cashup?.shop.cashDepositedBanking ?? 0;
+      const deepFrozenCC = (cashup?.shop as any)?.deepFrozenCC ?? 0;
       const closureCoins = Math.abs(entry?.ccBagClosureCoins ?? 0);
       const closureCC = Math.abs(entry?.ccBagClosureCashConnect ?? 0);
       const transferFromCoins = Math.abs(entry?.transferFromCoins ?? 0);
 
       coins = coins + dailyCoins - closureCoins - transferFromCoins;
-      cc = cc + dailyCC - closureCC + transferFromCoins;
+      cc = cc + dailyCC - closureCC + transferFromCoins - deepFrozenCC;
 
       d = addDays(d, 1);
     }
