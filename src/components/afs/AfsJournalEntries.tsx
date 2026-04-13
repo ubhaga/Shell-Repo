@@ -251,19 +251,31 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
   const [expandedPayoutCats, setExpandedPayoutCats] = useState<Set<string>>(new Set());
   const [expandedEftCats, setExpandedEftCats] = useState<Set<string>>(new Set());
 
-  const togglePayoutCat = (cat: string) => {
-    setExpandedPayoutCats((prev) => {
-      const next = new Set(prev);
-      next.has(cat) ? next.delete(cat) : next.add(cat);
-      return next;
+  // Adjustment explanations state (persisted via master_data)
+  const [je1Explanation, setJe1Explanation] = useState('');
+  const [je2Explanation, setJe2Explanation] = useState('');
+  const [je3Explanation, setJe3Explanation] = useState('');
+
+  useEffect(() => {
+    const key = `je_explanations_${month}`;
+    supabase.from('master_data').select('data').eq('key', key).maybeSingle().then(({ data }) => {
+      if (data?.data) {
+        const d = data.data as Record<string, string>;
+        setJe1Explanation(d.je1 ?? '');
+        setJe2Explanation(d.je2 ?? '');
+        setJe3Explanation(d.je3 ?? '');
+      } else {
+        setJe1Explanation('');
+        setJe2Explanation('');
+        setJe3Explanation('');
+      }
     });
-  };
-  const toggleEftCat = (cat: string) => {
-    setExpandedEftCats((prev) => {
-      const next = new Set(prev);
-      next.has(cat) ? next.delete(cat) : next.add(cat);
-      return next;
-    });
+  }, [month]);
+
+  const saveExplanation = (field: 'je1' | 'je2' | 'je3', value: string) => {
+    const key = `je_explanations_${month}`;
+    const current = { je1: je1Explanation, je2: je2Explanation, je3: je3Explanation, [field]: value };
+    supabase.from('master_data').upsert({ key, data: current as any }, { onConflict: 'key' }).then();
   };
 
   // ── JE 3 — Debtors Writeoff ──
