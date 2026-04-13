@@ -192,10 +192,12 @@ function StatusIcon({ status }: { status: "green" | "red" | "none" }) {
 export function MonthlyDashboard({ selectedDate }: Props) {
   const { getCashupByDate, getManagerEntryByDate, updateManagerEntry, addManagerEntry } = useCashupStore();
   const [editingExplanations, setEditingExplanations] = useState<Record<string, string>>({});
+  const [monthOffset, setMonthOffset] = useState(0);
 
-  const selected = parseISO(selectedDate);
-  const monthStart = startOfMonth(selected);
-  const monthEnd = endOfMonth(selected);
+  const baseMonth = startOfMonth(parseISO(selectedDate));
+  const currentMonth = monthOffset === 0 ? baseMonth : addMonths(baseMonth, monthOffset);
+  const monthStart = currentMonth;
+  const monthEnd = endOfMonth(currentMonth);
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   const rows: DayMetrics[] = days.map((day) => {
