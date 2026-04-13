@@ -236,7 +236,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                         {format(d, "d")}
                       </td>
                       <td className="px-3 py-2 text-center text-muted-foreground/40 border-r">{format(d, "EEE dd")}</td>
-                      <td colSpan={8} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">
+                      <td colSpan={9} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">
                         No data
                       </td>
                     </tr>
