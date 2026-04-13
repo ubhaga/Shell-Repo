@@ -45,6 +45,7 @@ export interface CashierShift {
   cashConnectTotal: number;
   cashDepositedBanking: number;
   easyPay: number;
+  deepFrozenCC: number;
   coins: number;
   // MOP Speedpoints
   speedpoints: SpeedpointEntry[];
