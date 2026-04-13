@@ -272,7 +272,21 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     });
   }, [month]);
 
-  const saveExplanation = (field: 'je1' | 'je2' | 'je3', value: string) => {
+  const togglePayoutCat = (cat: string) => {
+    setExpandedPayoutCats((prev) => {
+      const next = new Set(prev);
+      next.has(cat) ? next.delete(cat) : next.add(cat);
+      return next;
+    });
+  };
+  const toggleEftCat = (cat: string) => {
+    setExpandedEftCats((prev) => {
+      const next = new Set(prev);
+      next.has(cat) ? next.delete(cat) : next.add(cat);
+      return next;
+    });
+  };
+
     const key = `je_explanations_${month}`;
     const current = { je1: je1Explanation, je2: je2Explanation, je3: je3Explanation, [field]: value };
     supabase.from('master_data').upsert({ key, data: current as any }, { onConflict: 'key' }).then();
