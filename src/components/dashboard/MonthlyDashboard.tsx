@@ -330,7 +330,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
             {dataRows.length > 0 && (
               <tfoot>
                 <tr className="bg-muted/50 border-t-2 font-semibold">
-                  <td colSpan={4} className="px-3 py-2.5 text-center border-r">
+                  <td colSpan={3} className="px-3 py-2.5 text-center border-r">
                     Monthly Total
                   </td>
                   <td className="px-3 py-2.5 text-center border-r">
@@ -355,9 +355,10 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                     {dataRows.filter((r) => r.vatMatch === true).length}/
                     {dataRows.filter((r) => r.vatMatch !== null).length}
                   </td>
-                  <td className="px-3 py-2.5 text-center text-xs">
+                  <td className="px-3 py-2.5 text-center text-xs border-r">
                     {greenCount}/{dataRows.length}
                   </td>
+                  <td></td>
                 </tr>
               </tfoot>
             )}
