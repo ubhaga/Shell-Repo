@@ -27,12 +27,20 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     const credits: { description: string; amount: number }[] = [];
 
     if (mf) {
-      credits.push({ description: "C Store", amount: mf.salesCStore + mf.adjCStore });
+      const totalVat = mf.vatTaxAmount + mf.adjVat;
+      const totalGas = mf.salesGas + mf.adjGas;
+      const totalOil = mf.salesOil + mf.adjOil;
+      const totalCStore = mf.salesCStore + mf.adjCStore;
+      const cStoreVatable = (totalVat / 0.15) - totalGas - totalOil;
+      const cStoreNonVatable = totalCStore - cStoreVatable;
+
+      credits.push({ description: "C Store Vatable", amount: cStoreVatable });
+      credits.push({ description: "C Store Non Vatable", amount: cStoreNonVatable });
       credits.push({ description: "WSL DSL", amount: mf.salesWslDsl + mf.adjWslDsl });
       credits.push({ description: "Fuel", amount: mf.salesFuel + mf.adjFuel });
-      credits.push({ description: "Gas", amount: mf.salesGas + mf.adjGas });
-      credits.push({ description: "Oil", amount: mf.salesOil + mf.adjOil });
-      credits.push({ description: "VAT", amount: mf.vatTaxAmount + mf.adjVat });
+      credits.push({ description: "Gas", amount: totalGas });
+      credits.push({ description: "Oil", amount: totalOil });
+      credits.push({ description: "VAT", amount: totalVat });
     }
 
     // Prov Blue Label = total Blue Label receipts
