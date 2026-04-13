@@ -250,7 +250,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
               {bankingOB !== 0 && (
                 <TableRow className="bg-muted/40 font-semibold">
                   <TableCell className="text-xs">Opening Balance</TableCell>
-                  <TableCell colSpan={5}></TableCell>
+                  <TableCell colSpan={6}></TableCell>
                   <TableCell className="border-l"></TableCell>
                   <TableCell></TableCell>
                   <TableCell></TableCell>
