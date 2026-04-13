@@ -796,6 +796,22 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
               </td>
             </tr>
 
+            {/* Deep Frozen paid in CC — read-only from Cashier, Total CC column only */}
+            {dailyDeepFrozenCC > 0 && (
+              <tr className="border-b bg-muted/10">
+                <td className="px-3 py-1.5 text-xs text-muted-foreground">
+                  Deep Frozen paid in CC
+                  <Lock className="h-3 w-3 text-muted-foreground inline ml-1" />
+                </td>
+                <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
+                <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
+                <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
+                <td className="px-3 py-1.5 text-right text-destructive font-semibold">
+                  <CurrencyDisplay value={-dailyDeepFrozenCC} />
+                </td>
+              </tr>
+            )}
+
             {/* Transfer from Coins */}
             <tr className="border-b">
               <td className="px-3 py-1.5 text-xs text-muted-foreground">Transfer from Coin</td>
