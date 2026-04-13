@@ -92,6 +92,9 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   // EFT invoices from manager daily entries for this month
   const monthManagers = managerEntries.filter(e => e.date.startsWith(filterMonth));
 
+  // Get cashups for Deep Frozen CC payments
+  const { cashups } = useCashupStore();
+
   // Parse bank payment descriptions and map them to EFT suppliers
   const normalizeName = (value: string) =>
     value.toUpperCase().replace(/[^A-Z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
