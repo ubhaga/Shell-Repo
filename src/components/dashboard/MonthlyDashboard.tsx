@@ -123,7 +123,8 @@ function StatusIcon({ status }: { status: "green" | "red" | "none" }) {
 }
 
 export function MonthlyDashboard({ selectedDate }: Props) {
-  const { getCashupByDate, getManagerEntryByDate } = useCashupStore();
+  const { getCashupByDate, getManagerEntryByDate, updateManagerEntry, addManagerEntry } = useCashupStore();
+  const [editingExplanations, setEditingExplanations] = useState<Record<string, string>>({});
 
   const selected = parseISO(selectedDate);
   const monthStart = startOfMonth(selected);
@@ -134,6 +135,51 @@ export function MonthlyDashboard({ selectedDate }: Props) {
     const ds = format(day, "yyyy-MM-dd");
     return computeDayMetrics(ds, getCashupByDate(ds), getManagerEntryByDate(ds));
   });
+
+  const handleExplanationChange = useCallback((date: string, value: string) => {
+    setEditingExplanations(prev => ({ ...prev, [date]: value }));
+  }, []);
+
+  const handleExplanationBlur = useCallback(async (date: string) => {
+    const value = editingExplanations[date];
+    if (value === undefined) return;
+    const existing = getManagerEntryByDate(date);
+    if (existing) {
+      await updateManagerEntry(existing.id, { explanations: value });
+    } else {
+      await addManagerEntry({
+        date,
+        cashupId: '',
+        enteredBy: '',
+        explanations: value,
+        payoutInvoices: [],
+        eftInvoices: [],
+        coinsOpeningBalance: 0,
+        easypayOpeningBalance: 0,
+        cashConnectOpeningBalance: 0,
+        dailyCoins: 0,
+        cashDepositedEasypay: 0,
+        cashDepositedCashConnect: 0,
+        ccBagClosureCoins: 0,
+        ccBagClosureEasypay: 0,
+        ccBagClosureCashConnect: 0,
+        transferFromCoins: 0,
+        branchDayEndTotal: 0,
+        branchDayEndVat: 0,
+        invoiceNotes: '',
+        cashReconcNotes: '',
+        bankChargesRate: 0,
+        bankCharges: 0,
+        banking: 0,
+        locked: false,
+      });
+    }
+    setEditingExplanations(prev => {
+      const next = { ...prev };
+      delete next[date];
+      return next;
+    });
+  }, [editingExplanations, getManagerEntryByDate, updateManagerEntry, addManagerEntry]);
 
   const dataRows = rows.filter((r) => r.hasData);
   const totalShopDiff = dataRows.reduce((s, r) => s + (r.shopDiff ?? 0), 0);
