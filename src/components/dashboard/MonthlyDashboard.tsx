@@ -231,11 +231,9 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                 if (!row.hasData) {
                   return (
                     <tr key={row.date} className="border-b last:border-b-0 bg-muted/10">
-                      <td className="px-3 py-2 text-center text-muted-foreground/40 font-mono border-r">
-                        {format(d, "d")}
-                      </td>
+                      <td className="px-3 py-2 border-r"><StatusIcon status="none" /></td>
                       <td className="px-3 py-2 text-center text-muted-foreground/40 border-r">{format(d, "EEE dd")}</td>
-                      <td colSpan={9} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">
+                      <td colSpan={7} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">
                         No data
                       </td>
                     </tr>
