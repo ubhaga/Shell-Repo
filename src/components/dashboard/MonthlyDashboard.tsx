@@ -22,7 +22,15 @@ interface DayMetrics {
   vatDiff: number | null;
   vatMatch: boolean | null;
   hasData: boolean;
+  seqGaps: string[]; // abbreviations of receipt types with gaps e.g. ["BL","EP"]
+  seqHasReceipts: boolean; // whether this day has any tracked receipts
 }
+
+const SEQ_TYPE_MAP: Record<string, string> = {
+  "Blue Label": "BL",
+  "Easypay": "EP",
+  "Lotto Receipts": "LR",
+};
 
 function computeDayMetrics(
   dateStr: string,
@@ -41,6 +49,8 @@ function computeDayMetrics(
       vatMatch: null,
       hasData: false,
       enteredBy: undefined,
+      seqGaps: [],
+      seqHasReceipts: false,
     };
   }
 
@@ -72,7 +82,6 @@ function computeDayMetrics(
     optDiff = optNetSales - optSP - optAcc;
   }
 
-  // Payouts comparison: cashier payouts total vs manager 1.1 payout invoices total
   let payoutsDiff: number | null = null;
   if (cashup && managerEntry) {
     const cashierPayoutsTotal = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0);
@@ -98,8 +107,12 @@ function computeDayMetrics(
     vatMatch = Math.abs(vatDiff) < 1.0;
   }
 
-  // Combine entered_by from cashup and manager (they may differ)
   const enteredBy = cashup?.enteredBy || managerEntry?.enteredBy || undefined;
+
+  // Check which tracked receipt types exist
+  const seqHasReceipts = cashup
+    ? cashup.shop.receipts.some((r) => SEQ_TYPE_MAP[r.type] && r.amount !== 0)
+    : false;
 
   return {
     date: dateStr,
@@ -113,7 +126,60 @@ function computeDayMetrics(
     vatDiff,
     vatMatch,
     hasData: true,
+    seqGaps: [], // computed after all rows are built
+    seqHasReceipts,
   };
+}
+
+/** Parse seq numbers for tracked receipt types from a cashup */
+function getSeqNumbers(cashup: DailyCashup | undefined): Record<string, number[]> {
+  const result: Record<string, number[]> = {};
+  if (!cashup) return result;
+  for (const r of cashup.shop.receipts) {
+    const abbr = SEQ_TYPE_MAP[r.type];
+    if (!abbr || r.amount === 0) continue;
+    const num = parseInt(r.seqNo, 10);
+    if (!isNaN(num)) {
+      if (!result[abbr]) result[abbr] = [];
+      result[abbr].push(num);
+    }
+  }
+  return result;
+}
+
+function computeSeqGaps(
+  days: Date[],
+  getCashupByDate: (date: string) => DailyCashup | undefined,
+): Record<string, string[]> {
+  const gaps: Record<string, string[]> = {};
+  // Track last max seq per type
+  const lastMax: Record<string, number> = {};
+
+  for (const day of days) {
+    const ds = format(day, "yyyy-MM-dd");
+    const cashup = getCashupByDate(ds);
+    const seqNums = getSeqNumbers(cashup);
+    const dayGaps: string[] = [];
+
+    for (const abbr of Object.keys(SEQ_TYPE_MAP).map((k) => SEQ_TYPE_MAP[k])) {
+      const nums = seqNums[abbr];
+      if (!nums || nums.length === 0) continue;
+      nums.sort((a, b) => a - b);
+      const minSeq = nums[0];
+
+      if (lastMax[abbr] !== undefined) {
+        if (minSeq !== lastMax[abbr] + 1) {
+          dayGaps.push(abbr);
+        }
+      }
+      // Update lastMax
+      lastMax[abbr] = Math.max(...nums);
+    }
+
+    gaps[ds] = dayGaps;
+  }
+
+  return gaps;
 }
 
 function StatusIcon({ status }: { status: "green" | "red" | "none" }) {
@@ -135,6 +201,12 @@ export function MonthlyDashboard({ selectedDate }: Props) {
     const ds = format(day, "yyyy-MM-dd");
     return computeDayMetrics(ds, getCashupByDate(ds), getManagerEntryByDate(ds));
   });
+
+  // Compute seq gaps across the month
+  const seqGapsMap = computeSeqGaps(days, getCashupByDate);
+  for (const row of rows) {
+    row.seqGaps = seqGapsMap[row.date] || [];
+  }
 
   const handleExplanationChange = useCallback((date: string, value: string) => {
     setEditingExplanations(prev => ({ ...prev, [date]: value }));
@@ -222,7 +294,8 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                 <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">OPT</th>
                 <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">Invoices</th>
                 <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">VAT</th>
-                <th className="text-center px-1 py-2 font-semibold text-muted-foreground" style={{ width: '40%' }}>Explanation</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">Seq #</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground" style={{ width: '35%' }}>Explanation</th>
               </tr>
             </thead>
             <tbody>
@@ -233,7 +306,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                     <tr key={row.date} className="border-b last:border-b-0 bg-muted/10">
                       <td className="px-1 py-1 border-r"><StatusIcon status="none" /></td>
                       <td className="px-1 py-1 text-center text-muted-foreground/40 border-r text-xs">{format(d, "EEE dd")}</td>
-                      <td colSpan={7} className="px-1 py-1 text-muted-foreground/30 text-center italic text-xs">
+                      <td colSpan={8} className="px-1 py-1 text-muted-foreground/30 text-center italic text-xs">
                         No data
                       </td>
                     </tr>
@@ -246,6 +319,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                 const payoutsOk = row.payoutsDiff === null || Math.abs(row.payoutsDiff) < 0.5;
                 const invOk = row.invMatch === null || row.invMatch;
                 const vatOk = row.vatMatch === null || row.vatMatch;
+                const seqOk = row.seqGaps.length === 0;
                 const allOk = shopOk && optOk && payoutsOk && invOk && vatOk;
 
                 return (
@@ -306,6 +380,17 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                         )}
                       </div>
                     </td>
+                    <td className="px-1 py-1 text-center border-r">
+                      {row.seqHasReceipts ? (
+                        seqOk ? (
+                          <span className="text-green-700 text-xs font-mono">✓</span>
+                        ) : (
+                          <span className="text-red-600 text-xs font-semibold">{row.seqGaps.join(", ")}</span>
+                        )
+                      ) : (
+                        <span className="text-muted-foreground/30">—</span>
+                      )}
+                    </td>
                     <td className="px-1 py-1">
                       <textarea
                         className="w-full min-h-[28px] text-xs rounded-md border border-input bg-background px-2 py-1 resize-none overflow-hidden focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -351,6 +436,10 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                   <td className="px-1 py-2 text-center text-xs text-muted-foreground border-r">
                     {dataRows.filter((r) => r.vatMatch === true).length}/
                     {dataRows.filter((r) => r.vatMatch !== null).length}
+                  </td>
+                  <td className="px-1 py-2 text-center text-xs text-muted-foreground border-r">
+                    {dataRows.filter((r) => r.seqHasReceipts && r.seqGaps.length === 0).length}/
+                    {dataRows.filter((r) => r.seqHasReceipts).length}
                   </td>
                   <td className="px-1 py-2 text-center text-xs">
                     {greenCount}/{dataRows.length}
