@@ -304,7 +304,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
   // ── JE 3 — Debtors Writeoff ──
   const je3 = useMemo(() => {
     const monthlyCashups = cashups.filter((c) => c.month === month);
-    const writeoffAccounts = ["Generator", "Shop Expense"];
+    const writeoffAccounts = ["Generator", "Shop Expense", "Umesh"];
     const debits: { description: string; amount: number }[] = [];
 
     for (const accName of writeoffAccounts) {
