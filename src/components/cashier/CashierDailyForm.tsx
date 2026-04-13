@@ -505,7 +505,7 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
                     <SelectValue placeholder="Debtor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {accounts.map((acc) => (
+                    {ACCOUNTS.map((acc) => (
                       <SelectItem key={acc} value={acc}>{acc}</SelectItem>
                     ))}
                   </SelectContent>
