@@ -220,8 +220,8 @@ export function CashRecon({ filterMonth }: CashReconProps) {
           </h3>
           <Button size="sm" variant="outline" onClick={() => {
             downloadCsv(
-              ['Date', 'CC Opening', 'CC Daily Cashup', 'CC Transfer In', 'CC Bag Closure', 'CC Closing', 'Bank Charges', 'Expected Banking', 'Bank Stmt', 'Outstanding'],
-              dailyRows.map(r => [r.date, r.ccOpening, r.ccDailyCashup, r.ccTransferIn, r.ccBagClosure, r.ccClosing, r.bankCharges, r.bankingExpected, r.bankActual, r.bankRunningBalance]),
+              ['Date', 'CC Opening', 'CC Daily Cashup', 'CC Transfer In', 'CC Bag Closure', 'Deep Frozen CC', 'CC Closing', 'Bank Charges', 'Expected Banking', 'Bank Stmt', 'Outstanding'],
+              dailyRows.map(r => [r.date, r.ccOpening, r.ccDailyCashup, r.ccTransferIn, r.ccBagClosure, r.ccDeepFrozen, r.ccClosing, r.bankCharges, r.bankingExpected, r.bankActual, r.bankRunningBalance]),
               `cash-connect-recon-${filterMonth}.csv`
             );
           }}>
@@ -237,6 +237,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                 <TableHead className="text-right text-xs min-w-[90px]">+ Daily Cashup</TableHead>
                 <TableHead className="text-right text-xs min-w-[90px]">+ Transfer In</TableHead>
                 <TableHead className="text-right text-xs min-w-[90px]">− Bag Closure</TableHead>
+                <TableHead className="text-right text-xs min-w-[90px]">− Deep Frozen</TableHead>
                 <TableHead className="text-right text-xs min-w-[100px] font-semibold">Closing</TableHead>
                 <TableHead className="text-right text-xs border-l min-w-[80px]">Bank Charges</TableHead>
                 <TableHead className="text-right text-xs min-w-[90px]">Expected Banking</TableHead>
