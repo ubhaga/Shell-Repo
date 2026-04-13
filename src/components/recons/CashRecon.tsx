@@ -333,6 +333,9 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                 <TableCell className="text-right text-xs">
                   <CurrencyDisplay value={totalCCBagClosure} highlight />
                 </TableCell>
+                <TableCell className="text-right text-xs">
+                  <CurrencyDisplay value={totalCCDeepFrozen} highlight />
+                </TableCell>
                 <TableCell className="text-right text-xs font-bold">
                   <CurrencyDisplay value={runningCC} highlight />
                 </TableCell>
