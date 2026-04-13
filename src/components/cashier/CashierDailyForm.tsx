@@ -195,13 +195,27 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
       return;
     }
 
-    // --- Receipts: seq# mandatory if amount entered ---
-    const receiptsWithoutSeq = form.shop.receipts.filter((r) => r.amount !== 0 && !r.seqNo.trim());
+    // --- Receipts: seq# mandatory if amount entered (debtor mandatory for ROA) ---
+    const roaType = "Debtors Received on Account ROA";
+    const receiptsWithoutSeq = form.shop.receipts.filter(
+      (r) => r.amount !== 0 && r.type !== roaType && !r.seqNo.trim()
+    );
+    const roaWithoutDebtor = form.shop.receipts.filter(
+      (r) => r.amount !== 0 && r.type === roaType && !r.seqNo.trim()
+    );
     if (receiptsWithoutSeq.length > 0) {
       const types = receiptsWithoutSeq.map((r) => r.type).join(", ");
       toast({
         title: "Receipt Seq No. required",
         description: `Please enter a Seq No. for: ${types}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    if (roaWithoutDebtor.length > 0) {
+      toast({
+        title: "Debtor required",
+        description: `Please select a Debtor for: ${roaType}`,
         variant: "destructive",
       });
       return;
@@ -484,12 +498,27 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
         {form.shop.receipts.map((r) => (
           <div key={r.id} className="grid grid-cols-12 items-center gap-2 px-3 py-1 border-b last:border-b-0">
             <span className="text-sm text-muted-foreground col-span-7">{r.type}</span>
-            <input
-              value={r.seqNo}
-              onChange={(e) => updateReceipt(r.id, { seqNo: e.target.value })}
-              className="input-cell col-span-2"
-              placeholder="Seq#"
-            />
+            {r.type === "Debtors Received on Account ROA" ? (
+              <div className="col-span-2">
+                <Select value={r.seqNo} onValueChange={(v) => updateReceipt(r.id, { seqNo: v })}>
+                  <SelectTrigger className="h-7 text-xs">
+                    <SelectValue placeholder="Debtor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((acc) => (
+                      <SelectItem key={acc} value={acc}>{acc}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <input
+                value={r.seqNo}
+                onChange={(e) => updateReceipt(r.id, { seqNo: e.target.value })}
+                className="input-cell col-span-2"
+                placeholder="Seq#"
+              />
+            )}
             <div className="col-span-3 flex justify-end">
               <CurrencyInput value={r.amount} onChange={(v) => updateReceipt(r.id, { amount: v })} />
             </div>
