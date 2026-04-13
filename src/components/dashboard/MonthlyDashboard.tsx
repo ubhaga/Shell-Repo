@@ -3,7 +3,7 @@ import { useCashupStore } from "@/store/cashupStore";
 import { CurrencyDisplay } from "@/components/ui/CashupUI";
 import { CheckCircle, XCircle, MinusCircle } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from "date-fns";
-import { Input } from "@/components/ui/input";
+
 import type { DailyCashup, ManagerDailyEntry } from "@/types/cashup";
 
 interface Props {
@@ -214,15 +214,15 @@ export function MonthlyDashboard({ selectedDate }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/50 border-b">
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground w-12 border-r">Status</th>
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Date</th>
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Entered By</th>
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Shop Till</th>
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Payouts</th>
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">OPT</th>
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Invoices</th>
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">VAT</th>
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground min-w-[200px]">Explanation</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground w-8 border-r text-xs">St</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs whitespace-nowrap">Date</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs whitespace-nowrap">By</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs whitespace-nowrap">Shop</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs whitespace-nowrap">Pay</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs whitespace-nowrap">OPT</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs whitespace-nowrap">Inv</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs whitespace-nowrap">VAT</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground" style={{ width: '40%' }}>Explanation</th>
               </tr>
             </thead>
             <tbody>
@@ -231,9 +231,9 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                 if (!row.hasData) {
                   return (
                     <tr key={row.date} className="border-b last:border-b-0 bg-muted/10">
-                      <td className="px-3 py-2 border-r"><StatusIcon status="none" /></td>
-                      <td className="px-3 py-2 text-center text-muted-foreground/40 border-r">{format(d, "EEE dd")}</td>
-                      <td colSpan={7} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">
+                      <td className="px-1 py-1 border-r"><StatusIcon status="none" /></td>
+                      <td className="px-1 py-1 text-center text-muted-foreground/40 border-r text-xs">{format(d, "EEE dd")}</td>
+                      <td colSpan={7} className="px-1 py-1 text-muted-foreground/30 text-center italic text-xs">
                         No data
                       </td>
                     </tr>
@@ -250,49 +250,45 @@ export function MonthlyDashboard({ selectedDate }: Props) {
 
                 return (
                   <tr key={row.date} className={`border-b last:border-b-0 ${allOk ? "" : "bg-red-50/50"}`}>
-                    <td className="px-3 py-2 border-r">
+                    <td className="px-1 py-1 border-r">
                       <div className="flex justify-center">
                         {allOk ? (
-                          <span className="inline-block w-3 h-3 rounded-full bg-green-500" />
+                          <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500" />
                         ) : (
-                          <span className="inline-block w-3 h-3 rounded-full bg-red-500" />
+                          <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500" />
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-center font-medium border-r">{format(d, "EEE dd MMM")}</td>
-                    <td className="px-3 py-2 text-center text-muted-foreground border-r">{row.enteredBy || "—"}</td>
-                    <td className="px-3 py-2 text-center border-r">
+                    <td className="px-1 py-1 text-center font-medium border-r text-xs whitespace-nowrap">{format(d, "EEE dd")}</td>
+                    <td className="px-1 py-1 text-center text-muted-foreground border-r text-xs">{row.enteredBy || "—"}</td>
+                    <td className="px-1 py-1 text-center border-r">
                       {row.shopDiff !== null ? (
-                        <span
-                          className={`inline-flex items-center justify-center gap-1 font-mono ${shopOk ? "text-green-700" : "text-red-600 font-semibold"}`}
-                        >
+                        <span className={`inline-flex items-center justify-center font-mono text-xs ${shopOk ? "text-green-700" : "text-red-600 font-semibold"}`}>
                           <CurrencyDisplay value={row.shopDiff} />
                         </span>
                       ) : (
                         <span className="text-muted-foreground/30">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-center border-r">
+                    <td className="px-1 py-1 text-center border-r">
                       {row.payoutsDiff !== null ? (
-                        <span
-                          className={`inline-flex items-center justify-center gap-1 font-mono ${payoutsOk ? "text-green-700" : "text-red-600 font-semibold"}`}
-                        >
+                        <span className={`inline-flex items-center justify-center font-mono text-xs ${payoutsOk ? "text-green-700" : "text-red-600 font-semibold"}`}>
                           {payoutsOk ? "✓" : <CurrencyDisplay value={row.payoutsDiff} />}
                         </span>
                       ) : (
                         <span className="text-muted-foreground/30">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-center border-r">
+                    <td className="px-1 py-1 text-center border-r">
                       {showOpt ? (
-                        <span className="inline-flex items-center justify-center gap-1 font-mono text-red-600 font-semibold">
+                        <span className="inline-flex items-center justify-center font-mono text-xs text-red-600 font-semibold">
                           <CurrencyDisplay value={row.optDiff!} />
                         </span>
                       ) : (
                         <span className="text-muted-foreground/30">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 border-r">
+                    <td className="px-1 py-1 border-r">
                       <div className="flex justify-center">
                         {row.invMatch !== null ? (
                           <StatusIcon status={invOk ? "green" : "red"} />
@@ -301,7 +297,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-2 border-r">
+                    <td className="px-1 py-1 border-r">
                       <div className="flex justify-center">
                         {row.vatMatch !== null ? (
                           <StatusIcon status={vatOk ? "green" : "red"} />
@@ -311,11 +307,16 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                       </div>
                     </td>
                     <td className="px-1 py-1">
-                      <Input
-                        className="h-7 text-xs"
+                      <textarea
+                        className="w-full min-h-[28px] text-xs rounded-md border border-input bg-background px-2 py-1 resize-none overflow-hidden focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        rows={1}
                         placeholder={allOk ? "" : "Explain variance..."}
                         value={editingExplanations[row.date] ?? (getManagerEntryByDate(row.date)?.explanations || "")}
-                        onChange={(e) => handleExplanationChange(row.date, e.target.value)}
+                        onChange={(e) => {
+                          handleExplanationChange(row.date, e.target.value);
+                          e.target.style.height = 'auto';
+                          e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
                         onBlur={() => handleExplanationBlur(row.date)}
                       />
                     </td>
@@ -325,17 +326,17 @@ export function MonthlyDashboard({ selectedDate }: Props) {
             </tbody>
             {dataRows.length > 0 && (
               <tfoot>
-                <tr className="bg-muted/50 border-t-2 font-semibold">
-                  <td colSpan={3} className="px-3 py-2.5 text-center border-r">
-                    Monthly Total
+                <tr className="bg-muted/50 border-t-2 font-semibold text-xs">
+                  <td colSpan={3} className="px-1 py-2 text-center border-r">
+                    Total
                   </td>
-                  <td className="px-3 py-2.5 text-center border-r">
+                  <td className="px-1 py-2 text-center border-r">
                     <CurrencyDisplay value={totalShopDiff} highlight />
                   </td>
-                  <td className="px-3 py-2.5 text-center border-r">
+                  <td className="px-1 py-2 text-center border-r">
                     <CurrencyDisplay value={dataRows.reduce((s, r) => s + (r.payoutsDiff ?? 0), 0)} highlight />
                   </td>
-                  <td className="px-3 py-2.5 text-center border-r">
+                  <td className="px-1 py-2 text-center border-r">
                     <CurrencyDisplay
                       value={dataRows.reduce(
                         (s, r) => s + (r.optDiff !== null && Math.abs(r.optDiff) >= 0.01 ? r.optDiff : 0),
@@ -343,18 +344,17 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                       )}
                     />
                   </td>
-                  <td className="px-3 py-2.5 text-center text-xs text-muted-foreground border-r">
+                  <td className="px-1 py-2 text-center text-xs text-muted-foreground border-r">
                     {dataRows.filter((r) => r.invMatch === true).length}/
                     {dataRows.filter((r) => r.invMatch !== null).length}
                   </td>
-                  <td className="px-3 py-2.5 text-center text-xs text-muted-foreground border-r">
+                  <td className="px-1 py-2 text-center text-xs text-muted-foreground border-r">
                     {dataRows.filter((r) => r.vatMatch === true).length}/
                     {dataRows.filter((r) => r.vatMatch !== null).length}
                   </td>
-                  <td className="px-3 py-2.5 text-center text-xs border-r">
+                  <td className="px-1 py-2 text-center text-xs">
                     {greenCount}/{dataRows.length}
                   </td>
-                  <td></td>
                 </tr>
               </tfoot>
             )}
