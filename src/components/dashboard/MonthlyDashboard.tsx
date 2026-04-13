@@ -214,7 +214,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/50 border-b">
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground w-12 border-r">Day</th>
+                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground w-12 border-r">Status</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Date</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Entered By</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Shop Till</th>
@@ -222,7 +222,6 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">OPT</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Invoices</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">VAT</th>
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground w-12 border-r">Status</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground min-w-[200px]">Explanation</th>
               </tr>
             </thead>
@@ -232,11 +231,9 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                 if (!row.hasData) {
                   return (
                     <tr key={row.date} className="border-b last:border-b-0 bg-muted/10">
-                      <td className="px-3 py-2 text-center text-muted-foreground/40 font-mono border-r">
-                        {format(d, "d")}
-                      </td>
+                      <td className="px-3 py-2 border-r"><StatusIcon status="none" /></td>
                       <td className="px-3 py-2 text-center text-muted-foreground/40 border-r">{format(d, "EEE dd")}</td>
-                      <td colSpan={9} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">
+                      <td colSpan={7} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">
                         No data
                       </td>
                     </tr>
@@ -253,7 +250,15 @@ export function MonthlyDashboard({ selectedDate }: Props) {
 
                 return (
                   <tr key={row.date} className={`border-b last:border-b-0 ${allOk ? "" : "bg-red-50/50"}`}>
-                    <td className="px-3 py-2 text-center font-mono text-muted-foreground border-r">{format(d, "d")}</td>
+                    <td className="px-3 py-2 border-r">
+                      <div className="flex justify-center">
+                        {allOk ? (
+                          <span className="inline-block w-3 h-3 rounded-full bg-green-500" />
+                        ) : (
+                          <span className="inline-block w-3 h-3 rounded-full bg-red-500" />
+                        )}
+                      </div>
+                    </td>
                     <td className="px-3 py-2 text-center font-medium border-r">{format(d, "EEE dd MMM")}</td>
                     <td className="px-3 py-2 text-center text-muted-foreground border-r">{row.enteredBy || "—"}</td>
                     <td className="px-3 py-2 text-center border-r">
@@ -302,15 +307,6 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                           <StatusIcon status={vatOk ? "green" : "red"} />
                         ) : (
                           <StatusIcon status="none" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 border-r">
-                      <div className="flex justify-center">
-                        {allOk ? (
-                          <span className="inline-block w-3 h-3 rounded-full bg-green-500" />
-                        ) : (
-                          <span className="inline-block w-3 h-3 rounded-full bg-red-500" />
                         )}
                       </div>
                     </td>
