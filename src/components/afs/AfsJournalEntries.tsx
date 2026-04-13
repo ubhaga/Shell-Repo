@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { CurrencyDisplay } from "@/components/ui/CashupUI";
 import { useCashupStore } from "@/store/cashupStore";
+import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface AfsJournalEntriesProps {
@@ -249,6 +251,27 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
   const [expandedPayoutCats, setExpandedPayoutCats] = useState<Set<string>>(new Set());
   const [expandedEftCats, setExpandedEftCats] = useState<Set<string>>(new Set());
 
+  // Adjustment explanations state (persisted via master_data)
+  const [je1Explanation, setJe1Explanation] = useState('');
+  const [je2Explanation, setJe2Explanation] = useState('');
+  const [je3Explanation, setJe3Explanation] = useState('');
+
+  useEffect(() => {
+    const key = `je_explanations_${month}`;
+    supabase.from('master_data').select('data').eq('key', key).maybeSingle().then(({ data }) => {
+      if (data?.data) {
+        const d = data.data as Record<string, string>;
+        setJe1Explanation(d.je1 ?? '');
+        setJe2Explanation(d.je2 ?? '');
+        setJe3Explanation(d.je3 ?? '');
+      } else {
+        setJe1Explanation('');
+        setJe2Explanation('');
+        setJe3Explanation('');
+      }
+    });
+  }, [month]);
+
   const togglePayoutCat = (cat: string) => {
     setExpandedPayoutCats((prev) => {
       const next = new Set(prev);
@@ -262,6 +285,12 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       next.has(cat) ? next.delete(cat) : next.add(cat);
       return next;
     });
+  };
+
+  const saveExplanation = (field: 'je1' | 'je2' | 'je3', value: string) => {
+    const key = `je_explanations_${month}`;
+    const current = { je1: je1Explanation, je2: je2Explanation, je3: je3Explanation, [field]: value };
+    supabase.from('master_data').upsert({ key, data: current as any }, { onConflict: 'key' }).then();
   };
 
   // ── JE 3 — Debtors Writeoff ──
@@ -341,10 +370,18 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
               </TableRow>
             </TableFooter>
           </Table>
+          <div className="mt-3">
+            <label className="text-xs font-medium text-muted-foreground">Adjustment Explanations</label>
+            <Textarea
+              value={je1Explanation}
+              onChange={(e) => setJe1Explanation(e.target.value)}
+              onBlur={() => saveExplanation('je1', je1Explanation)}
+              placeholder="Enter adjustment explanations for JE 1..."
+              className="mt-1 min-h-[60px] text-sm"
+            />
+          </div>
         </CardContent>
       </Card>
-
-      {/* JE 2 */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">JE 2 — Invoices & Payouts ({month})</CardTitle>
@@ -520,11 +557,19 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                 </TableRow>
               </TableFooter>
             </Table>
+           </div>
+          <div className="mt-3">
+            <label className="text-xs font-medium text-muted-foreground">Adjustment Explanations</label>
+            <Textarea
+              value={je2Explanation}
+              onChange={(e) => setJe2Explanation(e.target.value)}
+              onBlur={() => saveExplanation('je2', je2Explanation)}
+              placeholder="Enter adjustment explanations for JE 2..."
+              className="mt-1 min-h-[60px] text-sm"
+            />
           </div>
         </CardContent>
       </Card>
-
-      {/* JE 3 */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">JE 3 — Debtors Writeoff ({month})</CardTitle>
@@ -568,6 +613,16 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
               </TableRow>
             </TableFooter>
           </Table>
+          <div className="mt-3">
+            <label className="text-xs font-medium text-muted-foreground">Adjustment Explanations</label>
+            <Textarea
+              value={je3Explanation}
+              onChange={(e) => setJe3Explanation(e.target.value)}
+              onBlur={() => saveExplanation('je3', je3Explanation)}
+              placeholder="Enter adjustment explanations for JE 3..."
+              className="mt-1 min-h-[60px] text-sm"
+            />
+          </div>
         </CardContent>
       </Card>
     </div>
