@@ -1,8 +1,9 @@
 import { useState, useCallback } from "react";
 import { useCashupStore } from "@/store/cashupStore";
 import { CurrencyDisplay } from "@/components/ui/CashupUI";
-import { CheckCircle, XCircle, MinusCircle } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from "date-fns";
+import { CheckCircle, XCircle, MinusCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, addMonths, subMonths } from "date-fns";
+import { Button } from "@/components/ui/button";
 
 import type { DailyCashup, ManagerDailyEntry } from "@/types/cashup";
 
@@ -191,10 +192,12 @@ function StatusIcon({ status }: { status: "green" | "red" | "none" }) {
 export function MonthlyDashboard({ selectedDate }: Props) {
   const { getCashupByDate, getManagerEntryByDate, updateManagerEntry, addManagerEntry } = useCashupStore();
   const [editingExplanations, setEditingExplanations] = useState<Record<string, string>>({});
+  const [monthOffset, setMonthOffset] = useState(0);
 
-  const selected = parseISO(selectedDate);
-  const monthStart = startOfMonth(selected);
-  const monthEnd = endOfMonth(selected);
+  const baseMonth = startOfMonth(parseISO(selectedDate));
+  const currentMonth = monthOffset === 0 ? baseMonth : addMonths(baseMonth, monthOffset);
+  const monthStart = currentMonth;
+  const monthEnd = endOfMonth(currentMonth);
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   const rows: DayMetrics[] = days.map((day) => {
@@ -268,11 +271,19 @@ export function MonthlyDashboard({ selectedDate }: Props) {
     <div className="space-y-4">
       {/* Month header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold">{format(monthStart, "MMMM yyyy")} — Monthly Overview</h2>
-          <p className="text-sm text-muted-foreground">
-            {dataRows.length} day{dataRows.length !== 1 ? "s" : ""} captured · {greenCount} balanced
-          </p>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset(prev => prev - 1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h2 className="text-xl font-bold">{format(monthStart, "MMMM yyyy")} — Monthly Overview</h2>
+            <p className="text-sm text-muted-foreground">
+              {dataRows.length} day{dataRows.length !== 1 ? "s" : ""} captured · {greenCount} balanced
+            </p>
+          </div>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset(prev => prev + 1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
         <div className="text-right">
           <div className="text-xs text-muted-foreground">Month Shop Short/(Over)</div>
