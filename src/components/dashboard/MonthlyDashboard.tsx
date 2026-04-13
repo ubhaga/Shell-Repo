@@ -214,14 +214,14 @@ export function MonthlyDashboard({ selectedDate }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/50 border-b">
-                <th className="text-center px-1 py-2 font-semibold text-muted-foreground w-8 border-r text-xs">St</th>
-                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs whitespace-nowrap">Date</th>
-                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs whitespace-nowrap">By</th>
-                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs whitespace-nowrap">Shop</th>
-                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs whitespace-nowrap">Pay</th>
-                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs whitespace-nowrap">OPT</th>
-                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs whitespace-nowrap">Inv</th>
-                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs whitespace-nowrap">VAT</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground w-8 border-r text-xs">Status</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">Date</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">Entered By</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">Shop Till</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">Payouts</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">OPT</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">Invoices</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">VAT</th>
                 <th className="text-center px-1 py-2 font-semibold text-muted-foreground" style={{ width: '40%' }}>Explanation</th>
               </tr>
             </thead>
