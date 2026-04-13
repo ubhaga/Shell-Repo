@@ -25,7 +25,7 @@ function computeEffectiveClosingForDate(
   getCashup: (
     d: string,
   ) =>
-    | { shop: { coins: number; easyPay: number; cashDepositedBanking: number; cashConnectTotal?: number } }
+    | { shop: { coins: number; easyPay: number; cashDepositedBanking: number; deepFrozenCC?: number; cashConnectTotal?: number } }
     | undefined,
 ): EffectiveClosing | null {
   const SEED_DATE = "2026-01-01";
