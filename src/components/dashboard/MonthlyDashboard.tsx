@@ -255,7 +255,6 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                   <tr key={row.date} className={`border-b last:border-b-0 ${allOk ? "" : "bg-red-50/50"}`}>
                     <td className="px-3 py-2 text-center font-mono text-muted-foreground border-r">{format(d, "d")}</td>
                     <td className="px-3 py-2 text-center font-medium border-r">{format(d, "EEE dd MMM")}</td>
-                    <td className="px-3 py-2 text-center text-muted-foreground border-r">{row.cashierName || "—"}</td>
                     <td className="px-3 py-2 text-center text-muted-foreground border-r">{row.enteredBy || "—"}</td>
                     <td className="px-3 py-2 text-center border-r">
                       {row.shopDiff !== null ? (
@@ -306,7 +305,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 border-r">
                       <div className="flex justify-center">
                         {allOk ? (
                           <span className="inline-block w-3 h-3 rounded-full bg-green-500" />
@@ -314,6 +313,15 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                           <span className="inline-block w-3 h-3 rounded-full bg-red-500" />
                         )}
                       </div>
+                    </td>
+                    <td className="px-1 py-1">
+                      <Input
+                        className="h-7 text-xs"
+                        placeholder={allOk ? "" : "Explain variance..."}
+                        value={editingExplanations[row.date] ?? (getManagerEntryByDate(row.date)?.explanations || "")}
+                        onChange={(e) => handleExplanationChange(row.date, e.target.value)}
+                        onBlur={() => handleExplanationBlur(row.date)}
+                      />
                     </td>
                   </tr>
                 );
