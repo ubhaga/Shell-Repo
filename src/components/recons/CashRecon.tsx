@@ -179,6 +179,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
       ccDailyCashup,
       ccBagClosure,
       ccTransferIn: transferFromCoins,
+      ccDeepFrozen: deepFrozenCC,
       ccClosing,
       bankCharges,
       bankingExpected,
