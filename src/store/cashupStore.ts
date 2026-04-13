@@ -22,6 +22,9 @@ function cashupToRow(c: DailyCashup) {
 }
 
 function rowToCashup(r: Record<string, unknown>): DailyCashup {
+  const shop = r.shop as DailyCashup['shop'];
+  // Ensure new fields default to 0 for old records
+  if (shop && shop.deepFrozenCC === undefined) shop.deepFrozenCC = 0;
   return {
     id: r.id as string,
     date: r.date as string,
@@ -30,7 +33,7 @@ function rowToCashup(r: Record<string, unknown>): DailyCashup {
     shopShiftNumber: r.shop_shift_number as number,
     optShiftNumber: r.opt_shift_number as number,
     cashierName: r.cashier_name as string,
-    shop: r.shop as DailyCashup['shop'],
+    shop,
     opt: r.opt as DailyCashup['opt'],
     notes: r.notes as string,
     locked: r.locked as boolean,
