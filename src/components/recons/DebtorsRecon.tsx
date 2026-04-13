@@ -43,7 +43,7 @@ const DEBTOR_ACCOUNTS = [
 ];
 
 // JE3 writeoff accounts — their purchases are also shown as adjustments (reducing closing balance)
-const JE3_WRITEOFF_ACCOUNTS = ['Generator', 'Shop Expense'];
+const JE3_WRITEOFF_ACCOUNTS = ['Generator', 'Shop Expense', 'Umesh'];
 
 export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
   const { cashups } = useCashupStore();
