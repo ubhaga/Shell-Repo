@@ -214,7 +214,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/50 border-b">
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground w-12 border-r">Day</th>
+                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground w-12 border-r">Status</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Date</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Entered By</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Shop Till</th>
@@ -222,7 +222,6 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">OPT</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Invoices</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">VAT</th>
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground w-12 border-r">Status</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground min-w-[200px]">Explanation</th>
               </tr>
             </thead>
