@@ -287,6 +287,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     });
   };
 
+  const saveExplanation = (field: 'je1' | 'je2' | 'je3', value: string) => {
     const key = `je_explanations_${month}`;
     const current = { je1: je1Explanation, je2: je2Explanation, je3: je3Explanation, [field]: value };
     supabase.from('master_data').upsert({ key, data: current as any }, { onConflict: 'key' }).then();
