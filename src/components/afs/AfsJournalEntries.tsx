@@ -613,8 +613,17 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
               </TableRow>
             </TableFooter>
           </Table>
+          <div className="mt-3">
+            <label className="text-xs font-medium text-muted-foreground">Adjustment Explanations</label>
+            <Textarea
+              value={je3Explanation}
+              onChange={(e) => setJe3Explanation(e.target.value)}
+              onBlur={() => saveExplanation('je3', je3Explanation)}
+              placeholder="Enter adjustment explanations for JE 3..."
+              className="mt-1 min-h-[60px] text-sm"
+            />
+          </div>
         </CardContent>
       </Card>
-    </div>
   );
 }
