@@ -250,7 +250,15 @@ export function MonthlyDashboard({ selectedDate }: Props) {
 
                 return (
                   <tr key={row.date} className={`border-b last:border-b-0 ${allOk ? "" : "bg-red-50/50"}`}>
-                    <td className="px-3 py-2 text-center font-mono text-muted-foreground border-r">{format(d, "d")}</td>
+                    <td className="px-3 py-2 border-r">
+                      <div className="flex justify-center">
+                        {allOk ? (
+                          <span className="inline-block w-3 h-3 rounded-full bg-green-500" />
+                        ) : (
+                          <span className="inline-block w-3 h-3 rounded-full bg-red-500" />
+                        )}
+                      </div>
+                    </td>
                     <td className="px-3 py-2 text-center font-medium border-r">{format(d, "EEE dd MMM")}</td>
                     <td className="px-3 py-2 text-center text-muted-foreground border-r">{row.enteredBy || "—"}</td>
                     <td className="px-3 py-2 text-center border-r">
@@ -299,15 +307,6 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                           <StatusIcon status={vatOk ? "green" : "red"} />
                         ) : (
                           <StatusIcon status="none" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 border-r">
-                      <div className="flex justify-center">
-                        {allOk ? (
-                          <span className="inline-block w-3 h-3 rounded-full bg-green-500" />
-                        ) : (
-                          <span className="inline-block w-3 h-3 rounded-full bg-red-500" />
                         )}
                       </div>
                     </td>
