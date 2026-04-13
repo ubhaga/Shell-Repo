@@ -304,20 +304,24 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
   // ── JE 3 — Debtors Writeoff ──
   const je3 = useMemo(() => {
     const monthlyCashups = cashups.filter((c) => c.month === month);
-    const writeoffAccounts = ["Generator", "Shop Expense", "Umesh"];
+    const writeoffAccounts: { account: string; debitLabel: string }[] = [
+      { account: "Generator", debitLabel: "Generator" },
+      { account: "Shop Expense", debitLabel: "Shop Expense" },
+      { account: "Umesh", debitLabel: "Staff Refreshments" },
+    ];
     const debits: { description: string; amount: number }[] = [];
 
-    for (const accName of writeoffAccounts) {
+    for (const { account, debitLabel } of writeoffAccounts) {
       let total = 0;
       for (const c of monthlyCashups) {
         for (const a of c.shop.accounts ?? []) {
-          if (a.name === accName) total += a.amount;
+          if (a.name === account) total += a.amount;
         }
         for (const a of c.opt.accounts ?? []) {
-          if (a.name === accName) total += a.amount;
+          if (a.name === account) total += a.amount;
         }
       }
-      debits.push({ description: accName, amount: total });
+      debits.push({ description: debitLabel, amount: total });
     }
 
     const totalDebits = debits.reduce((s, d) => s + d.amount, 0);
