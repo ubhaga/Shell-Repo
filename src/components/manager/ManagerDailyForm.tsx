@@ -25,7 +25,7 @@ function computeEffectiveClosingForDate(
   getCashup: (
     d: string,
   ) =>
-    | { shop: { coins: number; easyPay: number; cashDepositedBanking: number; cashConnectTotal?: number } }
+    | { shop: { coins: number; easyPay: number; cashDepositedBanking: number; deepFrozenCC?: number; cashConnectTotal?: number } }
     | undefined,
 ): EffectiveClosing | null {
   const SEED_DATE = "2026-01-01";
@@ -70,6 +70,7 @@ function computeEffectiveClosingForDate(
     const dailyCoins = cashup?.shop.coins ?? 0;
     const dailyEasypay = cashup?.shop.easyPay ?? 0;
     const dailyCC = cashup?.shop.cashDepositedBanking ?? 0;
+    const deepFrozenCC = cashup?.shop.deepFrozenCC ?? 0;
     const closureCoins = Math.abs(entry?.ccBagClosureCoins ?? 0);
     const closureEasypay = Math.abs(entry?.ccBagClosureEasypay ?? 0);
     const closureCC = Math.abs(entry?.ccBagClosureCashConnect ?? 0);
@@ -77,7 +78,7 @@ function computeEffectiveClosingForDate(
 
     coinsOpening = effCoinsOpen + dailyCoins - closureCoins - transferFromCoins;
     easypayOpening = effEasypayOpen + dailyEasypay - closureEasypay;
-    ccOpening = effCCOpen + dailyCC - closureCC + transferFromCoins;
+    ccOpening = effCCOpen + dailyCC - closureCC + transferFromCoins - deepFrozenCC;
   }
 
   return { coins: coinsOpening, easypay: easypayOpening, cc: ccOpening };
@@ -321,6 +322,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   const dailyCashupCoins = cashup?.shop.coins ?? 0;
   const dailyCashupEasypay = cashup?.shop.easyPay ?? 0;
   const dailyCashupCashConnect = cashup?.shop.cashDepositedBanking ?? 0;
+  const dailyDeepFrozenCC = cashup?.shop.deepFrozenCC ?? 0;
 
   // Opening balances: always use chain-derived prev-day closing (never the stale stored value)
   const effectiveCoinsOpening = usePrevClosingAsOpening ? prevCoinsClosing : form.coinsOpeningBalance;
@@ -335,7 +337,8 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
     effectiveCCOpening +
     dailyCashupCashConnect -
     Math.abs(form.ccBagClosureCashConnect) +
-    Math.abs(form.transferFromCoins);
+    Math.abs(form.transferFromCoins) -
+    dailyDeepFrozenCC;
 
   // 2.1 Banking — derived from CC Bag Closure Cash Connect using configurable rate
   const effectiveRate = form.bankChargesRate || 37.9; // cents per R100 inclusive
@@ -792,6 +795,22 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
                 <CurrencyDisplay value={-Math.abs(form.ccBagClosureEasypay) - Math.abs(form.ccBagClosureCashConnect)} />
               </td>
             </tr>
+
+            {/* Deep Frozen paid in CC — read-only from Cashier, Total CC column only */}
+            {dailyDeepFrozenCC > 0 && (
+              <tr className="border-b bg-muted/10">
+                <td className="px-3 py-1.5 text-xs text-muted-foreground">
+                  Deep Frozen paid in CC
+                  <Lock className="h-3 w-3 text-muted-foreground inline ml-1" />
+                </td>
+                <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
+                <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
+                <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
+                <td className="px-3 py-1.5 text-right text-destructive font-semibold">
+                  <CurrencyDisplay value={-dailyDeepFrozenCC} />
+                </td>
+              </tr>
+            )}
 
             {/* Transfer from Coins */}
             <tr className="border-b">

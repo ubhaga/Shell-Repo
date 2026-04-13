@@ -38,6 +38,7 @@ const blankShopShift = (): DailyCashup["shop"] => ({
   cashConnectTotal: 0,
   cashDepositedBanking: 0,
   easyPay: 0,
+  deepFrozenCC: 0,
   coins: 0,
   speedpoints: [
     { terminal: "Term 247608", batchNo: "", shopAmount: 0, optAmount: 0 },
@@ -151,8 +152,7 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
   const shopOtherTotal = form.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0);
   const shopSection8Total = shopOtherTotal + form.shop.returns_mop + form.shop.returnsNotCaptured + form.shop.attendantShortOver;
 
-  // MOP Cash: Cash Connect Total = sum of the 3 sub-items
-  const cashConnectTotal = form.shop.cashDepositedBanking + form.shop.easyPay + form.shop.coins;
+  const cashConnectTotal = form.shop.cashDepositedBanking + form.shop.easyPay + form.shop.deepFrozenCC + form.shop.coins;
 
   // Shop balance = Shop Takings - MOP Cash - Shop Speedpoints - Shop Accounts - Other adjustments
   const shopDifference =
@@ -565,6 +565,10 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
         <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
           <span className="text-muted-foreground">EasyPay</span>
           <CurrencyInput value={form.shop.easyPay} onChange={(v) => setShop({ easyPay: v })} />
+        </div>
+        <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
+          <span className="text-muted-foreground">Deep Frozen paid in CC</span>
+          <CurrencyInput value={form.shop.deepFrozenCC} onChange={(v) => setShop({ deepFrozenCC: v })} />
         </div>
         <div className="flex items-center justify-between px-3 py-1.5 border-b text-sm">
           <span className="text-muted-foreground">Coins</span>

@@ -92,6 +92,9 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   // EFT invoices from manager daily entries for this month
   const monthManagers = managerEntries.filter(e => e.date.startsWith(filterMonth));
 
+  // Get cashups for Deep Frozen CC payments
+  const { cashups } = useCashupStore();
+
   // Parse bank payment descriptions and map them to EFT suppliers
   const normalizeName = (value: string) =>
     value.toUpperCase().replace(/[^A-Z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -178,6 +181,21 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
       const idx = weekIdx >= 0 ? weekIdx : sundays.length - 1;
       weeks[idx].payments += paymentAmount;
     });
+
+    // Add Deep Frozen paid in CC from cashier daily as payments for "Deep frozen" supplier
+    const isDeepFrozen = supplier.toLowerCase().replace(/\s+/g, '') === 'deepfrozen';
+    if (isDeepFrozen) {
+      const monthCashups = cashups.filter(c => c.date.startsWith(filterMonth));
+      monthCashups.forEach(c => {
+        const dfAmount = (c.shop as any)?.deepFrozenCC ?? 0;
+        if (dfAmount > 0) {
+          const cashupDate = new Date(c.date);
+          const weekIdx = sundays.findIndex(sun => cashupDate <= sun);
+          const idx = weekIdx >= 0 ? weekIdx : sundays.length - 1;
+          weeks[idx].payments += dfAmount;
+        }
+      });
+    }
 
     supplierWeekly[supplier] = weeks;
   });

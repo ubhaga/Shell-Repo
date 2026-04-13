@@ -106,12 +106,13 @@ export function CashRecon({ filterMonth }: CashReconProps) {
 
       const dailyCoins = cashup?.shop.coins ?? 0;
       const dailyCC = cashup?.shop.cashDepositedBanking ?? 0;
+      const deepFrozenCC = (cashup?.shop as any)?.deepFrozenCC ?? 0;
       const closureCoins = Math.abs(entry?.ccBagClosureCoins ?? 0);
       const closureCC = Math.abs(entry?.ccBagClosureCashConnect ?? 0);
       const transferFromCoins = Math.abs(entry?.transferFromCoins ?? 0);
 
       coins = coins + dailyCoins - closureCoins - transferFromCoins;
-      cc = cc + dailyCC - closureCC + transferFromCoins;
+      cc = cc + dailyCC - closureCC + transferFromCoins - deepFrozenCC;
 
       d = addDays(d, 1);
     }
@@ -128,12 +129,13 @@ export function CashRecon({ filterMonth }: CashReconProps) {
     ccDailyCashup: number;
     ccBagClosure: number;
     ccTransferIn: number;
+    ccDeepFrozen: number;
     ccClosing: number;
     bankCharges: number;
     bankingExpected: number;
     bankActual: number;
     bankMatched: boolean;
-    bankRunningBalance: number; // cumulative outstanding (expected - actual)
+    bankRunningBalance: number;
     coinsOpening: number;
     coinsDailyCashup: number;
     coinsBagClosure: number;
@@ -154,6 +156,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
     const ccDailyCashup = cashup?.shop.cashDepositedBanking ?? 0;
     const ccBagClosure = Math.abs(entry?.ccBagClosureCashConnect ?? 0);
     const transferFromCoins = Math.abs(entry?.transferFromCoins ?? 0);
+    const deepFrozenCC = (cashup?.shop as any)?.deepFrozenCC ?? 0;
     const bankCharges = entry?.bankCharges ?? 0;
     const bankingExpected = entry?.banking ?? 0;
 
@@ -163,7 +166,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
     const ccOpening = runningCC;
     const coinsOpening = runningCoins;
 
-    const ccClosing = ccOpening + ccDailyCashup - ccBagClosure + transferFromCoins;
+    const ccClosing = ccOpening + ccDailyCashup - ccBagClosure + transferFromCoins - deepFrozenCC;
     const coinsClosing = coinsOpening + coinsDailyCashup - coinsBagClosure - transferFromCoins;
 
     const bankActual = cconnectByDate.get(dateStr) ?? 0;
@@ -176,6 +179,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
       ccDailyCashup,
       ccBagClosure,
       ccTransferIn: transferFromCoins,
+      ccDeepFrozen: deepFrozenCC,
       ccClosing,
       bankCharges,
       bankingExpected,
@@ -197,6 +201,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
   const totalCCDailyCashup = dailyRows.reduce((s, r) => s + r.ccDailyCashup, 0);
   const totalCCBagClosure = dailyRows.reduce((s, r) => s + r.ccBagClosure, 0);
   const totalCCTransferIn = dailyRows.reduce((s, r) => s + r.ccTransferIn, 0);
+  const totalCCDeepFrozen = dailyRows.reduce((s, r) => s + r.ccDeepFrozen, 0);
   const totalBankCharges = dailyRows.reduce((s, r) => s + r.bankCharges, 0);
   const totalBankingExpected = dailyRows.reduce((s, r) => s + r.bankingExpected, 0);
   const totalBankActual = dailyRows.reduce((s, r) => s + r.bankActual, 0);
@@ -215,8 +220,8 @@ export function CashRecon({ filterMonth }: CashReconProps) {
           </h3>
           <Button size="sm" variant="outline" onClick={() => {
             downloadCsv(
-              ['Date', 'CC Opening', 'CC Daily Cashup', 'CC Transfer In', 'CC Bag Closure', 'CC Closing', 'Bank Charges', 'Expected Banking', 'Bank Stmt', 'Outstanding'],
-              dailyRows.map(r => [r.date, r.ccOpening, r.ccDailyCashup, r.ccTransferIn, r.ccBagClosure, r.ccClosing, r.bankCharges, r.bankingExpected, r.bankActual, r.bankRunningBalance]),
+              ['Date', 'CC Opening', 'CC Daily Cashup', 'CC Transfer In', 'CC Bag Closure', 'Deep Frozen CC', 'CC Closing', 'Bank Charges', 'Expected Banking', 'Bank Stmt', 'Outstanding'],
+              dailyRows.map(r => [r.date, r.ccOpening, r.ccDailyCashup, r.ccTransferIn, r.ccBagClosure, r.ccDeepFrozen, r.ccClosing, r.bankCharges, r.bankingExpected, r.bankActual, r.bankRunningBalance]),
               `cash-connect-recon-${filterMonth}.csv`
             );
           }}>
@@ -232,6 +237,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                 <TableHead className="text-right text-xs min-w-[90px]">+ Daily Cashup</TableHead>
                 <TableHead className="text-right text-xs min-w-[90px]">+ Transfer In</TableHead>
                 <TableHead className="text-right text-xs min-w-[90px]">− Bag Closure</TableHead>
+                <TableHead className="text-right text-xs min-w-[90px]">− Deep Frozen</TableHead>
                 <TableHead className="text-right text-xs min-w-[100px] font-semibold">Closing</TableHead>
                 <TableHead className="text-right text-xs border-l min-w-[80px]">Bank Charges</TableHead>
                 <TableHead className="text-right text-xs min-w-[90px]">Expected Banking</TableHead>
@@ -244,7 +250,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
               {bankingOB !== 0 && (
                 <TableRow className="bg-muted/40 font-semibold">
                   <TableCell className="text-xs">Opening Balance</TableCell>
-                  <TableCell colSpan={5}></TableCell>
+                  <TableCell colSpan={6}></TableCell>
                   <TableCell className="border-l"></TableCell>
                   <TableCell></TableCell>
                   <TableCell></TableCell>
@@ -254,7 +260,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                 </TableRow>
               )}
               {dailyRows.map(row => {
-                const hasData = row.ccDailyCashup > 0 || row.ccBagClosure > 0 || row.ccTransferIn > 0;
+                const hasData = row.ccDailyCashup > 0 || row.ccBagClosure > 0 || row.ccTransferIn > 0 || row.ccDeepFrozen > 0;
 
                 return (
                   <TableRow key={row.date} className={!hasData ? 'opacity-50' : ''}>
@@ -275,6 +281,11 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                     <TableCell className="text-right text-xs">
                       {row.ccBagClosure > 0
                         ? <span className="text-destructive"><CurrencyDisplay value={row.ccBagClosure} /></span>
+                        : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-right text-xs">
+                      {row.ccDeepFrozen > 0
+                        ? <span className="text-destructive"><CurrencyDisplay value={row.ccDeepFrozen} /></span>
                         : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-right text-xs font-semibold bg-primary/10">
@@ -321,6 +332,9 @@ export function CashRecon({ filterMonth }: CashReconProps) {
                 </TableCell>
                 <TableCell className="text-right text-xs">
                   <CurrencyDisplay value={totalCCBagClosure} highlight />
+                </TableCell>
+                <TableCell className="text-right text-xs">
+                  <CurrencyDisplay value={totalCCDeepFrozen} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs font-bold">
                   <CurrencyDisplay value={runningCC} highlight />
