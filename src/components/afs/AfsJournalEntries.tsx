@@ -625,5 +625,6 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
           </div>
         </CardContent>
       </Card>
+    </div>
   );
 }
