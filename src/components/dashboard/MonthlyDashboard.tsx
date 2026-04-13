@@ -1,7 +1,9 @@
+import { useState, useCallback } from "react";
 import { useCashupStore } from "@/store/cashupStore";
 import { CurrencyDisplay } from "@/components/ui/CashupUI";
 import { CheckCircle, XCircle, MinusCircle } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from "date-fns";
+import { Input } from "@/components/ui/input";
 import type { DailyCashup, ManagerDailyEntry } from "@/types/cashup";
 
 interface Props {
