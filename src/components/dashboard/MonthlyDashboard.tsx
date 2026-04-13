@@ -1,7 +1,9 @@
+import { useState, useCallback } from "react";
 import { useCashupStore } from "@/store/cashupStore";
 import { CurrencyDisplay } from "@/components/ui/CashupUI";
 import { CheckCircle, XCircle, MinusCircle } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from "date-fns";
+import { Input } from "@/components/ui/input";
 import type { DailyCashup, ManagerDailyEntry } from "@/types/cashup";
 
 interface Props {
@@ -121,7 +123,8 @@ function StatusIcon({ status }: { status: "green" | "red" | "none" }) {
 }
 
 export function MonthlyDashboard({ selectedDate }: Props) {
-  const { getCashupByDate, getManagerEntryByDate } = useCashupStore();
+  const { getCashupByDate, getManagerEntryByDate, updateManagerEntry, addManagerEntry } = useCashupStore();
+  const [editingExplanations, setEditingExplanations] = useState<Record<string, string>>({});
 
   const selected = parseISO(selectedDate);
   const monthStart = startOfMonth(selected);
@@ -132,6 +135,51 @@ export function MonthlyDashboard({ selectedDate }: Props) {
     const ds = format(day, "yyyy-MM-dd");
     return computeDayMetrics(ds, getCashupByDate(ds), getManagerEntryByDate(ds));
   });
+
+  const handleExplanationChange = useCallback((date: string, value: string) => {
+    setEditingExplanations(prev => ({ ...prev, [date]: value }));
+  }, []);
+
+  const handleExplanationBlur = useCallback(async (date: string) => {
+    const value = editingExplanations[date];
+    if (value === undefined) return;
+    const existing = getManagerEntryByDate(date);
+    if (existing) {
+      await updateManagerEntry(existing.id, { explanations: value });
+    } else {
+      await addManagerEntry({
+        date,
+        cashupId: '',
+        enteredBy: '',
+        explanations: value,
+        payoutInvoices: [],
+        eftInvoices: [],
+        coinsOpeningBalance: 0,
+        easypayOpeningBalance: 0,
+        cashConnectOpeningBalance: 0,
+        dailyCoins: 0,
+        cashDepositedEasypay: 0,
+        cashDepositedCashConnect: 0,
+        ccBagClosureCoins: 0,
+        ccBagClosureEasypay: 0,
+        ccBagClosureCashConnect: 0,
+        transferFromCoins: 0,
+        branchDayEndTotal: 0,
+        branchDayEndVat: 0,
+        invoiceNotes: '',
+        cashReconcNotes: '',
+        bankChargesRate: 0,
+        bankCharges: 0,
+        banking: 0,
+        locked: false,
+      });
+    }
+    setEditingExplanations(prev => {
+      const next = { ...prev };
+      delete next[date];
+      return next;
+    });
+  }, [editingExplanations, getManagerEntryByDate, updateManagerEntry, addManagerEntry]);
 
   const dataRows = rows.filter((r) => r.hasData);
   const totalShopDiff = dataRows.reduce((s, r) => s + (r.shopDiff ?? 0), 0);
@@ -168,14 +216,14 @@ export function MonthlyDashboard({ selectedDate }: Props) {
               <tr className="bg-muted/50 border-b">
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground w-12 border-r">Day</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Date</th>
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Cashier</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Entered By</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Shop Till</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Payouts</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">OPT</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">Invoices</th>
                 <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground border-r">VAT</th>
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground w-12">Status</th>
+                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground w-12 border-r">Status</th>
+                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground min-w-[200px]">Explanation</th>
               </tr>
             </thead>
             <tbody>
@@ -188,7 +236,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                         {format(d, "d")}
                       </td>
                       <td className="px-3 py-2 text-center text-muted-foreground/40 border-r">{format(d, "EEE dd")}</td>
-                      <td colSpan={8} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">
+                      <td colSpan={9} className="px-3 py-2 text-muted-foreground/30 text-center italic text-xs">
                         No data
                       </td>
                     </tr>
@@ -207,7 +255,6 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                   <tr key={row.date} className={`border-b last:border-b-0 ${allOk ? "" : "bg-red-50/50"}`}>
                     <td className="px-3 py-2 text-center font-mono text-muted-foreground border-r">{format(d, "d")}</td>
                     <td className="px-3 py-2 text-center font-medium border-r">{format(d, "EEE dd MMM")}</td>
-                    <td className="px-3 py-2 text-center text-muted-foreground border-r">{row.cashierName || "—"}</td>
                     <td className="px-3 py-2 text-center text-muted-foreground border-r">{row.enteredBy || "—"}</td>
                     <td className="px-3 py-2 text-center border-r">
                       {row.shopDiff !== null ? (
@@ -258,7 +305,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 border-r">
                       <div className="flex justify-center">
                         {allOk ? (
                           <span className="inline-block w-3 h-3 rounded-full bg-green-500" />
@@ -267,6 +314,15 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                         )}
                       </div>
                     </td>
+                    <td className="px-1 py-1">
+                      <Input
+                        className="h-7 text-xs"
+                        placeholder={allOk ? "" : "Explain variance..."}
+                        value={editingExplanations[row.date] ?? (getManagerEntryByDate(row.date)?.explanations || "")}
+                        onChange={(e) => handleExplanationChange(row.date, e.target.value)}
+                        onBlur={() => handleExplanationBlur(row.date)}
+                      />
+                    </td>
                   </tr>
                 );
               })}
@@ -274,7 +330,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
             {dataRows.length > 0 && (
               <tfoot>
                 <tr className="bg-muted/50 border-t-2 font-semibold">
-                  <td colSpan={4} className="px-3 py-2.5 text-center border-r">
+                  <td colSpan={3} className="px-3 py-2.5 text-center border-r">
                     Monthly Total
                   </td>
                   <td className="px-3 py-2.5 text-center border-r">
@@ -299,9 +355,10 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                     {dataRows.filter((r) => r.vatMatch === true).length}/
                     {dataRows.filter((r) => r.vatMatch !== null).length}
                   </td>
-                  <td className="px-3 py-2.5 text-center text-xs">
+                  <td className="px-3 py-2.5 text-center text-xs border-r">
                     {greenCount}/{dataRows.length}
                   </td>
+                  <td></td>
                 </tr>
               </tfoot>
             )}
