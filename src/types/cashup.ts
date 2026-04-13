@@ -73,6 +73,7 @@ export interface DailyCashup {
     | "cashConnectTotal"
     | "cashDepositedBanking"
     | "easyPay"
+    | "deepFrozenCC"
     | "coins"
     | "receipts"
     | "otherAdjustments"

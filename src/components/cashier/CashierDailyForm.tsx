@@ -38,6 +38,7 @@ const blankShopShift = (): DailyCashup["shop"] => ({
   cashConnectTotal: 0,
   cashDepositedBanking: 0,
   easyPay: 0,
+  deepFrozenCC: 0,
   coins: 0,
   speedpoints: [
     { terminal: "Term 247608", batchNo: "", shopAmount: 0, optAmount: 0 },
