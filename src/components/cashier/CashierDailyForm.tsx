@@ -492,7 +492,7 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
         <div className="bg-green-700 text-white px-3 py-2 font-semibold text-sm">3. Receipts — Shop Till Only</div>
         <div className="px-3 py-1 text-xs text-muted-foreground grid grid-cols-12 gap-2 font-semibold border-b bg-muted/30">
           <span className="col-span-7">Type</span>
-          <span className="col-span-2">Seq No.</span>
+          <span className="col-span-2">Seq No. / Debtor</span>
           <span className="col-span-3 text-right">Amount</span>
         </div>
         {form.shop.receipts.map((r) => (
