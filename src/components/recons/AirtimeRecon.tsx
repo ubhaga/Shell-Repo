@@ -29,71 +29,17 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
 
   const loadData = useCallback(async () => {
     const bankQuery = supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth);
-    const commQuery = supabase.from('creditor_opening_balances').select('supplier, amount').eq('month', filterMonth);
     const prevBankQuery = !isFirstMonth ? supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', prevMonth) : null;
-    const prevCommQuery = !isFirstMonth ? supabase.from('creditor_opening_balances').select('supplier, amount').eq('month', prevMonth) : null;
 
-    const [bankRes, commRes, prevBankRes, prevCommRes] = await Promise.all([
-      bankQuery, commQuery, prevBankQuery, prevCommQuery,
-    ]);
+    const [bankRes, prevBankRes] = await Promise.all([bankQuery, prevBankQuery]);
     setBankLines(((bankRes as any)?.data ?? []) as typeof bankLines);
 
-    const parseComm = (data: any[]) => {
-      const commMap: Record<string, number> = {};
-      (data ?? []).forEach((r: { supplier: string; amount: number }) => {
-        if (r.supplier.startsWith('commission:')) {
-          commMap[r.supplier.replace('commission:', '')] = Number(r.amount);
-        }
-      });
-      return { bld: commMap['bld'] ?? 0, easypay: commMap['easypay'] ?? 0, lotto: commMap['lotto'] ?? 0 };
-    };
-
-    setCommissions(parseComm((commRes as any)?.data));
-    setEditingComm(null);
-
-    if (!isFirstMonth && prevBankRes && prevCommRes) {
+    if (!isFirstMonth && prevBankRes) {
       setPrevBankLines(((prevBankRes as any)?.data ?? []) as typeof bankLines);
-      setPrevCommissions(parseComm((prevCommRes as any)?.data));
     }
   }, [filterMonth, isFirstMonth, prevMonth]);
 
   useEffect(() => { loadData(); }, [loadData]);
-
-  const handleSaveCommissions = async () => {
-    if (!editingComm) return;
-    setSaving(true);
-    try {
-      for (const [key, val] of Object.entries(editingComm)) {
-        const supplier = `commission:${key}`;
-        const { data: existing } = await supabase
-          .from('creditor_opening_balances')
-          .select('id')
-          .eq('month', filterMonth)
-          .eq('supplier', supplier);
-        if (existing && existing.length > 0) {
-          const { error } = await supabase
-            .from('creditor_opening_balances')
-            .update({ amount: val } as never)
-            .eq('id', existing[0].id);
-          if (error) throw error;
-        } else {
-          const { error } = await supabase
-            .from('creditor_opening_balances')
-            .insert({ month: filterMonth, supplier, amount: val } as never);
-          if (error) throw error;
-        }
-      }
-      setCommissions(editingComm);
-      setEditingComm(null);
-      toast.success('Commissions saved');
-    } catch (e) {
-      console.error('Commission save error:', e);
-      toast.error('Failed to save commissions');
-    }
-    setSaving(false);
-  };
-
-  const currentComm = editingComm ?? commissions;
 
   const SEED_BLD = -11906.34;
   const SEED_EASYPAY = 14392.59;
