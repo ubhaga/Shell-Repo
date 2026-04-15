@@ -247,6 +247,9 @@ export function MonthlyDashboard({ selectedDate }: Props) {
         bankCharges: 0,
         banking: 0,
         deepFrozenCC: 0,
+        blueLabelComm: 0,
+        easypayComm: 0,
+        lottoComm: 0,
         locked: false,
       });
     }

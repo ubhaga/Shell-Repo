@@ -7,7 +7,7 @@ import { Section, DataRow, CurrencyInput, CurrencyDisplay } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Save, AlertCircle, CheckCircle, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { format, subDays, addDays, parseISO } from "date-fns";
+import { format, subDays, addDays, parseISO, lastDayOfMonth, isSaturday } from "date-fns";
 
 // ---- Recursive chain helper ----
 // Walk forward from Jan 1 2026 to compute the TRUE effective closing balance for any date.
@@ -201,6 +201,9 @@ const blankEntry = (date: string): Omit<ManagerDailyEntry, "id"> => ({
   bankCharges: 0,
   banking: 0,
   deepFrozenCC: 0,
+  blueLabelComm: 0,
+  easypayComm: 0,
+  lottoComm: 0,
   locked: false,
 });
 
@@ -342,7 +345,16 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   const bankChargesCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) / 100) * (effectiveRate / 100) * 100) / 100;
   const bankingCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) - bankChargesCalc) * 100) / 100;
 
-  const openingIsReadOnly = true; // Always read-only — seeded from prev day or Jan 1 spreadsheet values
+  const openingIsReadOnly = true;
+
+  // Commission day rules
+  const selectedParsed = parseISO(selectedDate);
+  const isFirstOfMonth = selectedParsed.getDate() === 1;
+  const isLastOfMonth = format(lastDayOfMonth(selectedParsed), 'yyyy-MM-dd') === selectedDate;
+  const isSat = isSaturday(selectedParsed);
+  const showBlueLabelComm = isFirstOfMonth;
+  const showEasypayComm = isLastOfMonth;
+  const showLottoComm = isSat;
 
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
@@ -427,7 +439,32 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
       }
     }
 
-    // 4. Closing balance cannot be negative
+    // 5. Commission validation — mandatory when field is shown
+    if (showBlueLabelComm && form.blueLabelComm === 0) {
+      toast({
+        title: "Missing Blue Label Commission",
+        description: "Blue Label Commission is mandatory on the 1st of the month.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (showEasypayComm && form.easypayComm === 0) {
+      toast({
+        title: "Missing Easy Pay Commission",
+        description: "Easy Pay Commission is mandatory on the last day of the month.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (showLottoComm && form.lottoComm === 0) {
+      toast({
+        title: "Missing Lotto Commission",
+        description: "Lotto Commission is mandatory every Saturday.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const negativeClosingFields: string[] = [];
     if (coinsClosing < -0.005) negativeClosingFields.push("Coins");
     if (easypayClosing < -0.005) negativeClosingFields.push("Easy Pay");
@@ -888,6 +925,42 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
           </div>
         </DataRow>
       </Section>
+
+      {/* 3. Airtime / Lotto Commissions — only shown when relevant fields are active */}
+      {(showBlueLabelComm || showEasypayComm || showLottoComm) && (
+        <Section title="3. Airtime / Lotto Commissions" color="green">
+          {showBlueLabelComm && (
+            <DataRow label="3.1 Blue Label Commission (1st of month)">
+              <CurrencyInput
+                value={form.blueLabelComm}
+                onChange={(v) => setForm((f) => ({ ...f, blueLabelComm: v }))}
+                className="w-[160px]"
+                allowNegative
+              />
+            </DataRow>
+          )}
+          {showEasypayComm && (
+            <DataRow label="3.2 Easy Pay Commission (last day of month)">
+              <CurrencyInput
+                value={form.easypayComm}
+                onChange={(v) => setForm((f) => ({ ...f, easypayComm: v }))}
+                className="w-[160px]"
+                allowNegative
+              />
+            </DataRow>
+          )}
+          {showLottoComm && (
+            <DataRow label="3.3 Lotto Commission (Saturday)">
+              <CurrencyInput
+                value={form.lottoComm}
+                onChange={(v) => setForm((f) => ({ ...f, lottoComm: v }))}
+                className="w-[160px]"
+                allowNegative
+              />
+            </DataRow>
+          )}
+        </Section>
+      )}
 
       {/* Save button + nav at bottom */}
       <div className="flex items-center justify-between gap-2 pt-2 pb-4">

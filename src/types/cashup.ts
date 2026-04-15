@@ -133,6 +133,9 @@ export interface ManagerDailyEntry {
   bankCharges: number;
   banking: number;
   deepFrozenCC: number;
+  blueLabelComm: number;
+  easypayComm: number;
+  lottoComm: number;
   locked: boolean;
 }
 

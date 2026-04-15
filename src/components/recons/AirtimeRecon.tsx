@@ -145,11 +145,15 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       const dfCC = mgrEntry?.deepFrozenCC ?? 0;
       const ltRec = c ? c.shop.receipts.filter((r: any) => r.type === 'Lotto Receipts').reduce((s: number, r: any) => s + r.amount, 0) : 0;
       const ltPay = c ? (c.shop.lottoPayouts ?? 0) : 0;
-      bld = bld - bldInv + (bldPmts.get(ds) ?? 0);
-      ep = ep - (epInv + dfCC) + (c?.shop.easyPay ?? 0);
-      lt = lt - (ltRec - ltPay) + (lottoPmts.get(ds) ?? 0);
+      // Manager daily commissions as payments
+      const bldComm = mgrEntry?.blueLabelComm ?? 0;
+      const epComm = mgrEntry?.easypayComm ?? 0;
+      const ltComm = mgrEntry?.lottoComm ?? 0;
+      bld = bld - bldInv + (bldPmts.get(ds) ?? 0) + bldComm;
+      ep = ep - (epInv + dfCC) + (c?.shop.easyPay ?? 0) + epComm;
+      lt = lt - (ltRec - ltPay) + (lottoPmts.get(ds) ?? 0) + ltComm;
     }
-    // Add commission
+    // Add monthly commission adjustments
     return { bld: bld + comm.bld, ep: ep + comm.easypay, lt: lt + comm.lotto };
   };
 
@@ -215,6 +219,10 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     // Add Deep Frozen paid in CC from manager daily to Easypay invoice
     const managerEntry = managerEntries.find(e => e.date === dateStr);
     const deepFrozenCC = managerEntry?.deepFrozenCC ?? 0;
+    // Manager daily commissions shown as payments on their specific days
+    const bldComm = managerEntry?.blueLabelComm ?? 0;
+    const epComm = managerEntry?.easypayComm ?? 0;
+    const ltComm = managerEntry?.lottoComm ?? 0;
     const lottoReceipts = cashup
       ? cashup.shop.receipts.filter(r => r.type === 'Lotto Receipts').reduce((s, r) => s + r.amount, 0)
       : 0;
@@ -226,11 +234,11 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     return {
       date: dateStr,
       bldInvoice,
-      bldPayment: bldPaymentsByDate.get(dateStr) ?? 0,
+      bldPayment: (bldPaymentsByDate.get(dateStr) ?? 0) + bldComm,
       easypayInvoice: easypayInvoice + deepFrozenCC,
-      easypayCollection: cashup?.shop.easyPay ?? 0,
+      easypayCollection: (cashup?.shop.easyPay ?? 0) + epComm,
       lottoInvoice,
-      lottoPayment: lottoPaymentsByDate.get(dateStr) ?? 0,
+      lottoPayment: (lottoPaymentsByDate.get(dateStr) ?? 0) + ltComm,
     };
   });
 
