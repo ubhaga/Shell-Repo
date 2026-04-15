@@ -401,9 +401,9 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 const mBld = monthly?.airtimeBldBalance ?? 0;
                 const mEp = monthly?.airtimeEasypayBalance ?? 0;
                 const mLt = monthly?.airtimeLottoBalance ?? 0;
-                const diffBld = Math.abs(bldBalance - mBld) < 0.01 ? 0 : bldBalance - mBld;
+                const diffBld = Math.abs((-bldBalance) - mBld) < 0.01 ? 0 : (-bldBalance) - mBld;
                 const diffEp = Math.abs(easypayBalance - mEp) < 0.01 ? 0 : easypayBalance - mEp;
-                const diffLt = Math.abs(lottoBalance - mLt) < 0.01 ? 0 : lottoBalance - mLt;
+                const diffLt = Math.abs((-lottoBalance) - mLt) < 0.01 ? 0 : (-lottoBalance) - mLt;
                 const allMatch = diffBld === 0 && diffEp === 0 && diffLt === 0;
                 const hasMonthly = !!monthly;
                 return (
