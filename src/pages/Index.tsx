@@ -263,8 +263,8 @@ export default function Index() {
           <TabsContent value="uploads">
             <Tabs value={uploadsSubTab} onValueChange={setUploadsSubTab}>
               <TabsList className="mb-4">
-                <TabsTrigger value="bank" className="text-xs">Bank Statement</TabsTrigger>
                 <TabsTrigger value="dayend" className="text-xs">Day End Reports</TabsTrigger>
+                <TabsTrigger value="bank" className="text-xs">Bank Statement</TabsTrigger>
               </TabsList>
               <TabsContent value="bank">
                 <BankStatementTab filterMonth={selectedDate.slice(0, 7)} monthLabel={format(new Date(selectedDate.slice(0, 7) + "-01"), "MMMM yyyy")} />
