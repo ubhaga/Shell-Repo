@@ -119,7 +119,6 @@ export function DayEndUpload({ filterMonth }: Props) {
     const raw = await file.text();
     const text = stripPageBreaks(raw);
     const batchDate = extractBatchDate(text);
-    const batchDate = extractBatchDate(text);
 
     if (batchDate && batchDate !== date) {
       setMismatchDialog({ targetDate: date, batchDate, file, text });
