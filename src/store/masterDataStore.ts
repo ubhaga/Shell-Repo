@@ -51,6 +51,10 @@ interface MasterDataStore {
   addCategory: (name: string) => void;
   updateCategory: (old: string, next: string) => void;
   deleteCategory: (name: string) => void;
+
+  addTank: (tank: TankDescription) => void;
+  updateTank: (index: number, tank: TankDescription) => void;
+  deleteTank: (index: number) => void;
 }
 
 const replace = (list: string[], old: string, next: string) =>
