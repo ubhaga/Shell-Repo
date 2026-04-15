@@ -56,12 +56,10 @@ function computeEffectiveClosingForDate(
     let effCCOpen: number;
 
     if (date === SEED_DATE) {
-      // Jan 1: use seed values (ignore any stale stored opening)
       effCoinsOpen = 4483.15;
       effEasypayOpen = 3500;
       effCCOpen = 2000;
     } else {
-      // Every other date: opening = previous day's effective closing
       effCoinsOpen = coinsOpening;
       effEasypayOpen = easypayOpening;
       effCCOpen = ccOpening;
@@ -70,15 +68,15 @@ function computeEffectiveClosingForDate(
     const dailyCoins = cashup?.shop.coins ?? 0;
     const dailyEasypay = cashup?.shop.easyPay ?? 0;
     const dailyCC = cashup?.shop.cashDepositedBanking ?? 0;
-    const deepFrozenCC = cashup?.shop.deepFrozenCC ?? 0;
+    const deepFrozenCC = entry?.deepFrozenCC ?? 0;
     const closureCoins = Math.abs(entry?.ccBagClosureCoins ?? 0);
     const closureEasypay = Math.abs(entry?.ccBagClosureEasypay ?? 0);
     const closureCC = Math.abs(entry?.ccBagClosureCashConnect ?? 0);
     const transferFromCoins = Math.abs(entry?.transferFromCoins ?? 0);
 
     coinsOpening = effCoinsOpen + dailyCoins - closureCoins - transferFromCoins;
-    easypayOpening = effEasypayOpen + dailyEasypay - closureEasypay;
-    ccOpening = effCCOpen + dailyCC - closureCC + transferFromCoins - deepFrozenCC;
+    easypayOpening = effEasypayOpen + dailyEasypay - closureEasypay - deepFrozenCC;
+    ccOpening = effCCOpen + dailyCC - closureCC + transferFromCoins;
   }
 
   return { coins: coinsOpening, easypay: easypayOpening, cc: ccOpening };
