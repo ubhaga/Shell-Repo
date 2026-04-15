@@ -457,54 +457,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 <TableCell className="text-right text-xs font-bold">
                   <CurrencyDisplay value={lottoBalance} highlight />
                 </TableCell>
-              </TableRow>
-              {/* Commission row */}
-              <TableRow className="bg-muted/30">
-                <TableCell className="text-xs font-semibold">Commission</TableCell>
-                <TableCell className="border-l" colSpan={2}></TableCell>
-                <TableCell className="text-right p-1">
-                  <CurrencyInput
-                    value={currentComm.bld}
-                    onChange={(v) => setEditingComm(prev => ({ ...(prev ?? commissions), bld: v }))}
-                    className="h-7 text-xs w-24 ml-auto"
-                    allowNegative
-                  />
-                </TableCell>
-                <TableCell className="border-l" colSpan={2}></TableCell>
-                <TableCell className="text-right p-1">
-                  <CurrencyInput
-                    value={currentComm.easypay}
-                    onChange={(v) => setEditingComm(prev => ({ ...(prev ?? commissions), easypay: v }))}
-                    className="h-7 text-xs w-24 ml-auto"
-                    allowNegative
-                  />
-                </TableCell>
-                <TableCell className="border-l" colSpan={2}></TableCell>
-                <TableCell className="text-right p-1">
-                  <CurrencyInput
-                    value={currentComm.lotto}
-                    onChange={(v) => setEditingComm(prev => ({ ...(prev ?? commissions), lotto: v }))}
-                    className="h-7 text-xs w-24 ml-auto"
-                    allowNegative
-                  />
-                </TableCell>
-              </TableRow>
-              {/* Final balance after commission */}
-              <TableRow className="bg-secondary/80 font-bold">
-                <TableCell className="text-xs">Balance after Commission</TableCell>
-                <TableCell className="border-l" colSpan={2}></TableCell>
-                <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={bldBalance + currentComm.bld} highlight />
-                </TableCell>
-                <TableCell className="border-l" colSpan={2}></TableCell>
-                <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={easypayBalance + currentComm.easypay} highlight />
-                </TableCell>
-                <TableCell className="border-l" colSpan={2}></TableCell>
-                <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={lottoBalance + currentComm.lotto} highlight />
-                </TableCell>
-              </TableRow>
+               </TableRow>
             </TableBody>
           </Table>
         </div>
