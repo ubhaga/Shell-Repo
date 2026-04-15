@@ -798,21 +798,28 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
               </td>
             </tr>
 
-            {/* Deep Frozen paid in CC — read-only from Cashier, Total CC column only */}
-            {dailyDeepFrozenCC > 0 && (
-              <tr className="border-b bg-muted/10">
-                <td className="px-3 py-1.5 text-xs text-muted-foreground">
-                  Deep Frozen paid in CC
-                  <Lock className="h-3 w-3 text-muted-foreground inline ml-1" />
-                </td>
-                <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
-                <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
-                <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
-                <td className="px-3 py-1.5 text-right text-destructive font-semibold">
-                  <CurrencyDisplay value={-dailyDeepFrozenCC} />
-                </td>
-              </tr>
-            )}
+            {/* Deep Frozen paid in CC — editable, Easy Pay + Total columns */}
+            <tr className="border-b">
+              <td className="px-3 py-1.5 text-xs text-muted-foreground">
+                Deep Frozen paid in CC <span className="text-destructive font-bold">(-ve)</span>
+              </td>
+              <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
+              <td className="px-3 py-1.5">
+                <CurrencyInput
+                  value={form.deepFrozenCC}
+                  onChange={(v) => setForm((f) => ({ ...f, deepFrozenCC: Math.abs(v) }))}
+                  className="w-full"
+                  placeholder="0.00"
+                />
+                <div className="text-xs text-destructive text-right mt-0.5">
+                  <CurrencyDisplay value={-Math.abs(form.deepFrozenCC)} />
+                </div>
+              </td>
+              <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
+              <td className="px-3 py-1.5 text-right text-destructive font-semibold">
+                <CurrencyDisplay value={-Math.abs(form.deepFrozenCC)} />
+              </td>
+            </tr>
 
             {/* Transfer from Coins */}
             <tr className="border-b">
