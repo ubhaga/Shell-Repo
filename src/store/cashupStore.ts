@@ -67,6 +67,9 @@ function managerToRow(e: ManagerDailyEntry) {
     bank_charges: e.bankCharges,
     banking: e.banking,
     deep_frozen_cc: e.deepFrozenCC,
+    blue_label_comm: e.blueLabelComm,
+    easypay_comm: e.easypayComm,
+    lotto_comm: e.lottoComm,
     locked: e.locked,
   };
 }
@@ -98,6 +101,9 @@ function rowToManager(r: Record<string, unknown>): ManagerDailyEntry {
     bankCharges: Number(r.bank_charges ?? 0),
     banking: Number(r.banking ?? 0),
     deepFrozenCC: Number(r.deep_frozen_cc ?? 0),
+    blueLabelComm: Number(r.blue_label_comm ?? 0),
+    easypayComm: Number(r.easypay_comm ?? 0),
+    lottoComm: Number(r.lotto_comm ?? 0),
     locked: r.locked as boolean,
   };
 }
