@@ -333,9 +333,10 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 lottoBalance = lottoBalance - row.lottoInvoice + row.lottoPayment;
 
                 const hasData = row.bldInvoice !== 0 || row.bldPayment > 0 || row.easypayInvoice !== 0 || row.easypayCollection > 0 || row.lottoInvoice !== 0 || row.lottoPayment > 0;
+                const hasComm = row.bldComm !== 0 || row.epComm !== 0 || row.ltComm !== 0;
 
-                return (
-                  <TableRow key={row.date} className={!hasData ? 'opacity-50' : ''}>
+                const dayRow = (
+                  <TableRow key={row.date} className={!hasData && !hasComm ? 'opacity-50' : ''}>
                     <TableCell className="text-xs">{format(new Date(row.date), 'dd MMM (EEE)')}</TableCell>
                     <TableCell className="text-right text-xs border-l">
                       {row.bldInvoice > 0
@@ -378,6 +379,48 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                     </TableCell>
                   </TableRow>
                 );
+
+                // Commission row (separate from payments)
+                let commRow: React.ReactNode = null;
+                if (hasComm) {
+                  bldBalance += row.bldComm;
+                  easypayBalance += row.epComm;
+                  lottoBalance += row.ltComm;
+                  commRow = (
+                    <TableRow key={row.date + '-comm'} className="bg-muted/20 italic">
+                      <TableCell className="text-xs text-muted-foreground pl-6">↳ Commission</TableCell>
+                      <TableCell className="border-l"></TableCell>
+                      <TableCell className="text-right text-xs">
+                        {row.bldComm !== 0
+                          ? <span className="text-destructive"><CurrencyDisplay value={row.bldComm} /></span>
+                          : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-semibold bg-destructive/10">
+                        <CurrencyDisplay value={bldBalance} />
+                      </TableCell>
+                      <TableCell className="border-l"></TableCell>
+                      <TableCell className="text-right text-xs">
+                        {row.epComm !== 0
+                          ? <span className="text-destructive"><CurrencyDisplay value={row.epComm} /></span>
+                          : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-semibold bg-primary/10">
+                        <CurrencyDisplay value={easypayBalance} />
+                      </TableCell>
+                      <TableCell className="border-l"></TableCell>
+                      <TableCell className="text-right text-xs">
+                        {row.ltComm !== 0
+                          ? <span className="text-destructive"><CurrencyDisplay value={row.ltComm} /></span>
+                          : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-semibold bg-accent/20">
+                        <CurrencyDisplay value={lottoBalance} />
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+
+                return <React.Fragment key={row.date}>{dayRow}{commRow}</React.Fragment>;
               })}
               {/* Closing before commission */}
               <TableRow className="bg-secondary font-semibold">
