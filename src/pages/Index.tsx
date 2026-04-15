@@ -26,12 +26,17 @@ import { BankStatementTab } from "@/components/reports/BankStatementTab";
 import { DayEndUpload } from "@/components/uploads/DayEndUpload";
 import { AfsJournalEntries } from "@/components/afs/AfsJournalEntries";
 import { AfsMonthly } from "@/components/afs/AfsMonthly";
+import { FuelDashboard } from "@/components/fuel/FuelDashboard";
+import { FuelSalesControl } from "@/components/fuel/FuelSalesControl";
+import { MeterSalesControl } from "@/components/fuel/MeterSalesControl";
+import { PosSalesPerTank } from "@/components/fuel/PosSalesPerTank";
 import { useCashupStore } from "@/store/cashupStore";
 import { useMasterDataStore } from "@/store/masterDataStore";
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [afsSubTab, setAfsSubTab] = useState("jes");
+  const [fuelSubTab, setFuelSubTab] = useState("fuel-dashboard");
   const [uploadsSubTab, setUploadsSubTab] = useState("bank");
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const cashupLoaded = useCashupStore((s) => s.loaded);
