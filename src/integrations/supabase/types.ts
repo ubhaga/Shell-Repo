@@ -176,6 +176,7 @@ export type Database = {
           created_at: string
           daily_coins: number
           date: string
+          deep_frozen_cc: number
           easypay_opening_balance: number
           eft_invoices: Json
           entered_by: string
@@ -205,6 +206,7 @@ export type Database = {
           created_at?: string
           daily_coins?: number
           date: string
+          deep_frozen_cc?: number
           easypay_opening_balance?: number
           eft_invoices?: Json
           entered_by?: string
@@ -234,6 +236,7 @@ export type Database = {
           created_at?: string
           daily_coins?: number
           date?: string
+          deep_frozen_cc?: number
           easypay_opening_balance?: number
           eft_invoices?: Json
           entered_by?: string
