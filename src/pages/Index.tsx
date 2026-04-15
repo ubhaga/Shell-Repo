@@ -7,7 +7,7 @@ import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Reports } from "@/components/reports/Reports";
 import { MasterDataSettings } from "@/components/settings/MasterDataSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2, GitCompareArrows, FileSpreadsheet, ChevronLeft, ChevronRight, Upload } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2, GitCompareArrows, FileSpreadsheet, ChevronLeft, ChevronRight, Upload, Fuel } from "lucide-react";
 import { BankStatementTab } from "@/components/reports/BankStatementTab";
 import { DayEndUpload } from "@/components/uploads/DayEndUpload";
 import { AfsJournalEntries } from "@/components/afs/AfsJournalEntries";
@@ -78,7 +78,7 @@ export default function Index() {
 
       <div className="container mx-auto px-4 py-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-9 w-full mb-4">
+          <TabsList className="grid grid-cols-10 w-full mb-4">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5 text-xs">
               <LayoutDashboard className="h-3.5 w-3.5" />
               Dashboard
@@ -102,6 +102,10 @@ export default function Index() {
             <TabsTrigger value="recons" className="flex items-center gap-1.5 text-xs">
               <GitCompareArrows className="h-3.5 w-3.5" />
               Recons
+            </TabsTrigger>
+            <TabsTrigger value="fuel-recon" className="flex items-center gap-1.5 text-xs">
+              <Fuel className="h-3.5 w-3.5" />
+              Fuel Recon
             </TabsTrigger>
             <TabsTrigger value="afs" className="flex items-center gap-1.5 text-xs">
               <FileSpreadsheet className="h-3.5 w-3.5" />
