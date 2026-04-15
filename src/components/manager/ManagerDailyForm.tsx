@@ -345,7 +345,16 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   const bankChargesCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) / 100) * (effectiveRate / 100) * 100) / 100;
   const bankingCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) - bankChargesCalc) * 100) / 100;
 
-  const openingIsReadOnly = true; // Always read-only — seeded from prev day or Jan 1 spreadsheet values
+  const openingIsReadOnly = true;
+
+  // Commission day rules
+  const selectedParsed = parseISO(selectedDate);
+  const isFirstOfMonth = selectedParsed.getDate() === 1;
+  const isLastOfMonth = format(lastDayOfMonth(selectedParsed), 'yyyy-MM-dd') === selectedDate;
+  const isSat = isSaturday(selectedParsed);
+  const showBlueLabelComm = isFirstOfMonth;
+  const showEasypayComm = isLastOfMonth;
+  const showLottoComm = isSat;
 
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
