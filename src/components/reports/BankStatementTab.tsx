@@ -1,16 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useMasterDataStore } from '@/store/masterDataStore';
 import { CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, Trash2, Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { useBankAllocations } from '@/hooks/useBankAllocations';
 
 const TERMINAL_PATTERNS: { pattern: RegExp; terminal: string }[] = [
   { pattern: /247608/, terminal: 'Term 247608' },
   { pattern: /929661/, terminal: 'Forecourt 929661' },
   { pattern: /200660/, terminal: 'Retail 200660' },
+];
+
+const DEBTOR_ACCOUNTS = [
+  'Mahindra', 'Lancaster Pharmacy', 'Hyde Park Toyota', 'Hltc', 'St Theresas',
+  'Sayinile', 'Red cross', 'Umesh', 'Isuzu bakkie', 'Bp Zoolake',
+  'Bp Zoolake Account Customer', 'Shell Parkhurst', 'House tech', 'Moses bpzl',
+  'Generator', 'Shop Expense',
 ];
 
 interface BankLine {
@@ -32,6 +41,8 @@ interface Props {
 export function BankStatementTab({ filterMonth, monthLabel }: Props) {
   const [lines, setLines] = useState<BankLine[]>([]);
   const [loading, setLoading] = useState(false);
+  const { eftSuppliers, accounts } = useMasterDataStore();
+  const { allocations, upsert: upsertAllocation } = useBankAllocations(filterMonth);
 
   const loadLines = useCallback(async () => {
     const { data } = await supabase
@@ -74,7 +85,6 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
         return result;
       };
 
-      // Auto-detect header row by scanning for a row containing 'date' and ('amount' or 'description')
       let headerRowIdx = -1;
       for (let i = 0; i < Math.min(csvLines.length, 20); i++) {
         const lower = csvLines[i].toLowerCase();
@@ -84,14 +94,12 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
         }
       }
       if (headerRowIdx === -1) {
-        toast.error('Could not find header row in CSV. Expected a row with Date, Amount/Description columns.');
+        toast.error('Could not find header row in CSV.');
         setLoading(false);
         return;
       }
 
       const headers = parseCSVRow(csvLines[headerRowIdx]).map(h => h.toLowerCase().replace(/"/g, '').trim()).filter(Boolean);
-      
-      // Flexible column detection
       const dateIdx = headers.findIndex(h => h.includes('date'));
       const descIdx = headers.findIndex(h => h.includes('description') || h.includes('narrative') || h.includes('detail') || h.includes('reference') || h.includes('particulars'));
       let amountIdx = headers.findIndex(h => h === 'amount' || h === 'transaction amount' || h === 'value');
@@ -105,9 +113,7 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
         return;
       }
 
-      // Get existing raw_lines to detect duplicates
       const existingRaw = new Set(lines.map(l => l.raw_line));
-
       const newRows: Omit<BankLine, 'id' | 'created_at'>[] = [];
       let duplicates = 0;
 
@@ -124,7 +130,7 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
         if (useDebitCredit) {
           const debit = debitIdx !== -1 ? parseFloat(fields[debitIdx].replace(/[^0-9.\-]/g, '')) || 0 : 0;
           const credit = creditIdx !== -1 ? parseFloat(fields[creditIdx].replace(/[^0-9.\-]/g, '')) || 0 : 0;
-          amt = credit - debit; // credits positive, debits negative
+          amt = credit - debit;
           if (debit === 0 && credit === 0) continue;
         } else {
           amt = parseFloat(fields[amountIdx].replace(/[^0-9.\-]/g, ''));
@@ -145,7 +151,6 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
         const { error } = await supabase.from('bank_statement_lines').insert(newRows as never[]);
         if (error) { toast.error('Upload failed: ' + error.message); }
         else {
-          // Re-link orphaned manual matches whose bank_line_id no longer exists
           const { data: matches } = await supabase
             .from('speedpoint_manual_matches')
             .select('id, bank_line_id, bank_description, bank_amount')
@@ -194,12 +199,36 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
   const grandTotal = lines.reduce((s, l) => s + l.amount, 0);
 
   const exportCSV = () => {
-    const headers = ['Date', 'Description', 'Amount', 'Matched Terminal'];
-    const rows = lines.map(l => [l.transaction_date, `"${l.description}"`, l.amount, l.matched_terminal].join(','));
+    const headers = ['Date', 'Description', 'Amount', 'Matched Terminal', 'Allocation'];
+    const rows = lines.map(l => {
+      const alloc = allocations.find(a => a.bank_line_id === l.id);
+      const allocLabel = alloc ? `${alloc.recon_type}: ${alloc.target_name}` : '';
+      return [l.transaction_date, `"${l.description}"`, l.amount, l.matched_terminal, allocLabel].join(',');
+    });
     const csv = [headers.join(','), ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `bank-statement-${filterMonth}.csv`; a.click();
+  };
+
+  // Build allocation options
+  const allocationOptions = [
+    { group: 'Creditor', items: [...eftSuppliers].sort() },
+    { group: 'Debtor', items: [...(accounts.length > 0 ? accounts : DEBTOR_ACCOUNTS)].sort() },
+  ];
+
+  const getAllocationValue = (lineId: string) => {
+    const alloc = allocations.find(a => a.bank_line_id === lineId);
+    return alloc ? `${alloc.recon_type}::${alloc.target_name}` : '';
+  };
+
+  const handleAllocationChange = async (lineId: string, value: string) => {
+    if (value === 'none' || !value) {
+      await upsertAllocation(lineId, '', '');
+    } else {
+      const [reconType, targetName] = value.split('::');
+      await upsertAllocation(lineId, reconType, targetName);
+    }
   };
 
   return (
@@ -226,7 +255,6 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
         </div>
       </div>
 
-      {/* Terminal matching summary */}
       {lines.length > 0 && (
         <div className="border-b p-4">
           <h4 className="text-sm font-semibold mb-2">Terminal Matching Summary</h4>
@@ -251,19 +279,20 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
             <TableHead>Date</TableHead>
             <TableHead>Description</TableHead>
             <TableHead className="text-right">Amount</TableHead>
-            <TableHead>Matched Terminal</TableHead>
+            <TableHead>Terminal</TableHead>
+            <TableHead className="min-w-[200px]">Allocation</TableHead>
             <TableHead className="w-10"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {lines.length === 0 ? (
-            <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No bank statement uploaded for this month. Upload a CSV to get started.</TableCell></TableRow>
+            <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No bank statement uploaded for this month.</TableCell></TableRow>
           ) : (
             <>
               {lines.map(l => (
                 <TableRow key={l.id} className={l.matched_terminal ? 'hover:bg-muted/30' : 'bg-muted/10 hover:bg-muted/30'}>
                   <TableCell className="text-sm font-mono">{l.transaction_date}</TableCell>
-                  <TableCell className="text-sm max-w-[300px] truncate">{l.description}</TableCell>
+                  <TableCell className="text-sm max-w-[250px] truncate">{l.description}</TableCell>
                   <TableCell className="text-right"><CurrencyDisplay value={l.amount} /></TableCell>
                   <TableCell className="text-sm">
                     {l.matched_terminal ? (
@@ -271,6 +300,31 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
                     ) : (
                       <span className="text-muted-foreground text-xs">—</span>
                     )}
+                  </TableCell>
+                  <TableCell className="p-1">
+                    <Select
+                      value={getAllocationValue(l.id) || 'none'}
+                      onValueChange={(v) => handleAllocationChange(l.id, v)}
+                    >
+                      <SelectTrigger className="h-7 text-xs w-full">
+                        <SelectValue placeholder="—" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">— None —</SelectItem>
+                        {allocationOptions.map(group => (
+                          <React.Fragment key={group.group}>
+                            <SelectItem value={`__header_${group.group}`} disabled className="font-semibold text-xs text-muted-foreground">
+                              ── {group.group}s ──
+                            </SelectItem>
+                            {group.items.map(item => (
+                              <SelectItem key={`${group.group}::${item}`} value={`${group.group.toLowerCase()}::${item}`}>
+                                {item}
+                              </SelectItem>
+                            ))}
+                          </React.Fragment>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell className="p-1">
                     <Button
@@ -291,7 +345,7 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
               <TableRow className="bg-secondary font-semibold">
                 <TableCell colSpan={2}>TOTAL ({lines.length} lines)</TableCell>
                 <TableCell className="text-right"><CurrencyDisplay value={grandTotal} highlight /></TableCell>
-                <TableCell colSpan={2}></TableCell>
+                <TableCell colSpan={3}></TableCell>
               </TableRow>
             </>
           )}
