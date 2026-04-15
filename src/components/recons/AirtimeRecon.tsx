@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCashupStore } from '@/store/cashupStore';
 import { supabase } from '@/integrations/supabase/client';
-import { CurrencyDisplay, CurrencyInput } from '@/components/ui/CashupUI';
+import { CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Download, Save } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { downloadCsv } from '@/lib/csvExport';
 import { parseBankStatementDate } from '@/lib/bankStatementDate';
-import { toast } from 'sonner';
+
 
 interface AirtimeReconProps {
   filterMonth: string;
@@ -19,10 +19,6 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
 
   const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
   const [prevBankLines, setPrevBankLines] = useState<typeof bankLines>([]);
-  const [commissions, setCommissions] = useState<{ bld: number; easypay: number; lotto: number }>({ bld: 0, easypay: 0, lotto: 0 });
-  const [prevCommissions, setPrevCommissions] = useState<{ bld: number; easypay: number; lotto: number }>({ bld: 0, easypay: 0, lotto: 0 });
-  const [editingComm, setEditingComm] = useState<{ bld: number; easypay: number; lotto: number } | null>(null);
-  const [saving, setSaving] = useState(false);
 
   const isFirstMonth = filterMonth === '2026-03';
   const prevMonth = useMemo(() => {
@@ -33,71 +29,17 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
 
   const loadData = useCallback(async () => {
     const bankQuery = supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth);
-    const commQuery = supabase.from('creditor_opening_balances').select('supplier, amount').eq('month', filterMonth);
     const prevBankQuery = !isFirstMonth ? supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', prevMonth) : null;
-    const prevCommQuery = !isFirstMonth ? supabase.from('creditor_opening_balances').select('supplier, amount').eq('month', prevMonth) : null;
 
-    const [bankRes, commRes, prevBankRes, prevCommRes] = await Promise.all([
-      bankQuery, commQuery, prevBankQuery, prevCommQuery,
-    ]);
+    const [bankRes, prevBankRes] = await Promise.all([bankQuery, prevBankQuery]);
     setBankLines(((bankRes as any)?.data ?? []) as typeof bankLines);
 
-    const parseComm = (data: any[]) => {
-      const commMap: Record<string, number> = {};
-      (data ?? []).forEach((r: { supplier: string; amount: number }) => {
-        if (r.supplier.startsWith('commission:')) {
-          commMap[r.supplier.replace('commission:', '')] = Number(r.amount);
-        }
-      });
-      return { bld: commMap['bld'] ?? 0, easypay: commMap['easypay'] ?? 0, lotto: commMap['lotto'] ?? 0 };
-    };
-
-    setCommissions(parseComm((commRes as any)?.data));
-    setEditingComm(null);
-
-    if (!isFirstMonth && prevBankRes && prevCommRes) {
+    if (!isFirstMonth && prevBankRes) {
       setPrevBankLines(((prevBankRes as any)?.data ?? []) as typeof bankLines);
-      setPrevCommissions(parseComm((prevCommRes as any)?.data));
     }
   }, [filterMonth, isFirstMonth, prevMonth]);
 
   useEffect(() => { loadData(); }, [loadData]);
-
-  const handleSaveCommissions = async () => {
-    if (!editingComm) return;
-    setSaving(true);
-    try {
-      for (const [key, val] of Object.entries(editingComm)) {
-        const supplier = `commission:${key}`;
-        const { data: existing } = await supabase
-          .from('creditor_opening_balances')
-          .select('id')
-          .eq('month', filterMonth)
-          .eq('supplier', supplier);
-        if (existing && existing.length > 0) {
-          const { error } = await supabase
-            .from('creditor_opening_balances')
-            .update({ amount: val } as never)
-            .eq('id', existing[0].id);
-          if (error) throw error;
-        } else {
-          const { error } = await supabase
-            .from('creditor_opening_balances')
-            .insert({ month: filterMonth, supplier, amount: val } as never);
-          if (error) throw error;
-        }
-      }
-      setCommissions(editingComm);
-      setEditingComm(null);
-      toast.success('Commissions saved');
-    } catch (e) {
-      console.error('Commission save error:', e);
-      toast.error('Failed to save commissions');
-    }
-    setSaving(false);
-  };
-
-  const currentComm = editingComm ?? commissions;
 
   const SEED_BLD = -11906.34;
   const SEED_EASYPAY = 14392.59;
@@ -109,7 +51,6 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   const computeClosing = (
     monthStr: string,
     lines: typeof bankLines,
-    comm: { bld: number; easypay: number; lotto: number },
     openBld: number,
     openEp: number,
     openLt: number,
@@ -153,18 +94,15 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       ep = ep - (epInv + dfCC) + (c?.shop.easyPay ?? 0) + epComm;
       lt = lt - (ltRec - ltPay) + (lottoPmts.get(ds) ?? 0) + ltComm;
     }
-    // Add monthly commission adjustments
-    return { bld: bld + comm.bld, ep: ep + comm.easypay, lt: lt + comm.lotto };
+    return { bld, ep, lt };
   };
 
   // Compute opening balances
   const openingBalances = useMemo(() => {
     if (isFirstMonth) return { bld: SEED_BLD, ep: SEED_EASYPAY, lt: SEED_LOTTO };
-    const prevClosing = computeClosing(prevMonth, prevBankLines, prevCommissions, SEED_BLD, SEED_EASYPAY, SEED_LOTTO);
-    // For months beyond April, we'd need to chain — but for now this handles Mar→Apr
-    // TODO: recursive chaining for future months
+    const prevClosing = computeClosing(prevMonth, prevBankLines, SEED_BLD, SEED_EASYPAY, SEED_LOTTO);
     return prevClosing;
-  }, [isFirstMonth, prevMonth, prevBankLines, prevCommissions, cashups, managerEntries]);
+  }, [isFirstMonth, prevMonth, prevBankLines, cashups, managerEntries]);
 
   const monthStart = startOfMonth(new Date(filterMonth + '-01'));
   const monthEnd = endOfMonth(monthStart);
@@ -251,7 +189,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   let easypayBalance = openingBalances.ep;
   let lottoBalance = openingBalances.lt;
 
-  const hasCommEdits = editingComm !== null;
+  
 
   return (
     <div className="space-y-4">
@@ -274,8 +212,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                   csvRows.push([r.date + ' (Comm)', '', r.bldComm, bld, '', r.epComm, ep, '', r.ltComm, lt]);
                 }
               });
-              csvRows.push(['Commission', '', '', currentComm.bld, '', '', currentComm.easypay, '', '', currentComm.lotto]);
-              csvRows.push(['Final Balance', '', '', bld + currentComm.bld, '', '', ep + currentComm.easypay, '', '', lt + currentComm.lotto]);
+              csvRows.push(['Final Balance', '', '', bld, '', '', ep, '', '', lt]);
               downloadCsv(
                 ['Date', 'BLD Invoice', 'BLD Payment', 'BLD Balance', 'Easypay Invoice', 'Easypay Collection', 'Easypay Balance', 'Lotto Invoice', 'Lotto Payment', 'Lotto Balance'],
                 csvRows, `airtime-lotto-recon-${filterMonth}.csv`
@@ -457,64 +394,10 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 <TableCell className="text-right text-xs font-bold">
                   <CurrencyDisplay value={lottoBalance} highlight />
                 </TableCell>
-              </TableRow>
-              {/* Commission row */}
-              <TableRow className="bg-muted/30">
-                <TableCell className="text-xs font-semibold">Commission</TableCell>
-                <TableCell className="border-l" colSpan={2}></TableCell>
-                <TableCell className="text-right p-1">
-                  <CurrencyInput
-                    value={currentComm.bld}
-                    onChange={(v) => setEditingComm(prev => ({ ...(prev ?? commissions), bld: v }))}
-                    className="h-7 text-xs w-24 ml-auto"
-                    allowNegative
-                  />
-                </TableCell>
-                <TableCell className="border-l" colSpan={2}></TableCell>
-                <TableCell className="text-right p-1">
-                  <CurrencyInput
-                    value={currentComm.easypay}
-                    onChange={(v) => setEditingComm(prev => ({ ...(prev ?? commissions), easypay: v }))}
-                    className="h-7 text-xs w-24 ml-auto"
-                    allowNegative
-                  />
-                </TableCell>
-                <TableCell className="border-l" colSpan={2}></TableCell>
-                <TableCell className="text-right p-1">
-                  <CurrencyInput
-                    value={currentComm.lotto}
-                    onChange={(v) => setEditingComm(prev => ({ ...(prev ?? commissions), lotto: v }))}
-                    className="h-7 text-xs w-24 ml-auto"
-                    allowNegative
-                  />
-                </TableCell>
-              </TableRow>
-              {/* Final balance after commission */}
-              <TableRow className="bg-secondary/80 font-bold">
-                <TableCell className="text-xs">Balance after Commission</TableCell>
-                <TableCell className="border-l" colSpan={2}></TableCell>
-                <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={bldBalance + currentComm.bld} highlight />
-                </TableCell>
-                <TableCell className="border-l" colSpan={2}></TableCell>
-                <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={easypayBalance + currentComm.easypay} highlight />
-                </TableCell>
-                <TableCell className="border-l" colSpan={2}></TableCell>
-                <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={lottoBalance + currentComm.lotto} highlight />
-                </TableCell>
-              </TableRow>
+               </TableRow>
             </TableBody>
           </Table>
         </div>
-        {hasCommEdits && (
-          <div className="px-4 py-2 border-t bg-muted/30 flex justify-end">
-            <Button size="sm" onClick={handleSaveCommissions} disabled={saving}>
-              <Save className="h-3.5 w-3.5 mr-1" />Save Commissions
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );
