@@ -140,6 +140,9 @@ function monthlyToRow(f: MonthlyBranchFigures) {
     explanation_invoices: f.explanationInvoices,
     explanation_vat: f.explanationVat,
     notes: f.notes,
+    airtime_bld_balance: f.airtimeBldBalance,
+    airtime_easypay_balance: f.airtimeEasypayBalance,
+    airtime_lotto_balance: f.airtimeLottoBalance,
   };
 }
 
@@ -171,6 +174,9 @@ function rowToMonthly(r: Record<string, unknown>): MonthlyBranchFigures {
     explanationInvoices: (r.explanation_invoices as string) ?? '',
     explanationVat: (r.explanation_vat as string) ?? '',
     notes: r.notes as string,
+    airtimeBldBalance: Number(r.airtime_bld_balance ?? 0),
+    airtimeEasypayBalance: Number(r.airtime_easypay_balance ?? 0),
+    airtimeLottoBalance: Number(r.airtime_lotto_balance ?? 0),
   };
 }
 

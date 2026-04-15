@@ -86,6 +86,9 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     explanationInvoices: "",
     explanationVat: "",
     notes: "",
+    airtimeBldBalance: 0,
+    airtimeEasypayBalance: 0,
+    airtimeLottoBalance: 0,
   });
 
   useEffect(() => {
@@ -330,6 +333,43 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
             }
             className="text-right"
           />
+        </div>
+      </Section>
+
+      {/* Airtime / Lotto Balance */}
+      <Section title="4. Airtime / Lotto Balance" color="green">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+          <span>Description</span>
+          <span className="text-center">Blue Label</span>
+          <span className="text-center">Easy Pay</span>
+          <span className="text-center">Lotto (Unpaid days combined)</span>
+        </div>
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
+          <span className="text-muted-foreground font-medium">Month End Bal</span>
+          <div className="flex justify-center">
+            <CurrencyInput
+              value={form.airtimeBldBalance}
+              onChange={(v) => setForm((f) => ({ ...f, airtimeBldBalance: v }))}
+              className="text-right w-full max-w-[120px]"
+              allowNegative
+            />
+          </div>
+          <div className="flex justify-center">
+            <CurrencyInput
+              value={form.airtimeEasypayBalance}
+              onChange={(v) => setForm((f) => ({ ...f, airtimeEasypayBalance: v }))}
+              className="text-right w-full max-w-[120px]"
+              allowNegative
+            />
+          </div>
+          <div className="flex justify-center">
+            <CurrencyInput
+              value={form.airtimeLottoBalance}
+              onChange={(v) => setForm((f) => ({ ...f, airtimeLottoBalance: v }))}
+              className="text-right w-full max-w-[120px]"
+              allowNegative
+            />
+          </div>
         </div>
       </Section>
 
