@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { parseEodShort, parsePumpVariance, type EodShortRow, type PumpVarianceRow } from '@/lib/fuelReportParser';
 import { format } from 'date-fns';
 import { AlertTriangle, CheckCircle, Fuel } from 'lucide-react';
+import { useMasterDataStore, getTankColor } from '@/store/masterDataStore';
 
 interface Props {
   selectedDate: string;
@@ -33,6 +34,7 @@ interface GradeSummary {
 export function FuelDashboard({ selectedDate }: Props) {
   const [days, setDays] = useState<DaySummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const tanks = useMasterDataStore(s => s.tanks);
   const month = selectedDate.slice(0, 7);
 
   const load = useCallback(async () => {
