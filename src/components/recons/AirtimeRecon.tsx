@@ -50,15 +50,31 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     setSaving(true);
     try {
       for (const [key, val] of Object.entries(editingComm)) {
-        await supabase.from('creditor_opening_balances').upsert(
-          { month: filterMonth, supplier: `commission:${key}`, amount: val } as never,
-          { onConflict: 'month,supplier' }
-        );
+        const supplier = `commission:${key}`;
+        // Check if row exists first
+        const { data: existing } = await supabase
+          .from('creditor_opening_balances')
+          .select('id')
+          .eq('month', filterMonth)
+          .eq('supplier', supplier);
+        if (existing && existing.length > 0) {
+          const { error } = await supabase
+            .from('creditor_opening_balances')
+            .update({ amount: val } as never)
+            .eq('id', existing[0].id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('creditor_opening_balances')
+            .insert({ month: filterMonth, supplier, amount: val } as never);
+          if (error) throw error;
+        }
       }
       setCommissions(editingComm);
       setEditingComm(null);
       toast.success('Commissions saved');
-    } catch {
+    } catch (e) {
+      console.error('Commission save error:', e);
       toast.error('Failed to save commissions');
     }
     setSaving(false);
