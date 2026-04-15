@@ -12,6 +12,7 @@ import { format, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
 import { toast } from 'sonner';
 import { downloadCsv } from '@/lib/csvExport';
 import { parseBankStatementDateToDate } from '@/lib/bankStatementDate';
+import { useBankAllocations } from '@/hooks/useBankAllocations';
 
 interface CreditorsReconProps {
   filterMonth: string;
