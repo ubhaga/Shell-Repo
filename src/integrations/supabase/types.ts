@@ -295,6 +295,33 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_pump_readings: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          month: string
+          readings: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          month: string
+          readings?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          month?: string
+          readings?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       master_data: {
         Row: {
           data: Json
