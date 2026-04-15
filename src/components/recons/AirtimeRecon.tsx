@@ -365,7 +365,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 </TableCell>
                 <TableCell className="border-l" colSpan={2}></TableCell>
                 <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={easypayBalance - currentComm.easypay} highlight />
+                  <CurrencyDisplay value={easypayBalance + currentComm.easypay} highlight />
                 </TableCell>
                 <TableCell className="border-l" colSpan={2}></TableCell>
                 <TableCell className="text-right text-xs">
