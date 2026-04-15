@@ -244,7 +244,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
           </h3>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => {
-              let bld = BLD_OPENING, ep = EASYPAY_OPENING, lt = LOTTO_OPENING;
+              let bld = openingBalances.bld, ep = openingBalances.ep, lt = openingBalances.lt;
               const csvRows = dailyRows.map(r => {
                 bld = bld - r.bldInvoice + r.bldPayment;
                 ep = ep - r.easypayInvoice + r.easypayCollection;
@@ -296,17 +296,17 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 <TableCell className="border-l"></TableCell>
                 <TableCell></TableCell>
                 <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={BLD_OPENING} />
+                  <CurrencyDisplay value={openingBalances.bld} />
                 </TableCell>
                 <TableCell className="border-l"></TableCell>
                 <TableCell></TableCell>
                 <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={EASYPAY_OPENING} />
+                  <CurrencyDisplay value={openingBalances.ep} />
                 </TableCell>
                 <TableCell className="border-l"></TableCell>
                 <TableCell></TableCell>
                 <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={LOTTO_OPENING} />
+                  <CurrencyDisplay value={openingBalances.lt} />
                 </TableCell>
               </TableRow>
               {dailyRows.map(row => {
