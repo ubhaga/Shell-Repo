@@ -86,7 +86,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
 
   const FUEL_CREDITORS = ['Shell Downstream', 'F2K'];
   const isFuelCreditor = (s: string) => FUEL_CREDITORS.some(fc => fc.toUpperCase() === s.toUpperCase());
-  const allSuppliers = [...eftSuppliers].filter(s => s.toUpperCase() !== 'DAWN CONSULTANTS').sort();
+  const allSuppliers = [...eftSuppliers].sort();
   const suppliers = allSuppliers.filter(s => !isFuelCreditor(s));
   const fuelSuppliers = allSuppliers.filter(s => isFuelCreditor(s));
 
