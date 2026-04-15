@@ -22,9 +22,7 @@ interface EffectiveClosing {
 function computeEffectiveClosingForDate(
   targetDate: string,
   getEntry: (d: string) => ManagerDailyEntry | undefined,
-  getCashup: (
-    d: string,
-  ) =>
+  getCashup: (d: string) =>
     | {
         shop: {
           coins: number;
@@ -970,7 +968,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
                   allowNegative
                 />
               </DataRow>
-              <DataRow label="3.3 Lotto Total Payout Comm (Saturday)">
+              <DataRow label="3.3 Total Payout Comm (Saturday)">
                 <CurrencyInput
                   value={form.lottoPayoutComm}
                   onChange={(v) => setForm((f) => ({ ...f, lottoPayoutComm: v, lottoComm: f.lottoNetSalesComm + v }))}
