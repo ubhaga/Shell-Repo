@@ -204,6 +204,10 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     easypayCollection: number;
     lottoInvoice: number;
     lottoPayment: number;
+    // Commission amounts shown separately
+    bldComm: number;
+    epComm: number;
+    ltComm: number;
   };
 
   const dailyRows: DayRow[] = days.map(day => {
@@ -216,10 +220,8 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     const easypayInvoice = cashup
       ? cashup.shop.receipts.filter(r => r.type === 'Easypay').reduce((s, r) => s + r.amount, 0)
       : 0;
-    // Add Deep Frozen paid in CC from manager daily to Easypay invoice
     const managerEntry = managerEntries.find(e => e.date === dateStr);
     const deepFrozenCC = managerEntry?.deepFrozenCC ?? 0;
-    // Manager daily commissions shown as payments on their specific days
     const bldComm = managerEntry?.blueLabelComm ?? 0;
     const epComm = managerEntry?.easypayComm ?? 0;
     const ltComm = managerEntry?.lottoComm ?? 0;
@@ -234,11 +236,14 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     return {
       date: dateStr,
       bldInvoice,
-      bldPayment: (bldPaymentsByDate.get(dateStr) ?? 0) + bldComm,
+      bldPayment: bldPaymentsByDate.get(dateStr) ?? 0,
       easypayInvoice: easypayInvoice + deepFrozenCC,
-      easypayCollection: (cashup?.shop.easyPay ?? 0) + epComm,
+      easypayCollection: cashup?.shop.easyPay ?? 0,
       lottoInvoice,
-      lottoPayment: (lottoPaymentsByDate.get(dateStr) ?? 0) + ltComm,
+      lottoPayment: lottoPaymentsByDate.get(dateStr) ?? 0,
+      bldComm,
+      epComm,
+      ltComm,
     };
   });
 
@@ -258,11 +263,16 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => {
               let bld = openingBalances.bld, ep = openingBalances.ep, lt = openingBalances.lt;
-              const csvRows = dailyRows.map(r => {
+              const csvRows: any[][] = [];
+              dailyRows.forEach(r => {
                 bld = bld - r.bldInvoice + r.bldPayment;
                 ep = ep - r.easypayInvoice + r.easypayCollection;
                 lt = lt - r.lottoInvoice + r.lottoPayment;
-                return [r.date, r.bldInvoice, r.bldPayment, bld, r.easypayInvoice, r.easypayCollection, ep, r.lottoInvoice, r.lottoPayment, lt];
+                csvRows.push([r.date, r.bldInvoice, r.bldPayment, bld, r.easypayInvoice, r.easypayCollection, ep, r.lottoInvoice, r.lottoPayment, lt]);
+                if (r.bldComm || r.epComm || r.ltComm) {
+                  bld += r.bldComm; ep += r.epComm; lt += r.ltComm;
+                  csvRows.push([r.date + ' (Comm)', '', r.bldComm, bld, '', r.epComm, ep, '', r.ltComm, lt]);
+                }
               });
               csvRows.push(['Commission', '', '', currentComm.bld, '', '', currentComm.easypay, '', '', currentComm.lotto]);
               csvRows.push(['Final Balance', '', '', bld + currentComm.bld, '', '', ep + currentComm.easypay, '', '', lt + currentComm.lotto]);
@@ -328,9 +338,10 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 lottoBalance = lottoBalance - row.lottoInvoice + row.lottoPayment;
 
                 const hasData = row.bldInvoice !== 0 || row.bldPayment > 0 || row.easypayInvoice !== 0 || row.easypayCollection > 0 || row.lottoInvoice !== 0 || row.lottoPayment > 0;
+                const hasComm = row.bldComm !== 0 || row.epComm !== 0 || row.ltComm !== 0;
 
-                return (
-                  <TableRow key={row.date} className={!hasData ? 'opacity-50' : ''}>
+                const dayRow = (
+                  <TableRow key={row.date} className={!hasData && !hasComm ? 'opacity-50' : ''}>
                     <TableCell className="text-xs">{format(new Date(row.date), 'dd MMM (EEE)')}</TableCell>
                     <TableCell className="text-right text-xs border-l">
                       {row.bldInvoice > 0
@@ -373,6 +384,48 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                     </TableCell>
                   </TableRow>
                 );
+
+                // Commission row (separate from payments)
+                let commRow: React.ReactNode = null;
+                if (hasComm) {
+                  bldBalance += row.bldComm;
+                  easypayBalance += row.epComm;
+                  lottoBalance += row.ltComm;
+                  commRow = (
+                    <TableRow key={row.date + '-comm'} className="bg-muted/20 italic">
+                      <TableCell className="text-xs text-muted-foreground pl-6">↳ Commission</TableCell>
+                      <TableCell className="border-l"></TableCell>
+                      <TableCell className="text-right text-xs">
+                        {row.bldComm !== 0
+                          ? <span className="text-destructive"><CurrencyDisplay value={row.bldComm} /></span>
+                          : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-semibold bg-destructive/10">
+                        <CurrencyDisplay value={bldBalance} />
+                      </TableCell>
+                      <TableCell className="border-l"></TableCell>
+                      <TableCell className="text-right text-xs">
+                        {row.epComm !== 0
+                          ? <span className="text-destructive"><CurrencyDisplay value={row.epComm} /></span>
+                          : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-semibold bg-primary/10">
+                        <CurrencyDisplay value={easypayBalance} />
+                      </TableCell>
+                      <TableCell className="border-l"></TableCell>
+                      <TableCell className="text-right text-xs">
+                        {row.ltComm !== 0
+                          ? <span className="text-destructive"><CurrencyDisplay value={row.ltComm} /></span>
+                          : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-semibold bg-accent/20">
+                        <CurrencyDisplay value={lottoBalance} />
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+
+                return <React.Fragment key={row.date}>{dayRow}{commRow}</React.Fragment>;
               })}
               {/* Closing before commission */}
               <TableRow className="bg-secondary font-semibold">
@@ -381,7 +434,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                   <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.bldInvoice, 0)} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.bldPayment, 0)} highlight />
+                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.bldPayment + r.bldComm, 0)} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs font-bold">
                   <CurrencyDisplay value={bldBalance} highlight />
@@ -390,7 +443,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                   <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.easypayInvoice, 0)} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.easypayCollection, 0)} highlight />
+                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.easypayCollection + r.epComm, 0)} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs font-bold">
                   <CurrencyDisplay value={easypayBalance} highlight />
@@ -399,7 +452,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                   <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.lottoInvoice, 0)} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.lottoPayment, 0)} highlight />
+                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.lottoPayment + r.ltComm, 0)} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs font-bold">
                   <CurrencyDisplay value={lottoBalance} highlight />
