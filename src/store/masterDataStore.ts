@@ -61,10 +61,10 @@ const replace = (list: string[], old: string, next: string) =>
   list.map(i => (i === old ? next : i));
 
 // Persist a single key to the master_data table
-async function persistKey(key: string, data: string[]) {
+async function persistKey(key: string, data: unknown) {
   await supabase
     .from('master_data')
-    .upsert({ key, data: data as unknown as never, updated_at: new Date().toISOString() } as never, { onConflict: 'key' });
+    .upsert({ key, data: data as never, updated_at: new Date().toISOString() } as never, { onConflict: 'key' });
 }
 
 export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
