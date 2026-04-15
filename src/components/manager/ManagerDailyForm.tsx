@@ -795,29 +795,6 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
               </td>
             </tr>
 
-            {/* Deep Frozen paid in CC — editable, Easy Pay + Total columns */}
-            <tr className="border-b">
-              <td className="px-3 py-1.5 text-xs text-muted-foreground">
-                Deep Frozen paid in CC <span className="text-destructive font-bold">(-ve)</span>
-              </td>
-              <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
-              <td className="px-3 py-1.5">
-                <CurrencyInput
-                  value={form.deepFrozenCC}
-                  onChange={(v) => setForm((f) => ({ ...f, deepFrozenCC: Math.abs(v) }))}
-                  className="w-full"
-                  placeholder="0.00"
-                />
-                <div className="text-xs text-destructive text-right mt-0.5">
-                  <CurrencyDisplay value={-Math.abs(form.deepFrozenCC)} />
-                </div>
-              </td>
-              <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
-              <td className="px-3 py-1.5 text-right text-destructive font-semibold">
-                <CurrencyDisplay value={-Math.abs(form.deepFrozenCC)} />
-              </td>
-            </tr>
-
             {/* Transfer from Coins */}
             <tr className="border-b">
               <td className="px-3 py-1.5 text-xs text-muted-foreground">Transfer from Coin</td>
@@ -843,7 +820,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
 
             {/* Closing Balance */}
             <tr className="bg-secondary font-semibold border-t-2">
-              <td className="px-3 py-2 rounded-bl-md font-bold text-xs uppercase">CLOSING BALANCE</td>
+              <td className="px-3 py-2 font-bold text-xs uppercase">CLOSING BALANCE</td>
               <td className="px-3 py-2 text-right">
                 <CurrencyDisplay value={coinsClosing} highlight />
               </td>
@@ -853,8 +830,28 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
               <td className="px-3 py-2 text-right">
                 <CurrencyDisplay value={ccClosing} highlight />
               </td>
-              <td className="px-3 py-2 text-right rounded-br-md">
+              <td className="px-3 py-2 text-right">
                 <CurrencyDisplay value={easypayClosing + ccClosing} highlight />
+              </td>
+            </tr>
+
+            {/* Deep Frozen paid in CC — editable, after closing balance, Easy Pay + Total columns */}
+            <tr className="border-t bg-muted/20">
+              <td className="px-3 py-1.5 text-xs text-muted-foreground">
+                Deep Frozen paid in CC
+              </td>
+              <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
+              <td className="px-3 py-1.5">
+                <CurrencyInput
+                  value={form.deepFrozenCC}
+                  onChange={(v) => setForm((f) => ({ ...f, deepFrozenCC: Math.abs(v) }))}
+                  className="w-full"
+                  placeholder="0.00"
+                />
+              </td>
+              <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
+              <td className="px-3 py-1.5 text-right font-semibold">
+                <CurrencyDisplay value={Math.abs(form.deepFrozenCC)} />
               </td>
             </tr>
           </tbody>
