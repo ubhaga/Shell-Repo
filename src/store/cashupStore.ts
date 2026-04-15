@@ -70,6 +70,8 @@ function managerToRow(e: ManagerDailyEntry) {
     blue_label_comm: e.blueLabelComm,
     easypay_comm: e.easypayComm,
     lotto_comm: e.lottoComm,
+    lotto_net_sales_comm: e.lottoNetSalesComm,
+    lotto_payout_comm: e.lottoPayoutComm,
     locked: e.locked,
   };
 }
@@ -104,6 +106,8 @@ function rowToManager(r: Record<string, unknown>): ManagerDailyEntry {
     blueLabelComm: Number(r.blue_label_comm ?? 0),
     easypayComm: Number(r.easypay_comm ?? 0),
     lottoComm: Number(r.lotto_comm ?? 0),
+    lottoNetSalesComm: Number(r.lotto_net_sales_comm ?? 0),
+    lottoPayoutComm: Number(r.lotto_payout_comm ?? 0),
     locked: r.locked as boolean,
   };
 }

@@ -136,6 +136,8 @@ export interface ManagerDailyEntry {
   blueLabelComm: number;
   easypayComm: number;
   lottoComm: number;
+  lottoNetSalesComm: number;
+  lottoPayoutComm: number;
   locked: boolean;
 }
 
