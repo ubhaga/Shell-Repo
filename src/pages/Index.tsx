@@ -214,6 +214,7 @@ export default function Index() {
                 </button>
               </div>
               <BankStatementTab filterMonth={selectedDate.slice(0, 7)} monthLabel={format(new Date(selectedDate.slice(0, 7) + '-01'), 'MMMM yyyy')} />
+              <DayEndUpload filterMonth={selectedDate.slice(0, 7)} />
             </div>
           </TabsContent>
           <TabsContent value="settings">
