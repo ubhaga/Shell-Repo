@@ -1087,7 +1087,7 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
                                             ) : <span className="text-muted-foreground">—</span>}
                                           </TableCell>
                                           <TableCell className="text-right text-sm">
-                                            {m.bankAmount > 0 && !m.matched ? (() => {
+                                            {td && td.total > 0 && !m.matched ? (() => {
                                               const cleared = isDiffCleared(r.date, t);
                                               const isSelected = selectedDiffForClearing?.date === r.date && selectedDiffForClearing?.terminal === t;
                                               return (

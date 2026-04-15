@@ -50,6 +50,8 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
 
   const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
   const [openingBalances, setOpeningBalances] = useState<Record<string, number>>({});
+  const [prevMonthBankLines, setPrevMonthBankLines] = useState<typeof bankLines>([]);
+  const [prevMonthOpeningBalances, setPrevMonthOpeningBalances] = useState<Record<string, number>>({});
   const [editingOB, setEditingOB] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
   const isFirstMonth = filterMonth === '2026-03';
@@ -76,7 +78,27 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     });
     setOpeningBalances(obMap);
     setEditingOB({});
-  }, [filterMonth]);
+
+    if (!isFirstMonth) {
+      const [prevBankRes, prevObRes] = await Promise.all([
+        supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', prevMonth),
+        supabase.from('creditor_opening_balances').select('*').eq('month', prevMonth),
+      ]);
+
+      setPrevMonthBankLines((prevBankRes.data ?? []) as typeof bankLines);
+
+      const prevObMap: Record<string, number> = {};
+      ((prevObRes.data ?? []) as { supplier: string; amount: number }[]).forEach(r => {
+        if (r.supplier.startsWith('debtor:')) {
+          prevObMap[r.supplier.replace('debtor:', '')] = Number(r.amount);
+        }
+      });
+      setPrevMonthOpeningBalances(prevObMap);
+    } else {
+      setPrevMonthBankLines([]);
+      setPrevMonthOpeningBalances({});
+    }
+  }, [filterMonth, isFirstMonth, prevMonth]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -96,6 +118,21 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     return totals;
   }, [filterMonth, cashups]);
 
+  const prevMonthPurchases = useMemo(() => {
+    const monthlyCashups = cashups.filter(c => c.month === prevMonth);
+    const totals: Record<string, number> = {};
+    DEBTOR_ACCOUNTS.forEach(a => { totals[a] = 0; });
+    for (const c of monthlyCashups) {
+      for (const a of c.shop.accounts ?? []) {
+        if (totals[a.name] !== undefined) totals[a.name] += a.amount;
+      }
+      for (const a of c.opt.accounts ?? []) {
+        if (totals[a.name] !== undefined) totals[a.name] += a.amount;
+      }
+    }
+    return totals;
+  }, [prevMonth, cashups]);
+
   // Bank payments mapped to debtors
   const bankPayments = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -111,6 +148,21 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     }
     return totals;
   }, [bankLines]);
+
+  const prevMonthBankPayments = useMemo(() => {
+    const totals: Record<string, number> = {};
+    DEBTOR_ACCOUNTS.forEach(a => { totals[a] = 0; });
+    for (const line of prevMonthBankLines) {
+      if (line.amount <= 0) continue;
+      for (const rule of BANK_PAYMENT_RULES) {
+        if (rule.pattern.test(line.description)) {
+          totals[rule.account] = (totals[rule.account] || 0) + line.amount;
+          break;
+        }
+      }
+    }
+    return totals;
+  }, [prevMonthBankLines]);
 
   // ROA payments allocated per debtor using seqNo as debtor reference
   const roaPerDebtor = useMemo(() => {
@@ -131,9 +183,58 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     return totals;
   }, [filterMonth, cashups]);
 
+  const prevMonthRoaPerDebtor = useMemo(() => {
+    const monthlyCashups = cashups.filter(c => c.month === prevMonth);
+    const totals: Record<string, number> = {};
+    DEBTOR_ACCOUNTS.forEach(a => { totals[a] = 0; });
+    for (const c of monthlyCashups) {
+      for (const r of c.shop.receipts ?? []) {
+        if (r.type === 'Debtors Received on Account ROA' && r.amount > 0) {
+          const ref = (r.seqNo || '').trim();
+          const matched = DEBTOR_ACCOUNTS.find(a => a.toLowerCase() === ref.toLowerCase());
+          if (matched) {
+            totals[matched] = (totals[matched] || 0) + r.amount;
+          }
+        }
+      }
+    }
+    return totals;
+  }, [prevMonth, cashups]);
+
+  const effectiveOpeningBalances = useMemo(() => {
+    const carriedForward: Record<string, number> = { ...openingBalances };
+
+    if (!isFirstMonth) {
+      DEBTOR_ACCOUNTS.forEach(name => {
+        if (carriedForward[name] !== undefined) return;
+
+        const prevOb = prevMonthOpeningBalances[name] ?? 0;
+        const prevPurchase = prevMonthPurchases[name] || 0;
+        const prevBankPmt = (prevMonthBankPayments[name] || 0) + (prevMonthRoaPerDebtor[name] || 0);
+        const prevAdjustment = JE3_WRITEOFF_ACCOUNTS.includes(name) ? prevPurchase : 0;
+        const closing = prevOb + prevPurchase - prevBankPmt - prevAdjustment;
+
+        if (closing !== 0) {
+          carriedForward[name] = closing;
+        }
+      });
+    }
+
+    return carriedForward;
+  }, [
+    openingBalances,
+    isFirstMonth,
+    prevMonthOpeningBalances,
+    prevMonthPurchases,
+    prevMonthBankPayments,
+    prevMonthRoaPerDebtor,
+  ]);
+
   // Build rows — JE3 accounts get their purchases as adjustments too
   const rows = DEBTOR_ACCOUNTS.map(name => {
-    const ob = openingBalances[name] ?? editingOB[name] ?? 0;
+    const ob = isFirstMonth
+      ? (editingOB[name] ?? effectiveOpeningBalances[name] ?? 0)
+      : (effectiveOpeningBalances[name] ?? 0);
     const purchase = purchases[name] || 0;
     const bankPmt = (bankPayments[name] || 0) + (roaPerDebtor[name] || 0);
     const isJe3 = JE3_WRITEOFF_ACCOUNTS.includes(name);

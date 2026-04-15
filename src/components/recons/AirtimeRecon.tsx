@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { downloadCsv } from '@/lib/csvExport';
+import { parseBankStatementDate } from '@/lib/bankStatementDate';
 
 interface AirtimeReconProps {
   filterMonth: string;
@@ -39,15 +40,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     cashups.filter(c => c.month === filterMonth).map(c => [c.date, c])
   );
 
-  const parseBankDate = (dateStr: string): string | null => {
-    try {
-      const parts = dateStr.split('/');
-      if (parts.length === 3) {
-        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-      }
-      return null;
-    } catch { return null; }
-  };
+  const parseBankDate = (dateStr: string): string | null => parseBankStatementDate(dateStr);
 
   // BLD payments from bank
   const bldPaymentsByDate = new Map<string, number>();
