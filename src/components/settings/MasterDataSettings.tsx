@@ -211,26 +211,26 @@ export function MasterDataSettings() {
 
 function TankDescriptionList() {
   const store = useMasterDataStore();
-  const [newTank, setNewTank] = useState({ tankNumber: '', grade: '', size: '' });
+  const [newTank, setNewTank] = useState({ tankNumber: '', grade: '', size: '', color: '#3B82F6' });
   const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [editVal, setEditVal] = useState({ tankNumber: '', grade: '', size: '' });
+  const [editVal, setEditVal] = useState({ tankNumber: '', grade: '', size: '', color: '#3B82F6' });
 
   const handleAdd = () => {
     if (!newTank.tankNumber.trim() || !newTank.grade.trim()) return;
-    store.addTank({ tankNumber: newTank.tankNumber.trim(), grade: newTank.grade.trim(), size: parseFloat(newTank.size) || 0 });
-    setNewTank({ tankNumber: '', grade: '', size: '' });
+    store.addTank({ tankNumber: newTank.tankNumber.trim(), grade: newTank.grade.trim(), size: parseFloat(newTank.size) || 0, color: newTank.color });
+    setNewTank({ tankNumber: '', grade: '', size: '', color: '#3B82F6' });
     toast({ title: 'Tank added' });
   };
 
   const startEdit = (i: number) => {
     const t = store.tanks[i];
     setEditIdx(i);
-    setEditVal({ tankNumber: t.tankNumber, grade: t.grade, size: String(t.size) });
+    setEditVal({ tankNumber: t.tankNumber, grade: t.grade, size: String(t.size), color: t.color || '#3B82F6' });
   };
 
   const confirmEdit = () => {
     if (editIdx === null) return;
-    store.updateTank(editIdx, { tankNumber: editVal.tankNumber.trim(), grade: editVal.grade.trim(), size: parseFloat(editVal.size) || 0 });
+    store.updateTank(editIdx, { tankNumber: editVal.tankNumber.trim(), grade: editVal.grade.trim(), size: parseFloat(editVal.size) || 0, color: editVal.color });
     setEditIdx(null);
     toast({ title: 'Tank updated' });
   };

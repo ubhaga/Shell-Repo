@@ -14,6 +14,13 @@ export interface TankDescription {
   tankNumber: string;
   grade: string;
   size: number;
+  color: string; // hex color for reports/recons
+}
+
+/** Look up tank color by gradeId (tank number) or grade description */
+export function getTankColor(tanks: TankDescription[], gradeIdOrDesc: string): string | undefined {
+  const t = tanks.find(t => t.tankNumber === gradeIdOrDesc || t.grade.toLowerCase() === gradeIdOrDesc.toLowerCase());
+  return t?.color;
 }
 
 interface MasterDataStore {
