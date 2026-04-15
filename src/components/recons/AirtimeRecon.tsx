@@ -15,7 +15,7 @@ interface AirtimeReconProps {
 }
 
 export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
-  const { cashups, managerEntries } = useCashupStore();
+  const { cashups, managerEntries, getMonthlyFiguresByMonth } = useCashupStore();
 
   const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
   const [prevBankLines, setPrevBankLines] = useState<typeof bankLines>([]);
@@ -395,6 +395,49 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                   <CurrencyDisplay value={lottoBalance} highlight />
                 </TableCell>
                </TableRow>
+              {/* Status bar comparing with Manager Monthly Section 4 */}
+              {(() => {
+                const monthly = getMonthlyFiguresByMonth(filterMonth);
+                const mBld = monthly?.airtimeBldBalance ?? 0;
+                const mEp = monthly?.airtimeEasypayBalance ?? 0;
+                const mLt = monthly?.airtimeLottoBalance ?? 0;
+                const diffBld = Math.abs(bldBalance - mBld) < 0.01 ? 0 : bldBalance - mBld;
+                const diffEp = Math.abs(easypayBalance - mEp) < 0.01 ? 0 : easypayBalance - mEp;
+                const diffLt = Math.abs(lottoBalance - mLt) < 0.01 ? 0 : lottoBalance - mLt;
+                const allMatch = diffBld === 0 && diffEp === 0 && diffLt === 0;
+                const hasMonthly = !!monthly;
+                return (
+                  <TableRow className={allMatch && hasMonthly ? 'bg-green-50 dark:bg-green-950/20' : 'bg-red-50 dark:bg-red-950/20'}>
+                    <TableCell className="text-xs font-semibold" colSpan={1}>
+                      {!hasMonthly ? '⚠️ No Monthly figures entered' : allMatch ? '✅ Matches Monthly Report' : '❌ Mismatch vs Monthly Report'}
+                    </TableCell>
+                    <TableCell className="border-l" colSpan={2}></TableCell>
+                    <TableCell className="text-right text-xs font-semibold">
+                      {hasMonthly && (
+                        diffBld === 0
+                          ? <span className="text-green-600">✓ Match</span>
+                          : <span className="text-destructive">Diff: <CurrencyDisplay value={diffBld} /></span>
+                      )}
+                    </TableCell>
+                    <TableCell className="border-l" colSpan={2}></TableCell>
+                    <TableCell className="text-right text-xs font-semibold">
+                      {hasMonthly && (
+                        diffEp === 0
+                          ? <span className="text-green-600">✓ Match</span>
+                          : <span className="text-destructive">Diff: <CurrencyDisplay value={diffEp} /></span>
+                      )}
+                    </TableCell>
+                    <TableCell className="border-l" colSpan={2}></TableCell>
+                    <TableCell className="text-right text-xs font-semibold">
+                      {hasMonthly && (
+                        diffLt === 0
+                          ? <span className="text-green-600">✓ Match</span>
+                          : <span className="text-destructive">Diff: <CurrencyDisplay value={diffLt} /></span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })()}
             </TableBody>
           </Table>
         </div>
