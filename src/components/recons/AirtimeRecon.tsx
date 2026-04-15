@@ -189,7 +189,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   let easypayBalance = openingBalances.ep;
   let lottoBalance = openingBalances.lt;
 
-  const hasCommEdits = editingComm !== null;
+  
 
   return (
     <div className="space-y-4">
@@ -212,8 +212,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                   csvRows.push([r.date + ' (Comm)', '', r.bldComm, bld, '', r.epComm, ep, '', r.ltComm, lt]);
                 }
               });
-              csvRows.push(['Commission', '', '', currentComm.bld, '', '', currentComm.easypay, '', '', currentComm.lotto]);
-              csvRows.push(['Final Balance', '', '', bld + currentComm.bld, '', '', ep + currentComm.easypay, '', '', lt + currentComm.lotto]);
+              csvRows.push(['Final Balance', '', '', bld, '', '', ep, '', '', lt]);
               downloadCsv(
                 ['Date', 'BLD Invoice', 'BLD Payment', 'BLD Balance', 'Easypay Invoice', 'Easypay Collection', 'Easypay Balance', 'Lotto Invoice', 'Lotto Payment', 'Lotto Balance'],
                 csvRows, `airtime-lotto-recon-${filterMonth}.csv`
