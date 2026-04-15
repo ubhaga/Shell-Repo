@@ -132,6 +132,7 @@ export interface ManagerDailyEntry {
   bankChargesRate: number; // cents per R100 inclusive
   bankCharges: number;
   banking: number;
+  deepFrozenCC: number;
   locked: boolean;
 }
 

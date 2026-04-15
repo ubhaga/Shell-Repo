@@ -66,6 +66,7 @@ function managerToRow(e: ManagerDailyEntry) {
     bank_charges_rate: e.bankChargesRate,
     bank_charges: e.bankCharges,
     banking: e.banking,
+    deep_frozen_cc: e.deepFrozenCC,
     locked: e.locked,
   };
 }
@@ -96,6 +97,7 @@ function rowToManager(r: Record<string, unknown>): ManagerDailyEntry {
     bankChargesRate: Number(r.bank_charges_rate ?? 37.9),
     bankCharges: Number(r.bank_charges ?? 0),
     banking: Number(r.banking ?? 0),
+    deepFrozenCC: Number(r.deep_frozen_cc ?? 0),
     locked: r.locked as boolean,
   };
 }
