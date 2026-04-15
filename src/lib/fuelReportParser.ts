@@ -72,7 +72,8 @@ function convertDate(dateStr: string): string {
   if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
   return dateStr;
 }
-export function parseEodShort(content: string): EodShortRow[] {
+export function parseEodShort(rawContent: string): EodShortRow[] {
+  const content = stripPageBreaks(rawContent);
   const rows: EodShortRow[] = [];
   const lines = content.split('\n');
   let inSection = false;
@@ -95,7 +96,7 @@ export function parseEodShort(content: string): EodShortRow[] {
         if (line.includes('------')) continue;
         break;
       }
-      if (line.trim() === '' || line.includes('Page') || line.includes('<<')) {
+      if (line.trim() === '') {
         inSection = false;
         break;
       }
@@ -203,7 +204,8 @@ export function parseMtdSummary(content: string): MtdSummaryGrade[] {
   return grades;
 }
 
-export function parsePumpVariance(content: string): PumpVarianceRow[] {
+export function parsePumpVariance(rawContent: string): PumpVarianceRow[] {
+  const content = stripPageBreaks(rawContent);
   const rows: PumpVarianceRow[] = [];
   const lines = content.split('\n');
   let inSection = false;
@@ -229,7 +231,7 @@ export function parsePumpVariance(content: string): PumpVarianceRow[] {
       if (line.includes('~~~~~~') || line.includes('------') && rows.length > 0) {
         break;
       }
-      if (line.trim() === '' || line.includes('Page') || line.includes('<<')) break;
+      if (line.trim() === '') break;
 
       const m = line.match(
         /^\s*(\d+)\s+(\d+)\s+(\S+(?:\s+\S+)*?)\s{2,}([\d.,\-]+)\s+([\d.,\-]+)\s+([\d.,\-]+)\s+([\d.,\-]+)\s+([\d.,\-]+)\s+([\d.,\-]+)\s+([\d.,\-]+)/
