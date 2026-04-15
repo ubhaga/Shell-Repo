@@ -139,6 +139,13 @@ export default function Index() {
           <TabsContent value="recons">
             <Reports mode="recons" onNavigateToDate={(date) => { setSelectedDate(date); setActiveTab('cashier'); }} />
           </TabsContent>
+          <TabsContent value="fuel-recon">
+            <div className="text-center py-16">
+              <Fuel className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <h2 className="text-xl font-bold mb-1">Fuel Reconciliation</h2>
+              <p className="text-muted-foreground text-sm">Coming soon — fuel recon functionality will be built here.</p>
+            </div>
+          </TabsContent>
           <TabsContent value="afs">
             <Tabs value={afsSubTab} onValueChange={setAfsSubTab}>
               <div className="flex items-center justify-between mb-4">
