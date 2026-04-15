@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { parseEodShort, type EodShortRow } from '@/lib/fuelReportParser';
 import { format } from 'date-fns';
+import { useMasterDataStore, getTankColor } from '@/store/masterDataStore';
 
 interface Props {
   selectedDate: string;
@@ -15,6 +16,7 @@ interface DayEodShort {
 export function PosSalesPerTank({ selectedDate }: Props) {
   const [dayData, setDayData] = useState<DayEodShort[]>([]);
   const [loading, setLoading] = useState(true);
+  const tanks = useMasterDataStore(s => s.tanks);
   const month = selectedDate.slice(0, 7);
 
   const load = useCallback(async () => {
@@ -73,7 +75,12 @@ export function PosSalesPerTank({ selectedDate }: Props) {
               <tbody className="divide-y">
                 {day.rows.map((r, i) => (
                   <tr key={i} className="hover:bg-muted/20">
-                    <td className="px-2 py-1">{r.gradeId}</td>
+                    <td className="px-2 py-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: getTankColor(tanks, r.gradeId) || getTankColor(tanks, r.gradeDescription) || '#94a3b8' }} />
+                        {r.gradeId}
+                      </span>
+                    </td>
                     <td className="px-2 py-1">{r.gradeDescription}</td>
                     <td className="px-2 py-1 text-right">{fmtN(r.amtSales)}</td>
                     <td className="px-2 py-1 text-right">{fmtV(r.pumpVolSales)}</td>

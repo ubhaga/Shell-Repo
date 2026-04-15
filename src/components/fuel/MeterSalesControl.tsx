@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { parsePumpVariance, parseBatchDate, type PumpVarianceRow } from '@/lib/fuelReportParser';
 import { format, getDaysInMonth } from 'date-fns';
+import { useMasterDataStore, getTankColor } from '@/store/masterDataStore';
 
 interface Props {
   selectedDate: string;
@@ -16,6 +17,7 @@ export function MeterSalesControl({ selectedDate }: Props) {
   const [dayData, setDayData] = useState<DayPumpData[]>([]);
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const tanks = useMasterDataStore(s => s.tanks);
   const month = selectedDate.slice(0, 7);
 
   const load = useCallback(async () => {
@@ -88,7 +90,12 @@ export function MeterSalesControl({ selectedDate }: Props) {
                         {day.rows.map((r, i) => (
                           <tr key={i} className="hover:bg-muted/20">
                             <td className="px-2 py-1">{r.pumpNo}</td>
-                            <td className="px-2 py-1">{r.gradeDescription}</td>
+                            <td className="px-2 py-1">
+                              <span className="flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: getTankColor(tanks, r.gradeId) || getTankColor(tanks, r.gradeDescription) || '#94a3b8' }} />
+                                {r.gradeDescription}
+                              </span>
+                            </td>
                             <td className="px-2 py-1 text-right">{fmtV(r.startReading)}</td>
                             <td className="px-2 py-1 text-right">{fmtV(r.endReading)}</td>
                             <td className="px-2 py-1 text-right">{fmtV(r.calculatedVolume)}</td>
