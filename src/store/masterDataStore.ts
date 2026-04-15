@@ -89,6 +89,7 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
         cashierNames: map.cashierNames ?? get().cashierNames,
         managerNames: map.managerNames ?? get().managerNames,
         categories: map.categories ?? get().categories,
+        tanks: (map.tanks as unknown as TankDescription[]) ?? get().tanks,
         loaded: true,
       });
     } else {
@@ -235,6 +236,29 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
       const list = s.categories.filter(i => i !== name);
       persistKey('categories', list);
       return { categories: list };
+    });
+  },
+
+  addTank: (tank) => {
+    set(s => {
+      const next = [...s.tanks, tank];
+      persistKey('tanks', next);
+      return { tanks: next };
+    });
+  },
+  updateTank: (index, tank) => {
+    set(s => {
+      const next = [...s.tanks];
+      next[index] = tank;
+      persistKey('tanks', next);
+      return { tanks: next };
+    });
+  },
+  deleteTank: (index) => {
+    set(s => {
+      const next = s.tanks.filter((_, i) => i !== index);
+      persistKey('tanks', next);
+      return { tanks: next };
     });
   },
 }));
