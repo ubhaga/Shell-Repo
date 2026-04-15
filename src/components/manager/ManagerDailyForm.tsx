@@ -201,6 +201,9 @@ const blankEntry = (date: string): Omit<ManagerDailyEntry, "id"> => ({
   bankCharges: 0,
   banking: 0,
   deepFrozenCC: 0,
+  blueLabelComm: 0,
+  easypayComm: 0,
+  lottoComm: 0,
   locked: false,
 });
 
