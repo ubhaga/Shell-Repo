@@ -952,14 +952,27 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
             </DataRow>
           )}
           {showLottoComm && (
-            <DataRow label="3.3 Lotto Commission (Saturday)">
-              <CurrencyInput
-                value={form.lottoComm}
-                onChange={(v) => setForm((f) => ({ ...f, lottoComm: v }))}
-                className="w-[160px]"
-                allowNegative
-              />
-            </DataRow>
+            <>
+              <DataRow label="3.3 Lotto Net Sales Comm (Saturday)">
+                <CurrencyInput
+                  value={form.lottoNetSalesComm}
+                  onChange={(v) => setForm((f) => ({ ...f, lottoNetSalesComm: v, lottoComm: v + f.lottoPayoutComm }))}
+                  className="w-[160px]"
+                  allowNegative
+                />
+              </DataRow>
+              <DataRow label="3.3 Lotto Total Payout Comm (Saturday)">
+                <CurrencyInput
+                  value={form.lottoPayoutComm}
+                  onChange={(v) => setForm((f) => ({ ...f, lottoPayoutComm: v, lottoComm: f.lottoNetSalesComm + v }))}
+                  className="w-[160px]"
+                  allowNegative
+                />
+              </DataRow>
+              <DataRow label="3.3 Lotto Commission Total">
+                <CurrencyDisplay value={form.lottoComm} />
+              </DataRow>
+            </>
           )}
         </Section>
       )}
