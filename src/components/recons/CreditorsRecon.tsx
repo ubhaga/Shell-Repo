@@ -8,9 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Save, Download } from 'lucide-react';
 import { CreditorsTable } from './CreditorsTable';
-import { format, startOfMonth, endOfMonth, addDays, getDay, parse } from 'date-fns';
+import { format, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
 import { toast } from 'sonner';
 import { downloadCsv } from '@/lib/csvExport';
+import { parseBankStatementDateToDate } from '@/lib/bankStatementDate';
 
 interface CreditorsReconProps {
   filterMonth: string;
@@ -144,12 +145,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     return null;
   };
 
-  // Parse bank line date (DD/MM/YYYY format)
-  const parseBankDate = (dateStr: string): Date | null => {
-    try {
-      return parse(dateStr, 'dd/MM/yyyy', new Date());
-    } catch { return null; }
-  };
+  const parseBankDate = (dateStr: string): Date | null => parseBankStatementDateToDate(dateStr);
 
   // Build weekly data per supplier
   type WeekData = { invoices: number; payments: number };

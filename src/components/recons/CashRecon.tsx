@@ -8,6 +8,7 @@ import { Download } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, addDays } from 'date-fns';
 import type { ManagerDailyEntry } from '@/types/cashup';
 import { downloadCsv } from '@/lib/csvExport';
+import { parseBankStatementDate } from '@/lib/bankStatementDate';
 
 interface CashReconProps {
   filterMonth: string;
@@ -43,15 +44,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   // Parse bank date from DD/MM/YYYY to YYYY-MM-DD
-  const parseBankDate = (dateStr: string): string | null => {
-    try {
-      const parts = dateStr.split('/');
-      if (parts.length === 3) {
-        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-      }
-      return null;
-    } catch { return null; }
-  };
+  const parseBankDate = (dateStr: string): string | null => parseBankStatementDate(dateStr);
 
   // Find CCONNECT bank deposits by date
   const cconnectByDate = new Map<string, number>();
