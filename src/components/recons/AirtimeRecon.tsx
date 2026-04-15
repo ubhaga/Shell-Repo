@@ -263,11 +263,16 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => {
               let bld = openingBalances.bld, ep = openingBalances.ep, lt = openingBalances.lt;
-              const csvRows = dailyRows.map(r => {
+              const csvRows: any[][] = [];
+              dailyRows.forEach(r => {
                 bld = bld - r.bldInvoice + r.bldPayment;
                 ep = ep - r.easypayInvoice + r.easypayCollection;
                 lt = lt - r.lottoInvoice + r.lottoPayment;
-                return [r.date, r.bldInvoice, r.bldPayment, bld, r.easypayInvoice, r.easypayCollection, ep, r.lottoInvoice, r.lottoPayment, lt];
+                csvRows.push([r.date, r.bldInvoice, r.bldPayment, bld, r.easypayInvoice, r.easypayCollection, ep, r.lottoInvoice, r.lottoPayment, lt]);
+                if (r.bldComm || r.epComm || r.ltComm) {
+                  bld += r.bldComm; ep += r.epComm; lt += r.ltComm;
+                  csvRows.push([r.date + ' (Comm)', '', r.bldComm, bld, '', r.epComm, ep, '', r.ltComm, lt]);
+                }
               });
               csvRows.push(['Commission', '', '', currentComm.bld, '', '', currentComm.easypay, '', '', currentComm.lotto]);
               csvRows.push(['Final Balance', '', '', bld + currentComm.bld, '', '', ep + currentComm.easypay, '', '', lt + currentComm.lotto]);
