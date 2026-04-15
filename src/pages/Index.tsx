@@ -236,10 +236,10 @@ export default function Index() {
                 <TabsTrigger value="dayend" className="text-xs">Day End Reports</TabsTrigger>
               </TabsList>
               <TabsContent value="bank">
-                <BankStatementTab />
+                <BankStatementTab filterMonth={selectedDate.slice(0, 7)} monthLabel={format(new Date(selectedDate.slice(0, 7) + "-01"), "MMMM yyyy")} />
               </TabsContent>
               <TabsContent value="dayend">
-                <DayEndUpload selectedDate={selectedDate} />
+                <DayEndUpload filterMonth={selectedDate.slice(0, 7)} />
               </TabsContent>
             </Tabs>
           </TabsContent>
