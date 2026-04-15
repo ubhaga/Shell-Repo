@@ -6,7 +6,7 @@ type: feature
 
 The Airtime / Lotto reconciliation tab tracks daily balances for Blue Label Distribution (BLD), Easypay, and Lotto.
 
-Seed values (March 2026): BLD -11906.34, Easypay 14392.59, Lotto 7691.21.
+Seed values (March 2026): BLD -11906.34, Easypay 14392.59, Lotto -7691.21.
 
 Balance formula: Previous day balance - Invoice + Payment.
 
