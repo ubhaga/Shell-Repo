@@ -192,9 +192,11 @@ function StatusIcon({ status }: { status: "green" | "red" | "none" }) {
 }
 
 export function MonthlyDashboard({ selectedDate }: Props) {
-  const { getCashupByDate, getManagerEntryByDate, updateManagerEntry, addManagerEntry } = useCashupStore();
+  const { getCashupByDate, getManagerEntryByDate, updateManagerEntry, addManagerEntry, cashups, managerEntries, getMonthlyFiguresByMonth } = useCashupStore();
   const [editingExplanations, setEditingExplanations] = useState<Record<string, string>>({});
   const [monthOffset, setMonthOffset] = useState(0);
+  const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
+  const [prevBankLines, setPrevBankLines] = useState<typeof bankLines>([]);
 
   const baseMonth = startOfMonth(parseISO(selectedDate));
   const currentMonth = monthOffset === 0 ? baseMonth : addMonths(baseMonth, monthOffset);
