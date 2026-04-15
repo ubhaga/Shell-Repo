@@ -439,7 +439,32 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
       }
     }
 
-    // 4. Closing balance cannot be negative
+    // 5. Commission validation — mandatory when field is shown
+    if (showBlueLabelComm && form.blueLabelComm === 0) {
+      toast({
+        title: "Missing Blue Label Commission",
+        description: "Blue Label Commission is mandatory on the 1st of the month.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (showEasypayComm && form.easypayComm === 0) {
+      toast({
+        title: "Missing Easy Pay Commission",
+        description: "Easy Pay Commission is mandatory on the last day of the month.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (showLottoComm && form.lottoComm === 0) {
+      toast({
+        title: "Missing Lotto Commission",
+        description: "Lotto Commission is mandatory every Saturday.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const negativeClosingFields: string[] = [];
     if (coinsClosing < -0.005) negativeClosingFields.push("Coins");
     if (easypayClosing < -0.005) negativeClosingFields.push("Easy Pay");
