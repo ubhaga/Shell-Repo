@@ -197,6 +197,96 @@ export function MasterDataSettings() {
           />
         </div>
       </div>
+
+      {/* Tank Descriptions */}
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
+          Fuel Tanks
+        </h3>
+        <TankDescriptionList />
+      </div>
+    </div>
+  );
+}
+
+function TankDescriptionList() {
+  const store = useMasterDataStore();
+  const [newTank, setNewTank] = useState({ tankNumber: '', grade: '', size: '' });
+  const [editIdx, setEditIdx] = useState<number | null>(null);
+  const [editVal, setEditVal] = useState({ tankNumber: '', grade: '', size: '' });
+
+  const handleAdd = () => {
+    if (!newTank.tankNumber.trim() || !newTank.grade.trim()) return;
+    store.addTank({ tankNumber: newTank.tankNumber.trim(), grade: newTank.grade.trim(), size: parseFloat(newTank.size) || 0 });
+    setNewTank({ tankNumber: '', grade: '', size: '' });
+    toast({ title: 'Tank added' });
+  };
+
+  const startEdit = (i: number) => {
+    const t = store.tanks[i];
+    setEditIdx(i);
+    setEditVal({ tankNumber: t.tankNumber, grade: t.grade, size: String(t.size) });
+  };
+
+  const confirmEdit = () => {
+    if (editIdx === null) return;
+    store.updateTank(editIdx, { tankNumber: editVal.tankNumber.trim(), grade: editVal.grade.trim(), size: parseFloat(editVal.size) || 0 });
+    setEditIdx(null);
+    toast({ title: 'Tank updated' });
+  };
+
+  return (
+    <div className="border rounded-lg overflow-hidden max-w-2xl">
+      <div className="bg-emerald-700 text-white px-4 py-2.5 font-semibold text-sm flex items-center justify-between">
+        <span>Tank Descriptions</span>
+        <span className="text-xs font-normal opacity-80">{store.tanks.length} tanks</span>
+      </div>
+      <div className="flex gap-2 p-3 border-b bg-muted/20">
+        <input value={newTank.tankNumber} onChange={e => setNewTank(p => ({ ...p, tankNumber: e.target.value }))}
+          placeholder="Tank #" className="w-24 text-sm border border-input rounded-md px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+        <input value={newTank.grade} onChange={e => setNewTank(p => ({ ...p, grade: e.target.value }))}
+          placeholder="Grade (e.g. ULP95)" className="flex-1 text-sm border border-input rounded-md px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+        <input value={newTank.size} onChange={e => setNewTank(p => ({ ...p, size: e.target.value }))} type="number"
+          placeholder="Size (L)" className="w-28 text-sm border border-input rounded-md px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+        <Button size="sm" onClick={handleAdd} className="shrink-0"><Plus className="h-3.5 w-3.5 mr-1" /> Add</Button>
+      </div>
+      <div className="divide-y">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/30 text-xs font-medium text-muted-foreground">
+          <span className="w-24">Tank #</span>
+          <span className="flex-1">Grade</span>
+          <span className="w-28 text-right">Size (L)</span>
+          <span className="w-16"></span>
+        </div>
+        {store.tanks.map((tank, i) => (
+          <div key={i} className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted/30 group">
+            {editIdx === i ? (
+              <>
+                <input value={editVal.tankNumber} onChange={e => setEditVal(p => ({ ...p, tankNumber: e.target.value }))}
+                  className="w-24 text-sm border border-input rounded px-2 py-0.5 bg-background" autoFocus />
+                <input value={editVal.grade} onChange={e => setEditVal(p => ({ ...p, grade: e.target.value }))}
+                  className="flex-1 text-sm border border-input rounded px-2 py-0.5 bg-background" />
+                <input value={editVal.size} onChange={e => setEditVal(p => ({ ...p, size: e.target.value }))} type="number"
+                  className="w-28 text-sm border border-input rounded px-2 py-0.5 bg-background text-right" />
+                <div className="w-16 flex gap-1">
+                  <button onClick={confirmEdit} className="text-green-600 p-1"><Check className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => setEditIdx(null)} className="text-muted-foreground p-1"><X className="h-3.5 w-3.5" /></button>
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="w-24 text-sm font-medium">{tank.tankNumber}</span>
+                <span className="flex-1 text-sm">{tank.grade}</span>
+                <span className="w-28 text-sm text-right">{tank.size.toLocaleString()}</span>
+                <div className="w-16 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => startEdit(i)} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => { store.deleteTank(i); toast({ title: 'Tank removed' }); }} className="text-destructive hover:text-destructive/70 p-1"><Trash2 className="h-3.5 w-3.5" /></button>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+        {store.tanks.length === 0 && <div className="px-3 py-4 text-sm text-muted-foreground text-center">No tanks configured. Add your first tank above.</div>}
+      </div>
     </div>
   );
 }
