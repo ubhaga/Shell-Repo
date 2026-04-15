@@ -228,7 +228,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
               </TableRow>
               {dailyRows.map(row => {
                 bldBalance = bldBalance - row.bldInvoice + row.bldPayment;
-                easypayBalance = easypayBalance + row.easypayInvoice - row.easypayCollection;
+                easypayBalance = easypayBalance - row.easypayInvoice + row.easypayCollection;
                 lottoBalance = lottoBalance - row.lottoInvoice + row.lottoPayment;
 
                 const hasData = row.bldInvoice !== 0 || row.bldPayment > 0 || row.easypayInvoice !== 0 || row.easypayCollection > 0 || row.lottoInvoice !== 0 || row.lottoPayment > 0;
