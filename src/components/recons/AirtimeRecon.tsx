@@ -32,17 +32,14 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   }, [filterMonth]);
 
   const loadData = useCallback(async () => {
-    const queries: Promise<any>[] = [
-      supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth),
-      supabase.from('creditor_opening_balances').select('supplier, amount').eq('month', filterMonth),
-    ];
-    if (!isFirstMonth) {
-      queries.push(
-        supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', prevMonth),
-        supabase.from('creditor_opening_balances').select('supplier, amount').eq('month', prevMonth),
-      );
-    }
-    const results = await Promise.all(queries);
+    const bankQuery = supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth);
+    const commQuery = supabase.from('creditor_opening_balances').select('supplier, amount').eq('month', filterMonth);
+    const prevBankQuery = !isFirstMonth ? supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', prevMonth) : null;
+    const prevCommQuery = !isFirstMonth ? supabase.from('creditor_opening_balances').select('supplier, amount').eq('month', prevMonth) : null;
+
+    const [bankRes, commRes, prevBankRes, prevCommRes] = await Promise.all([
+      bankQuery, commQuery, prevBankQuery, prevCommQuery,
+    ]);
     setBankLines((results[0].data ?? []) as typeof bankLines);
 
     const parseComm = (data: any[]) => {
