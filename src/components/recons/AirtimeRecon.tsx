@@ -328,13 +328,13 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                   bldBalance += row.bldComm;
                   easypayBalance += row.epComm;
                   lottoBalance += row.ltComm;
-                  commRow = (
-                    <TableRow key={row.date + '-comm'} className="bg-muted/20 italic">
-                      <TableCell className="text-xs text-muted-foreground pl-6">↳ Commission</TableCell>
+                commRow = (
+                    <TableRow key={row.date + '-comm'} className="bg-blue-50 dark:bg-blue-950/20 italic border-l-4 border-l-blue-500">
+                      <TableCell className="text-xs text-blue-700 dark:text-blue-400 font-semibold pl-6">↳ Commission</TableCell>
                       <TableCell className="border-l"></TableCell>
                       <TableCell className="text-right text-xs">
                         {row.bldComm !== 0
-                          ? <span className="text-destructive"><CurrencyDisplay value={row.bldComm} /></span>
+                          ? <span className="text-blue-600 dark:text-blue-400 font-semibold"><CurrencyDisplay value={row.bldComm} /></span>
                           : <span className="text-muted-foreground">—</span>}
                       </TableCell>
                       <TableCell className="text-right text-xs font-semibold bg-destructive/10">
@@ -343,7 +343,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                       <TableCell className="border-l"></TableCell>
                       <TableCell className="text-right text-xs">
                         {row.epComm !== 0
-                          ? <span className="text-destructive"><CurrencyDisplay value={row.epComm} /></span>
+                          ? <span className="text-blue-600 dark:text-blue-400 font-semibold"><CurrencyDisplay value={row.epComm} /></span>
                           : <span className="text-muted-foreground">—</span>}
                       </TableCell>
                       <TableCell className="text-right text-xs font-semibold bg-primary/10">
@@ -352,7 +352,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                       <TableCell className="border-l"></TableCell>
                       <TableCell className="text-right text-xs">
                         {row.ltComm !== 0
-                          ? <span className="text-destructive"><CurrencyDisplay value={row.ltComm} /></span>
+                          ? <span className="text-blue-600 dark:text-blue-400 font-semibold"><CurrencyDisplay value={row.ltComm} /></span>
                           : <span className="text-muted-foreground">—</span>}
                       </TableCell>
                       <TableCell className="text-right text-xs font-semibold bg-accent/20">
