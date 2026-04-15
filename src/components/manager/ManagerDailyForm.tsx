@@ -75,7 +75,7 @@ function computeEffectiveClosingForDate(
     const transferFromCoins = Math.abs(entry?.transferFromCoins ?? 0);
 
     coinsOpening = effCoinsOpen + dailyCoins - closureCoins - transferFromCoins;
-    easypayOpening = effEasypayOpen + dailyEasypay - closureEasypay - deepFrozenCC;
+    easypayOpening = effEasypayOpen + dailyEasypay - closureEasypay;
     ccOpening = effCCOpen + dailyCC - closureCC + transferFromCoins;
   }
 
@@ -331,7 +331,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   // CLOSING = Opening + DailyCashup - CCBagClosure ± Transfer
   const coinsClosing =
     effectiveCoinsOpening + dailyCashupCoins - Math.abs(form.ccBagClosureCoins) - Math.abs(form.transferFromCoins);
-  const easypayClosing = effectiveEasypayOpening + dailyCashupEasypay - Math.abs(form.ccBagClosureEasypay) - dailyDeepFrozenCC;
+  const easypayClosing = effectiveEasypayOpening + dailyCashupEasypay - Math.abs(form.ccBagClosureEasypay);
   const ccClosing =
     effectiveCCOpening +
     dailyCashupCashConnect -
