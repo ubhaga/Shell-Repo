@@ -91,7 +91,7 @@ export function DayEndUpload({ filterMonth }: Props) {
           const row = uploadMap.get(date);
           const dayLabel = format(new Date(date), 'EEE dd MMM');
           return (
-            <div key={date} className="flex items-center justify-between px-4 py-2 text-sm hover:bg-muted/30">
+            <div key={date} className={`flex items-center justify-between px-4 py-2 text-sm ${row ? 'bg-green-50' : 'hover:bg-muted/30'}`}>
               <div className="flex items-center gap-3 min-w-[140px]">
                 <span className="font-medium">{dayLabel}</span>
               </div>

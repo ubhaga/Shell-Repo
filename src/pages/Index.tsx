@@ -182,40 +182,50 @@ export default function Index() {
             </Tabs>
           </TabsContent>
           <TabsContent value="uploads">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    const d = new Date(selectedDate.slice(0, 7) + '-01');
-                    d.setMonth(d.getMonth() - 1);
-                    if (d >= new Date('2026-01-01')) setSelectedDate(format(d, 'yyyy-MM') + '-01');
-                  }}
-                  className="p-1.5 rounded-md hover:bg-muted border"
-                  disabled={selectedDate.slice(0, 7) <= '2026-01'}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <input
-                  type="month"
-                  value={selectedDate.slice(0, 7)}
-                  min="2026-01"
-                  onChange={(e) => setSelectedDate(e.target.value + '-01')}
-                  className="text-sm border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <button
-                  onClick={() => {
-                    const d = new Date(selectedDate.slice(0, 7) + '-01');
-                    d.setMonth(d.getMonth() + 1);
-                    setSelectedDate(format(d, 'yyyy-MM') + '-01');
-                  }}
-                  className="p-1.5 rounded-md hover:bg-muted border"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
+            <Tabs defaultValue="bank-statement">
+              <div className="flex items-center justify-between mb-4">
+                <TabsList>
+                  <TabsTrigger value="bank-statement" className="text-xs">Bank Statement</TabsTrigger>
+                  <TabsTrigger value="day-ends" className="text-xs">Day End Reports</TabsTrigger>
+                </TabsList>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const d = new Date(selectedDate.slice(0, 7) + '-01');
+                      d.setMonth(d.getMonth() - 1);
+                      if (d >= new Date('2026-01-01')) setSelectedDate(format(d, 'yyyy-MM') + '-01');
+                    }}
+                    className="p-1.5 rounded-md hover:bg-muted border"
+                    disabled={selectedDate.slice(0, 7) <= '2026-01'}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <input
+                    type="month"
+                    value={selectedDate.slice(0, 7)}
+                    min="2026-01"
+                    onChange={(e) => setSelectedDate(e.target.value + '-01')}
+                    className="text-sm border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <button
+                    onClick={() => {
+                      const d = new Date(selectedDate.slice(0, 7) + '-01');
+                      d.setMonth(d.getMonth() + 1);
+                      setSelectedDate(format(d, 'yyyy-MM') + '-01');
+                    }}
+                    className="p-1.5 rounded-md hover:bg-muted border"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-              <BankStatementTab filterMonth={selectedDate.slice(0, 7)} monthLabel={format(new Date(selectedDate.slice(0, 7) + '-01'), 'MMMM yyyy')} />
-              <DayEndUpload filterMonth={selectedDate.slice(0, 7)} />
-            </div>
+              <TabsContent value="bank-statement">
+                <BankStatementTab filterMonth={selectedDate.slice(0, 7)} monthLabel={format(new Date(selectedDate.slice(0, 7) + '-01'), 'MMMM yyyy')} />
+              </TabsContent>
+              <TabsContent value="day-ends">
+                <DayEndUpload filterMonth={selectedDate.slice(0, 7)} />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
           <TabsContent value="settings">
             <MasterDataSettings />
