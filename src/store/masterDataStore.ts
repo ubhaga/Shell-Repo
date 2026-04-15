@@ -74,6 +74,7 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
   cashierNames: [...DEFAULT_CASHIER_NAMES],
   managerNames: [...DEFAULT_MANAGER_NAMES],
   categories: [...DEFAULT_CATEGORIES].sort(),
+  tanks: [] as TankDescription[],
   loaded: false,
 
   loadAll: async () => {
