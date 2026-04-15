@@ -56,12 +56,10 @@ function computeEffectiveClosingForDate(
     let effCCOpen: number;
 
     if (date === SEED_DATE) {
-      // Jan 1: use seed values (ignore any stale stored opening)
       effCoinsOpen = 4483.15;
       effEasypayOpen = 3500;
       effCCOpen = 2000;
     } else {
-      // Every other date: opening = previous day's effective closing
       effCoinsOpen = coinsOpening;
       effEasypayOpen = easypayOpening;
       effCCOpen = ccOpening;
@@ -70,15 +68,15 @@ function computeEffectiveClosingForDate(
     const dailyCoins = cashup?.shop.coins ?? 0;
     const dailyEasypay = cashup?.shop.easyPay ?? 0;
     const dailyCC = cashup?.shop.cashDepositedBanking ?? 0;
-    const deepFrozenCC = cashup?.shop.deepFrozenCC ?? 0;
+    const deepFrozenCC = entry?.deepFrozenCC ?? 0;
     const closureCoins = Math.abs(entry?.ccBagClosureCoins ?? 0);
     const closureEasypay = Math.abs(entry?.ccBagClosureEasypay ?? 0);
     const closureCC = Math.abs(entry?.ccBagClosureCashConnect ?? 0);
     const transferFromCoins = Math.abs(entry?.transferFromCoins ?? 0);
 
     coinsOpening = effCoinsOpen + dailyCoins - closureCoins - transferFromCoins;
-    easypayOpening = effEasypayOpen + dailyEasypay - closureEasypay;
-    ccOpening = effCCOpen + dailyCC - closureCC + transferFromCoins - deepFrozenCC;
+    easypayOpening = effEasypayOpen + dailyEasypay - closureEasypay - deepFrozenCC;
+    ccOpening = effCCOpen + dailyCC - closureCC + transferFromCoins;
   }
 
   return { coins: coinsOpening, easypay: easypayOpening, cc: ccOpening };
@@ -203,6 +201,7 @@ const blankEntry = (date: string): Omit<ManagerDailyEntry, "id"> => ({
   bankChargesRate: 0,
   bankCharges: 0,
   banking: 0,
+  deepFrozenCC: 0,
   locked: false,
 });
 
@@ -322,7 +321,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   const dailyCashupCoins = cashup?.shop.coins ?? 0;
   const dailyCashupEasypay = cashup?.shop.easyPay ?? 0;
   const dailyCashupCashConnect = cashup?.shop.cashDepositedBanking ?? 0;
-  const dailyDeepFrozenCC = cashup?.shop.deepFrozenCC ?? 0;
+   const dailyDeepFrozenCC = form.deepFrozenCC;
 
   // Opening balances: always use chain-derived prev-day closing (never the stale stored value)
   const effectiveCoinsOpening = usePrevClosingAsOpening ? prevCoinsClosing : form.coinsOpeningBalance;
@@ -332,13 +331,12 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   // CLOSING = Opening + DailyCashup - CCBagClosure ± Transfer
   const coinsClosing =
     effectiveCoinsOpening + dailyCashupCoins - Math.abs(form.ccBagClosureCoins) - Math.abs(form.transferFromCoins);
-  const easypayClosing = effectiveEasypayOpening + dailyCashupEasypay - Math.abs(form.ccBagClosureEasypay);
+  const easypayClosing = effectiveEasypayOpening + dailyCashupEasypay - Math.abs(form.ccBagClosureEasypay) - dailyDeepFrozenCC;
   const ccClosing =
     effectiveCCOpening +
     dailyCashupCashConnect -
     Math.abs(form.ccBagClosureCashConnect) +
-    Math.abs(form.transferFromCoins) -
-    dailyDeepFrozenCC;
+    Math.abs(form.transferFromCoins);
 
   // 2.1 Banking — derived from CC Bag Closure Cash Connect using configurable rate
   const effectiveRate = form.bankChargesRate || 37.9; // cents per R100 inclusive
@@ -491,8 +489,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
         const shopTotalTakings = shopNetSales - shopPayoutsTotal - cashup.shop.lottoPayouts + shopTotalReceipts;
 
         // Must match CashierDailyForm exactly: cashConnectTotal = cashDepositedBanking + easyPay + coins
-        const deepFrozenCC = (cashup.shop as any).deepFrozenCC ?? 0;
-        const cashConnectTotal = cashup.shop.cashDepositedBanking + cashup.shop.easyPay + deepFrozenCC + cashup.shop.coins;
+        const cashConnectTotal = cashup.shop.cashDepositedBanking + cashup.shop.easyPay + cashup.shop.coins;
         const shopSpeedpointTotal = cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0);
         const shopAccountTotal = cashup.shop.accounts.reduce((s, a) => s + a.amount, 0);
         const shopOtherTotal = cashup.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0);
@@ -798,21 +795,28 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
               </td>
             </tr>
 
-            {/* Deep Frozen paid in CC — read-only from Cashier, Total CC column only */}
-            {dailyDeepFrozenCC > 0 && (
-              <tr className="border-b bg-muted/10">
-                <td className="px-3 py-1.5 text-xs text-muted-foreground">
-                  Deep Frozen paid in CC
-                  <Lock className="h-3 w-3 text-muted-foreground inline ml-1" />
-                </td>
-                <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
-                <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
-                <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
-                <td className="px-3 py-1.5 text-right text-destructive font-semibold">
-                  <CurrencyDisplay value={-dailyDeepFrozenCC} />
-                </td>
-              </tr>
-            )}
+            {/* Deep Frozen paid in CC — editable, Easy Pay + Total columns */}
+            <tr className="border-b">
+              <td className="px-3 py-1.5 text-xs text-muted-foreground">
+                Deep Frozen paid in CC <span className="text-destructive font-bold">(-ve)</span>
+              </td>
+              <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
+              <td className="px-3 py-1.5">
+                <CurrencyInput
+                  value={form.deepFrozenCC}
+                  onChange={(v) => setForm((f) => ({ ...f, deepFrozenCC: Math.abs(v) }))}
+                  className="w-full"
+                  placeholder="0.00"
+                />
+                <div className="text-xs text-destructive text-right mt-0.5">
+                  <CurrencyDisplay value={-Math.abs(form.deepFrozenCC)} />
+                </div>
+              </td>
+              <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
+              <td className="px-3 py-1.5 text-right text-destructive font-semibold">
+                <CurrencyDisplay value={-Math.abs(form.deepFrozenCC)} />
+              </td>
+            </tr>
 
             {/* Transfer from Coins */}
             <tr className="border-b">
