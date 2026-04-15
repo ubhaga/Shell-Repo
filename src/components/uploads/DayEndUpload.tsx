@@ -27,12 +27,13 @@ interface DayEndRow {
   date_mismatch?: boolean;
 }
 
-/** Strip page break markers injected by the POS reporting system */
+/** Strip page break markers from RPT content */
 function stripPageBreaks(content: string): string {
   return content
-    .replace(/<---\s*Ver:.*?Page:\s*\d+\s*\*.*?Rpt Type:\s*\w+\s*--->/g, '')
+    .replace(/<---\s*Ver:.*?Rpt Type:\s*\w+\s*--->/g, '')
     .replace(/<<\s*Page Break\s*>>/g, '')
-    .replace(/\n{3,}/g, '\n\n'); // collapse excessive blank lines left behind
+    .replace(/^.*Page:\s*\d+\s*$/gm, '')
+    .replace(/\n{3,}/g, '\n\n');
 }
 
 /** Extract Batch Date from RPT file content — looks for "Batch Date   : dd/MM/yyyy" */

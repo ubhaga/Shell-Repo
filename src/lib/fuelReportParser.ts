@@ -122,7 +122,8 @@ export function parseEodShort(rawContent: string): EodShortRow[] {
   return rows;
 }
 
-export function parseMtdSummary(content: string): MtdSummaryGrade[] {
+export function parseMtdSummary(rawContent: string): MtdSummaryGrade[] {
+  const content = stripPageBreaks(rawContent);
   const grades: MtdSummaryGrade[] = [];
   const lines = content.split('\n');
   let inSection = false;
