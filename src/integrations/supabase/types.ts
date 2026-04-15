@@ -157,6 +157,36 @@ export type Database = {
         }
         Relationships: []
       }
+      day_end_uploads: {
+        Row: {
+          content: string
+          created_at: string
+          date: string
+          filename: string
+          id: string
+          month: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          date: string
+          filename?: string
+          id?: string
+          month: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          date?: string
+          filename?: string
+          id?: string
+          month?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       manager_daily_entries: {
         Row: {
           bank_charges: number
