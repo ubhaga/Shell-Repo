@@ -434,7 +434,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                   <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.bldInvoice, 0)} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.bldPayment, 0)} highlight />
+                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.bldPayment + r.bldComm, 0)} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs font-bold">
                   <CurrencyDisplay value={bldBalance} highlight />
