@@ -550,6 +550,42 @@ export function MonthlyDashboard({ selectedDate }: Props) {
           </table>
         </div>
       </div>
+
+      {/* Airtime Recon Reconciliation */}
+      <div className="border rounded-xl overflow-hidden">
+        <div className="bg-muted/50 px-3 py-2 border-b font-semibold text-sm">
+          Airtime / Lotto Reconciliation
+        </div>
+        <div className="grid grid-cols-3 gap-0 text-sm">
+          {[
+            { label: 'Blue Label', ok: airtimeStatus?.bldOk ?? null },
+            { label: 'Easy Pay', ok: airtimeStatus?.epOk ?? null },
+            { label: 'Lotto', ok: airtimeStatus?.ltOk ?? null },
+          ].map(({ label, ok }) => (
+            <div key={label} className={`flex items-center justify-center gap-2 px-3 py-3 border-r last:border-r-0 ${
+              ok === null ? 'bg-muted/20' : ok ? 'bg-green-50 dark:bg-green-950/20' : 'bg-red-50 dark:bg-red-950/20'
+            }`}>
+              {ok === null ? (
+                <MinusCircle className="h-4 w-4 text-muted-foreground/40" />
+              ) : ok ? (
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              ) : (
+                <XCircle className="h-4 w-4 text-red-600" />
+              )}
+              <span className={`text-xs font-semibold ${
+                ok === null ? 'text-muted-foreground' : ok ? 'text-green-700' : 'text-red-600'
+              }`}>
+                {label}: {ok === null ? 'No data' : ok ? 'PASS' : 'FAIL'}
+              </span>
+            </div>
+          ))}
+        </div>
+        {!airtimeMonthly && (
+          <div className="text-xs text-muted-foreground text-center py-1 border-t">
+            No monthly figures entered — enter in Manager Monthly Section 4
+          </div>
+        )}
+      </div>
     </div>
   );
 }
