@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useCashupStore } from '@/store/cashupStore';
 import { supabase } from '@/integrations/supabase/client';
-import { CurrencyDisplay } from '@/components/ui/CashupUI';
+import { CurrencyDisplay, CurrencyInput } from '@/components/ui/CashupUI';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Save } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { downloadCsv } from '@/lib/csvExport';
 import { parseBankStatementDate } from '@/lib/bankStatementDate';
+import { toast } from 'sonner';
 
 interface AirtimeReconProps {
   filterMonth: string;
@@ -17,16 +18,53 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   const { cashups } = useCashupStore();
 
   const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
+  const [commissions, setCommissions] = useState<{ bld: number; easypay: number; lotto: number }>({ bld: 0, easypay: 0, lotto: 0 });
+  const [editingComm, setEditingComm] = useState<{ bld: number; easypay: number; lotto: number } | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const loadBankLines = useCallback(async () => {
-    const { data } = await supabase
-      .from('bank_statement_lines')
-      .select('amount, description, transaction_date')
-      .eq('month', filterMonth);
-    setBankLines((data ?? []) as typeof bankLines);
+  const loadData = useCallback(async () => {
+    const [bankRes, commRes] = await Promise.all([
+      supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth),
+      supabase.from('creditor_opening_balances').select('supplier, amount').eq('month', filterMonth),
+    ]);
+    setBankLines((bankRes.data ?? []) as typeof bankLines);
+
+    const commMap: Record<string, number> = {};
+    ((commRes.data ?? []) as { supplier: string; amount: number }[]).forEach(r => {
+      if (r.supplier.startsWith('commission:')) {
+        commMap[r.supplier.replace('commission:', '')] = Number(r.amount);
+      }
+    });
+    setCommissions({
+      bld: commMap['bld'] ?? 0,
+      easypay: commMap['easypay'] ?? 0,
+      lotto: commMap['lotto'] ?? 0,
+    });
+    setEditingComm(null);
   }, [filterMonth]);
 
-  useEffect(() => { loadBankLines(); }, [loadBankLines]);
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const handleSaveCommissions = async () => {
+    if (!editingComm) return;
+    setSaving(true);
+    try {
+      for (const [key, val] of Object.entries(editingComm)) {
+        await supabase.from('creditor_opening_balances').upsert(
+          { month: filterMonth, supplier: `commission:${key}`, amount: val } as never,
+          { onConflict: 'month,supplier' }
+        );
+      }
+      setCommissions(editingComm);
+      setEditingComm(null);
+      toast.success('Commissions saved');
+    } catch {
+      toast.error('Failed to save commissions');
+    }
+    setSaving(false);
+  };
+
+  const currentComm = editingComm ?? commissions;
 
   const BLD_OPENING = -11906.34;
   const EASYPAY_OPENING = 14392.59;
@@ -42,7 +80,6 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
 
   const parseBankDate = (dateStr: string): string | null => parseBankStatementDate(dateStr);
 
-  // BLD payments from bank
   const bldPaymentsByDate = new Map<string, number>();
   bankLines.forEach(line => {
     const desc = line.description.toUpperCase().trim();
@@ -54,7 +91,6 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     }
   });
 
-  // Lotto payments from bank (ITHUCOLL)
   const lottoPaymentsByDate = new Map<string, number>();
   bankLines.forEach(line => {
     const desc = line.description.toUpperCase().trim();
@@ -109,6 +145,8 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   let easypayBalance = EASYPAY_OPENING;
   let lottoBalance = LOTTO_OPENING;
 
+  const hasCommEdits = editingComm !== null;
+
   return (
     <div className="space-y-4">
       <div className="bg-card border rounded-lg overflow-hidden">
@@ -116,21 +154,30 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
           <h3 className="font-semibold text-sm">
             Airtime / Lotto Reconciliation — {format(monthStart, 'MMMM yyyy')}
           </h3>
-          <Button size="sm" variant="outline" onClick={() => {
-            let bld = BLD_OPENING, ep = EASYPAY_OPENING, lt = LOTTO_OPENING;
-            const csvRows = dailyRows.map(r => {
-              bld = bld - r.bldInvoice + r.bldPayment;
-              ep = ep + r.easypayInvoice - r.easypayCollection;
-              lt = lt - r.lottoInvoice + r.lottoPayment;
-              return [r.date, r.bldInvoice, r.bldPayment, bld, r.easypayInvoice, r.easypayCollection, ep, r.lottoInvoice, r.lottoPayment, lt];
-            });
-            downloadCsv(
-              ['Date', 'BLD Invoice', 'BLD Payment', 'BLD Balance', 'Easypay Invoice', 'Easypay Collection', 'Easypay Balance', 'Lotto Invoice', 'Lotto Payment', 'Lotto Balance'],
-              csvRows, `airtime-lotto-recon-${filterMonth}.csv`
-            );
-          }}>
-            <Download className="h-3.5 w-3.5 mr-1" />Export CSV
-          </Button>
+          <div className="flex gap-2">
+            {hasCommEdits && (
+              <Button size="sm" onClick={handleSaveCommissions} disabled={saving}>
+                <Save className="h-3.5 w-3.5 mr-1" />Save Commissions
+              </Button>
+            )}
+            <Button size="sm" variant="outline" onClick={() => {
+              let bld = BLD_OPENING, ep = EASYPAY_OPENING, lt = LOTTO_OPENING;
+              const csvRows = dailyRows.map(r => {
+                bld = bld - r.bldInvoice + r.bldPayment;
+                ep = ep + r.easypayInvoice - r.easypayCollection;
+                lt = lt - r.lottoInvoice + r.lottoPayment;
+                return [r.date, r.bldInvoice, r.bldPayment, bld, r.easypayInvoice, r.easypayCollection, ep, r.lottoInvoice, r.lottoPayment, lt];
+              });
+              csvRows.push(['Commission', '', '', currentComm.bld, '', '', currentComm.easypay, '', '', currentComm.lotto]);
+              csvRows.push(['Final Balance', '', '', bld + currentComm.bld, '', '', ep - currentComm.easypay, '', '', lt + currentComm.lotto]);
+              downloadCsv(
+                ['Date', 'BLD Invoice', 'BLD Payment', 'BLD Balance', 'Easypay Invoice', 'Easypay Collection', 'Easypay Balance', 'Lotto Invoice', 'Lotto Payment', 'Lotto Balance'],
+                csvRows, `airtime-lotto-recon-${filterMonth}.csv`
+              );
+            }}>
+              <Download className="h-3.5 w-3.5 mr-1" />Export CSV
+            </Button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -182,7 +229,6 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
               {dailyRows.map(row => {
                 bldBalance = bldBalance - row.bldInvoice + row.bldPayment;
                 easypayBalance = easypayBalance + row.easypayInvoice - row.easypayCollection;
-                // Lotto creditor: invoices increase debt, payments reduce it
                 lottoBalance = lottoBalance - row.lottoInvoice + row.lottoPayment;
 
                 const hasData = row.bldInvoice !== 0 || row.bldPayment > 0 || row.easypayInvoice !== 0 || row.easypayCollection > 0 || row.lottoInvoice !== 0 || row.lottoPayment > 0;
@@ -190,7 +236,6 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 return (
                   <TableRow key={row.date} className={!hasData ? 'opacity-50' : ''}>
                     <TableCell className="text-xs">{format(new Date(row.date), 'dd MMM (EEE)')}</TableCell>
-                    {/* BLD */}
                     <TableCell className="text-right text-xs border-l">
                       {row.bldInvoice > 0
                         ? <CurrencyDisplay value={row.bldInvoice} />
@@ -204,7 +249,6 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                     <TableCell className="text-right text-xs font-semibold bg-destructive/10">
                       <CurrencyDisplay value={bldBalance} />
                     </TableCell>
-                    {/* Easypay */}
                     <TableCell className="text-right text-xs border-l">
                       {row.easypayInvoice > 0
                         ? <CurrencyDisplay value={row.easypayInvoice} />
@@ -218,7 +262,6 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                     <TableCell className="text-right text-xs font-semibold bg-primary/10">
                       <CurrencyDisplay value={easypayBalance} />
                     </TableCell>
-                    {/* Lotto */}
                     <TableCell className="text-right text-xs border-l">
                       {row.lottoInvoice !== 0
                         ? <CurrencyDisplay value={row.lottoInvoice} />
@@ -235,7 +278,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                   </TableRow>
                 );
               })}
-              {/* Closing */}
+              {/* Closing before commission */}
               <TableRow className="bg-secondary font-semibold">
                 <TableCell className="text-xs">Closing Balance</TableCell>
                 <TableCell className="text-right text-xs border-l">
@@ -264,6 +307,53 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 </TableCell>
                 <TableCell className="text-right text-xs font-bold">
                   <CurrencyDisplay value={lottoBalance} highlight />
+                </TableCell>
+              </TableRow>
+              {/* Commission row */}
+              <TableRow className="bg-muted/30">
+                <TableCell className="text-xs font-semibold">Commission</TableCell>
+                <TableCell className="border-l" colSpan={2}></TableCell>
+                <TableCell className="text-right p-1">
+                  <CurrencyInput
+                    value={currentComm.bld}
+                    onChange={(v) => setEditingComm(prev => ({ ...(prev ?? commissions), bld: v }))}
+                    className="h-7 text-xs w-24 ml-auto"
+                    allowNegative
+                  />
+                </TableCell>
+                <TableCell className="border-l" colSpan={2}></TableCell>
+                <TableCell className="text-right p-1">
+                  <CurrencyInput
+                    value={currentComm.easypay}
+                    onChange={(v) => setEditingComm(prev => ({ ...(prev ?? commissions), easypay: v }))}
+                    className="h-7 text-xs w-24 ml-auto"
+                    allowNegative
+                  />
+                </TableCell>
+                <TableCell className="border-l" colSpan={2}></TableCell>
+                <TableCell className="text-right p-1">
+                  <CurrencyInput
+                    value={currentComm.lotto}
+                    onChange={(v) => setEditingComm(prev => ({ ...(prev ?? commissions), lotto: v }))}
+                    className="h-7 text-xs w-24 ml-auto"
+                    allowNegative
+                  />
+                </TableCell>
+              </TableRow>
+              {/* Final balance after commission */}
+              <TableRow className="bg-secondary/80 font-bold">
+                <TableCell className="text-xs">Balance after Commission</TableCell>
+                <TableCell className="border-l" colSpan={2}></TableCell>
+                <TableCell className="text-right text-xs">
+                  <CurrencyDisplay value={bldBalance + currentComm.bld} highlight />
+                </TableCell>
+                <TableCell className="border-l" colSpan={2}></TableCell>
+                <TableCell className="text-right text-xs">
+                  <CurrencyDisplay value={easypayBalance - currentComm.easypay} highlight />
+                </TableCell>
+                <TableCell className="border-l" colSpan={2}></TableCell>
+                <TableCell className="text-right text-xs">
+                  <CurrencyDisplay value={lottoBalance + currentComm.lotto} highlight />
                 </TableCell>
               </TableRow>
             </TableBody>
