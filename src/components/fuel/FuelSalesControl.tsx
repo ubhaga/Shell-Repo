@@ -45,7 +45,7 @@ export function FuelSalesControl({ selectedDate }: Props) {
           <div className="bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold flex items-center justify-between">
             <span>Tank {grade.gradeId} — {grade.description}</span>
             <span className="text-xs font-normal opacity-80">
-              MTD Variance: {fmtV(grade.monthlyVariance)}L ({fmtN(grade.variancePercentage)}%)
+              MTD Variance: {fmt(grade.monthlyVariance)}L ({fmt(grade.variancePercentage)}%)
             </span>
           </div>
           <div className="overflow-x-auto">
@@ -70,18 +70,18 @@ export function FuelSalesControl({ selectedDate }: Props) {
                   <tr key={row.date} className="hover:bg-muted/30">
                     <td className="px-2 py-1">{format(new Date(row.date), 'dd MMM')}</td>
                     <td className="px-2 py-1">{row.batchNo}</td>
-                    <td className="px-2 py-1 text-right">{fmtV(row.daysPumpVolSales)}</td>
-                    <td className="px-2 py-1 text-right">{fmtV(row.mtdPumpVolSales)}</td>
-                    <td className="px-2 py-1 text-right">{fmtV(row.openingVol)}</td>
-                    <td className="px-2 py-1 text-right">{fmtV(row.daysVolPurchase)}</td>
-                    <td className="px-2 py-1 text-right">{fmtV(row.closingDip)}</td>
-                    <td className="px-2 py-1 text-right">{fmtV(row.daysTankVolSales)}</td>
-                    <td className="px-2 py-1 text-right">{fmtV(row.mtdTankVolSales)}</td>
+                    <td className="px-2 py-1 text-right">{fmt(row.daysPumpVolSales)}</td>
+                    <td className="px-2 py-1 text-right">{fmt(row.mtdPumpVolSales)}</td>
+                    <td className="px-2 py-1 text-right">{fmt(row.openingVol)}</td>
+                    <td className="px-2 py-1 text-right">{fmt(row.daysVolPurchase)}</td>
+                    <td className="px-2 py-1 text-right">{fmt(row.closingDip)}</td>
+                    <td className="px-2 py-1 text-right">{fmt(row.daysTankVolSales)}</td>
+                    <td className="px-2 py-1 text-right">{fmt(row.mtdTankVolSales)}</td>
                     <td className={`px-2 py-1 text-right font-medium ${row.daysPumpVolVariance < 0 ? 'text-red-600' : row.daysPumpVolVariance > 0 ? 'text-amber-600' : ''}`}>
-                      {fmtV(row.daysPumpVolVariance)}
+                      {fmt(row.daysPumpVolVariance)}
                     </td>
                     <td className={`px-2 py-1 text-right font-medium ${row.mtdPumpVolVariance < 0 ? 'text-red-600' : row.mtdPumpVolVariance > 0 ? 'text-amber-600' : ''}`}>
-                      {fmtV(row.mtdPumpVolVariance)}
+                      {fmt(row.mtdPumpVolVariance)}
                     </td>
                   </tr>
                 ))}
@@ -89,11 +89,11 @@ export function FuelSalesControl({ selectedDate }: Props) {
               <tfoot>
                 <tr className="bg-muted/50 font-semibold border-t">
                   <td colSpan={7} className="px-2 py-1.5">Monthly Totals</td>
-                  <td className="px-2 py-1.5 text-right">{fmtV(grade.monthlyTankSales)}</td>
+                  <td className="px-2 py-1.5 text-right">{fmt(grade.monthlyTankSales)}</td>
                   <td className="px-2 py-1.5 text-right"></td>
                   <td className="px-2 py-1.5 text-right"></td>
                   <td className={`px-2 py-1.5 text-right ${grade.monthlyVariance < 0 ? 'text-red-600' : 'text-amber-600'}`}>
-                    {fmtV(grade.monthlyVariance)}
+                    {fmt(grade.monthlyVariance)}
                   </td>
                 </tr>
               </tfoot>
