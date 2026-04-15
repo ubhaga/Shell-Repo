@@ -294,6 +294,9 @@ export type Database = {
           adj_oil: number
           adj_vat: number
           adj_wsl_dsl: number
+          airtime_bld_balance: number
+          airtime_easypay_balance: number
+          airtime_lotto_balance: number
           branch_net_sales: number
           branch_total_invoices_capital: number
           branch_total_invoices_vat: number
@@ -324,6 +327,9 @@ export type Database = {
           adj_oil?: number
           adj_vat?: number
           adj_wsl_dsl?: number
+          airtime_bld_balance?: number
+          airtime_easypay_balance?: number
+          airtime_lotto_balance?: number
           branch_net_sales?: number
           branch_total_invoices_capital?: number
           branch_total_invoices_vat?: number
@@ -354,6 +360,9 @@ export type Database = {
           adj_oil?: number
           adj_vat?: number
           adj_wsl_dsl?: number
+          airtime_bld_balance?: number
+          airtime_easypay_balance?: number
+          airtime_lotto_balance?: number
           branch_net_sales?: number
           branch_total_invoices_capital?: number
           branch_total_invoices_vat?: number
