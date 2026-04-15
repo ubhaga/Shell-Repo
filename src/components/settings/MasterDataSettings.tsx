@@ -209,6 +209,29 @@ export function MasterDataSettings() {
   );
 }
 
+const PRESET_COLORS = [
+  '#EF4444', '#F97316', '#F59E0B', '#EAB308',
+  '#22C55E', '#10B981', '#14B8A6', '#06B6D4',
+  '#3B82F6', '#6366F1', '#8B5CF6', '#A855F7',
+  '#EC4899', '#F43F5E', '#78716C', '#1E293B',
+];
+
+function ColorSwatches({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {PRESET_COLORS.map(c => (
+        <button
+          key={c}
+          type="button"
+          onClick={() => onChange(c)}
+          className={`w-6 h-6 rounded-full border-2 transition-transform ${value === c ? 'border-foreground scale-110' : 'border-transparent hover:scale-110'}`}
+          style={{ backgroundColor: c }}
+        />
+      ))}
+    </div>
+  );
+}
+
 function TankDescriptionList() {
   const store = useMasterDataStore();
   const [newTank, setNewTank] = useState({ tankNumber: '', grade: '', size: '', color: '#3B82F6' });
@@ -241,16 +264,17 @@ function TankDescriptionList() {
         <span>Tank Descriptions</span>
         <span className="text-xs font-normal opacity-80">{store.tanks.length} tanks</span>
       </div>
-      <div className="flex gap-2 p-3 border-b bg-muted/20">
-        <input value={newTank.tankNumber} onChange={e => setNewTank(p => ({ ...p, tankNumber: e.target.value }))}
-          placeholder="Tank #" className="w-24 text-sm border border-input rounded-md px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-        <input value={newTank.grade} onChange={e => setNewTank(p => ({ ...p, grade: e.target.value }))}
-          placeholder="Grade (e.g. ULP95)" className="flex-1 text-sm border border-input rounded-md px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-        <input value={newTank.size} onChange={e => setNewTank(p => ({ ...p, size: e.target.value }))} type="number"
-          placeholder="Size (L)" className="w-28 text-sm border border-input rounded-md px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-        <input type="color" value={newTank.color} onChange={e => setNewTank(p => ({ ...p, color: e.target.value }))}
-          className="w-10 h-8 rounded border border-input cursor-pointer p-0.5" title="Tank colour" />
-        <Button size="sm" onClick={handleAdd} className="shrink-0"><Plus className="h-3.5 w-3.5 mr-1" /> Add</Button>
+      <div className="p-3 border-b bg-muted/20 space-y-2">
+        <div className="flex gap-2">
+          <input value={newTank.tankNumber} onChange={e => setNewTank(p => ({ ...p, tankNumber: e.target.value }))}
+            placeholder="Tank #" className="w-24 text-sm border border-input rounded-md px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+          <input value={newTank.grade} onChange={e => setNewTank(p => ({ ...p, grade: e.target.value }))}
+            placeholder="Grade (e.g. ULP95)" className="flex-1 text-sm border border-input rounded-md px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+          <input value={newTank.size} onChange={e => setNewTank(p => ({ ...p, size: e.target.value }))} type="number"
+            placeholder="Size (L)" className="w-28 text-sm border border-input rounded-md px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+          <Button size="sm" onClick={handleAdd} className="shrink-0"><Plus className="h-3.5 w-3.5 mr-1" /> Add</Button>
+        </div>
+        <ColorSwatches value={newTank.color} onChange={c => setNewTank(p => ({ ...p, color: c }))} />
       </div>
       <div className="divide-y">
         <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/30 text-xs font-medium text-muted-foreground">
@@ -263,20 +287,24 @@ function TankDescriptionList() {
         {store.tanks.map((tank, i) => (
           <div key={i} className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted/30 group">
             {editIdx === i ? (
-              <>
-                <input type="color" value={editVal.color} onChange={e => setEditVal(p => ({ ...p, color: e.target.value }))}
-                  className="w-10 h-6 rounded border border-input cursor-pointer p-0.5" />
-                <input value={editVal.tankNumber} onChange={e => setEditVal(p => ({ ...p, tankNumber: e.target.value }))}
-                  className="w-24 text-sm border border-input rounded px-2 py-0.5 bg-background" autoFocus />
-                <input value={editVal.grade} onChange={e => setEditVal(p => ({ ...p, grade: e.target.value }))}
-                  className="flex-1 text-sm border border-input rounded px-2 py-0.5 bg-background" />
-                <input value={editVal.size} onChange={e => setEditVal(p => ({ ...p, size: e.target.value }))} type="number"
-                  className="w-28 text-sm border border-input rounded px-2 py-0.5 bg-background text-right" />
-                <div className="w-16 flex gap-1">
-                  <button onClick={confirmEdit} className="text-green-600 p-1"><Check className="h-3.5 w-3.5" /></button>
-                  <button onClick={() => setEditIdx(null)} className="text-muted-foreground p-1"><X className="h-3.5 w-3.5" /></button>
+              <div className="w-full space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-10 flex items-center"><span className="w-6 h-6 rounded-full border" style={{ backgroundColor: editVal.color }} /></span>
+                  <input value={editVal.tankNumber} onChange={e => setEditVal(p => ({ ...p, tankNumber: e.target.value }))}
+                    className="w-24 text-sm border border-input rounded px-2 py-0.5 bg-background" autoFocus />
+                  <input value={editVal.grade} onChange={e => setEditVal(p => ({ ...p, grade: e.target.value }))}
+                    className="flex-1 text-sm border border-input rounded px-2 py-0.5 bg-background" />
+                  <input value={editVal.size} onChange={e => setEditVal(p => ({ ...p, size: e.target.value }))} type="number"
+                    className="w-28 text-sm border border-input rounded px-2 py-0.5 bg-background text-right" />
+                  <div className="w-16 flex gap-1">
+                    <button onClick={confirmEdit} className="text-green-600 p-1"><Check className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => setEditIdx(null)} className="text-muted-foreground p-1"><X className="h-3.5 w-3.5" /></button>
+                  </div>
                 </div>
-              </>
+                <div className="pl-10">
+                  <ColorSwatches value={editVal.color} onChange={c => setEditVal(p => ({ ...p, color: c }))} />
+                </div>
+              </div>
             ) : (
               <>
                 <span className="w-10 flex items-center"><span className="w-6 h-6 rounded-full border" style={{ backgroundColor: tank.color || '#3B82F6' }} /></span>
