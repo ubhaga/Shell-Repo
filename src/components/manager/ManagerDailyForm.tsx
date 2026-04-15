@@ -323,7 +323,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   const dailyCashupCoins = cashup?.shop.coins ?? 0;
   const dailyCashupEasypay = cashup?.shop.easyPay ?? 0;
   const dailyCashupCashConnect = cashup?.shop.cashDepositedBanking ?? 0;
-  const dailyDeepFrozenCC = cashup?.shop.deepFrozenCC ?? 0;
+   const dailyDeepFrozenCC = form.deepFrozenCC;
 
   // Opening balances: always use chain-derived prev-day closing (never the stale stored value)
   const effectiveCoinsOpening = usePrevClosingAsOpening ? prevCoinsClosing : form.coinsOpeningBalance;
@@ -333,13 +333,12 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   // CLOSING = Opening + DailyCashup - CCBagClosure ± Transfer
   const coinsClosing =
     effectiveCoinsOpening + dailyCashupCoins - Math.abs(form.ccBagClosureCoins) - Math.abs(form.transferFromCoins);
-  const easypayClosing = effectiveEasypayOpening + dailyCashupEasypay - Math.abs(form.ccBagClosureEasypay);
+  const easypayClosing = effectiveEasypayOpening + dailyCashupEasypay - Math.abs(form.ccBagClosureEasypay) - dailyDeepFrozenCC;
   const ccClosing =
     effectiveCCOpening +
     dailyCashupCashConnect -
     Math.abs(form.ccBagClosureCashConnect) +
-    Math.abs(form.transferFromCoins) -
-    dailyDeepFrozenCC;
+    Math.abs(form.transferFromCoins);
 
   // 2.1 Banking — derived from CC Bag Closure Cash Connect using configurable rate
   const effectiveRate = form.bankChargesRate || 37.9; // cents per R100 inclusive
