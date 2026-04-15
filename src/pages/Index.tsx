@@ -19,7 +19,11 @@ import {
   FileSpreadsheet,
   ChevronLeft,
   ChevronRight,
+  Fuel,
+  Upload,
 } from "lucide-react";
+import { BankStatementTab } from "@/components/reports/BankStatementTab";
+import { DayEndUpload } from "@/components/uploads/DayEndUpload";
 import { AfsJournalEntries } from "@/components/afs/AfsJournalEntries";
 import { AfsMonthly } from "@/components/afs/AfsMonthly";
 import { useCashupStore } from "@/store/cashupStore";
@@ -28,6 +32,7 @@ import { useMasterDataStore } from "@/store/masterDataStore";
 export default function Index() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [afsSubTab, setAfsSubTab] = useState("jes");
+  const [uploadsSubTab, setUploadsSubTab] = useState("bank");
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const cashupLoaded = useCashupStore((s) => s.loaded);
   const loadCashups = useCashupStore((s) => s.loadAll);
@@ -88,7 +93,7 @@ export default function Index() {
 
       <div className="container mx-auto px-4 py-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-8 w-full mb-4">
+          <TabsList className="grid grid-cols-10 w-full mb-4">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5 text-xs">
               <LayoutDashboard className="h-3.5 w-3.5" />
               Dashboard
@@ -113,9 +118,17 @@ export default function Index() {
               <GitCompareArrows className="h-3.5 w-3.5" />
               Daily Sales Recons
             </TabsTrigger>
+            <TabsTrigger value="fuel-recon" className="flex items-center gap-1.5 text-xs">
+              <Fuel className="h-3.5 w-3.5" />
+              Fuel Recon
+            </TabsTrigger>
             <TabsTrigger value="afs" className="flex items-center gap-1.5 text-xs">
               <FileSpreadsheet className="h-3.5 w-3.5" />
               AFS
+            </TabsTrigger>
+            <TabsTrigger value="uploads" className="flex items-center gap-1.5 text-xs">
+              <Upload className="h-3.5 w-3.5" />
+              Uploads
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-1.5 text-xs">
               <Settings className="h-3.5 w-3.5" />
@@ -206,6 +219,27 @@ export default function Index() {
               </TabsContent>
               <TabsContent value="afs-monthly">
                 <AfsMonthly selectedDate={selectedDate} />
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+          <TabsContent value="fuel-recon">
+            <div className="text-center py-12 text-muted-foreground">
+              <Fuel className="h-10 w-10 mx-auto mb-3 opacity-40" />
+              <p className="text-sm font-medium">Fuel Recon</p>
+              <p className="text-xs">Coming soon</p>
+            </div>
+          </TabsContent>
+          <TabsContent value="uploads">
+            <Tabs value={uploadsSubTab} onValueChange={setUploadsSubTab}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="bank" className="text-xs">Bank Statement</TabsTrigger>
+                <TabsTrigger value="dayend" className="text-xs">Day End Reports</TabsTrigger>
+              </TabsList>
+              <TabsContent value="bank">
+                <BankStatementTab filterMonth={selectedDate.slice(0, 7)} monthLabel={format(new Date(selectedDate.slice(0, 7) + "-01"), "MMMM yyyy")} />
+              </TabsContent>
+              <TabsContent value="dayend">
+                <DayEndUpload filterMonth={selectedDate.slice(0, 7)} />
               </TabsContent>
             </Tabs>
           </TabsContent>
