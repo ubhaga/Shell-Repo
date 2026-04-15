@@ -21,9 +21,10 @@ interface CreditorsReconProps {
 export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   const { managerEntries } = useCashupStore();
   const { eftSuppliers } = useMasterDataStore();
+  const { allocations: bankAllocations } = useBankAllocations(filterMonth);
 
-  // Load bank lines for CR payments
-  const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
+  // Load bank lines for CR payments (now includes id for allocation matching)
+  const [bankLines, setBankLines] = useState<{ id: string; amount: number; description: string; transaction_date: string }[]>([]);
   const [openingBalances, setOpeningBalances] = useState<Record<string, number>>({});
   const [editingOB, setEditingOB] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
