@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Save, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { downloadCsv } from '@/lib/csvExport';
+import { useBankAllocations } from '@/hooks/useBankAllocations';
 
 interface DebtorsReconProps {
   filterMonth: string;
@@ -47,8 +48,9 @@ const JE3_WRITEOFF_ACCOUNTS = ['Generator', 'Shop Expense', 'Umesh'];
 
 export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
   const { cashups } = useCashupStore();
+  const { allocations: bankAllocations } = useBankAllocations(filterMonth);
 
-  const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
+  const [bankLines, setBankLines] = useState<{ id: string; amount: number; description: string; transaction_date: string }[]>([]);
   const [openingBalances, setOpeningBalances] = useState<Record<string, number>>({});
   const [prevMonthBankLines, setPrevMonthBankLines] = useState<typeof bankLines>([]);
   const [prevMonthOpeningBalances, setPrevMonthOpeningBalances] = useState<Record<string, number>>({});
@@ -65,7 +67,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
 
   const loadData = useCallback(async () => {
     const [bankRes, obRes] = await Promise.all([
-      supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth),
+      supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', filterMonth),
       supabase.from('creditor_opening_balances').select('*').eq('month', filterMonth),
     ]);
     setBankLines((bankRes.data ?? []) as typeof bankLines);
@@ -81,7 +83,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
 
     if (!isFirstMonth) {
       const [prevBankRes, prevObRes] = await Promise.all([
-        supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', prevMonth),
+        supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', prevMonth),
         supabase.from('creditor_opening_balances').select('*').eq('month', prevMonth),
       ]);
 
