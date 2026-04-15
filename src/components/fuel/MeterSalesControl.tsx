@@ -32,7 +32,7 @@ export function MeterSalesControl({ selectedDate }: Props) {
       const parsed: DayPumpData[] = data.map(d => ({
         date: d.date,
         rows: parsePumpVariance(d.content),
-      })).filter(d => d.rows.length > 0);
+      }));
       setDayData(parsed);
     } else {
       setDayData([]);
