@@ -461,13 +461,6 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
             </TableBody>
           </Table>
         </div>
-        {hasCommEdits && (
-          <div className="px-4 py-2 border-t bg-muted/30 flex justify-end">
-            <Button size="sm" onClick={handleSaveCommissions} disabled={saving}>
-              <Save className="h-3.5 w-3.5 mr-1" />Save Commissions
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );
