@@ -15,7 +15,7 @@ interface AirtimeReconProps {
 }
 
 export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
-  const { cashups, managerEntries } = useCashupStore();
+  const { cashups, managerEntries, getMonthlyFiguresByMonth } = useCashupStore();
 
   const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
   const [prevBankLines, setPrevBankLines] = useState<typeof bankLines>([]);
