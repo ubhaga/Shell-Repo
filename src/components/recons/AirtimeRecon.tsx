@@ -40,7 +40,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     const [bankRes, commRes, prevBankRes, prevCommRes] = await Promise.all([
       bankQuery, commQuery, prevBankQuery, prevCommQuery,
     ]);
-    setBankLines((results[0].data ?? []) as typeof bankLines);
+    setBankLines(((bankRes as any)?.data ?? []) as typeof bankLines);
 
     const parseComm = (data: any[]) => {
       const commMap: Record<string, number> = {};
@@ -52,12 +52,12 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       return { bld: commMap['bld'] ?? 0, easypay: commMap['easypay'] ?? 0, lotto: commMap['lotto'] ?? 0 };
     };
 
-    setCommissions(parseComm(results[1].data));
+    setCommissions(parseComm((commRes as any)?.data));
     setEditingComm(null);
 
-    if (!isFirstMonth) {
-      setPrevBankLines((results[2].data ?? []) as typeof bankLines);
-      setPrevCommissions(parseComm(results[3].data));
+    if (!isFirstMonth && prevBankRes && prevCommRes) {
+      setPrevBankLines(((prevBankRes as any)?.data ?? []) as typeof bankLines);
+      setPrevCommissions(parseComm((prevCommRes as any)?.data));
     }
   }, [filterMonth, isFirstMonth, prevMonth]);
 
