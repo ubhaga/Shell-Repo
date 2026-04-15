@@ -10,6 +10,12 @@ import { supabase } from '@/integrations/supabase/client';
 
 const DEFAULT_EFT_SUPPLIERS = [...SUPPLIERS].sort();
 
+export interface TankDescription {
+  tankNumber: string;
+  grade: string;
+  size: number;
+}
+
 interface MasterDataStore {
   payoutSuppliers: string[];
   eftSuppliers: string[];
@@ -17,6 +23,7 @@ interface MasterDataStore {
   cashierNames: string[];
   managerNames: string[];
   categories: string[];
+  tanks: TankDescription[];
   loaded: boolean;
 
   loadAll: () => Promise<void>;
