@@ -141,10 +141,12 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       const c = mCashups.get(ds);
       const bldInv = c ? c.shop.receipts.filter((r: any) => r.type === 'Blue Label').reduce((s: number, r: any) => s + r.amount, 0) : 0;
       const epInv = c ? c.shop.receipts.filter((r: any) => r.type === 'Easypay').reduce((s: number, r: any) => s + r.amount, 0) : 0;
+      const mgrEntry = managerEntries.find(e => e.date === ds);
+      const dfCC = mgrEntry?.deepFrozenCC ?? 0;
       const ltRec = c ? c.shop.receipts.filter((r: any) => r.type === 'Lotto Receipts').reduce((s: number, r: any) => s + r.amount, 0) : 0;
       const ltPay = c ? (c.shop.lottoPayouts ?? 0) : 0;
       bld = bld - bldInv + (bldPmts.get(ds) ?? 0);
-      ep = ep - epInv + (c?.shop.easyPay ?? 0);
+      ep = ep - (epInv + dfCC) + (c?.shop.easyPay ?? 0);
       lt = lt - (ltRec - ltPay) + (lottoPmts.get(ds) ?? 0);
     }
     // Add commission
