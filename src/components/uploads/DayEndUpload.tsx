@@ -116,7 +116,9 @@ export function DayEndUpload({ filterMonth }: Props) {
   };
 
   const handleFileUpload = async (date: string, file: File) => {
-    const text = await file.text();
+    const raw = await file.text();
+    const text = stripPageBreaks(raw);
+    const batchDate = extractBatchDate(text);
     const batchDate = extractBatchDate(text);
 
     if (batchDate && batchDate !== date) {
