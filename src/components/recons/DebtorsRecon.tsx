@@ -141,6 +141,12 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     DEBTOR_ACCOUNTS.forEach(a => { totals[a] = 0; });
     for (const line of bankLines) {
       if (line.amount <= 0) continue;
+      // Check manual allocation first
+      const allocation = bankAllocations.find(a => a.bank_line_id === line.id && a.recon_type === 'debtor');
+      if (allocation) {
+        totals[allocation.target_name] = (totals[allocation.target_name] || 0) + line.amount;
+        continue;
+      }
       for (const rule of BANK_PAYMENT_RULES) {
         if (rule.pattern.test(line.description)) {
           totals[rule.account] = (totals[rule.account] || 0) + line.amount;
@@ -149,7 +155,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
       }
     }
     return totals;
-  }, [bankLines]);
+  }, [bankLines, bankAllocations]);
 
   const prevMonthBankPayments = useMemo(() => {
     const totals: Record<string, number> = {};
