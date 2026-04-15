@@ -164,7 +164,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
               let bld = BLD_OPENING, ep = EASYPAY_OPENING, lt = LOTTO_OPENING;
               const csvRows = dailyRows.map(r => {
                 bld = bld - r.bldInvoice + r.bldPayment;
-                ep = ep + r.easypayInvoice - r.easypayCollection;
+                ep = ep - r.easypayInvoice + r.easypayCollection;
                 lt = lt - r.lottoInvoice + r.lottoPayment;
                 return [r.date, r.bldInvoice, r.bldPayment, bld, r.easypayInvoice, r.easypayCollection, ep, r.lottoInvoice, r.lottoPayment, lt];
               });
