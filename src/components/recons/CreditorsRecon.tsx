@@ -43,7 +43,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     setPrevMonth(pm);
 
     const [bankRes, obRes] = await Promise.all([
-      supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth),
+      supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', filterMonth),
       supabase.from('creditor_opening_balances').select('*').eq('month', filterMonth),
     ]);
 
@@ -57,7 +57,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
 
     if (filterMonth > '2026-03') {
       const [prevBankRes, prevObRes] = await Promise.all([
-        supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', pm),
+        supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', pm),
         supabase.from('creditor_opening_balances').select('*').eq('month', pm),
       ]);
       setPrevMonthBankLines((prevBankRes.data ?? []) as typeof bankLines);
