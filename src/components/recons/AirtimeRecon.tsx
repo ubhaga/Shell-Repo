@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCashupStore } from '@/store/cashupStore';
 import { supabase } from '@/integrations/supabase/client';
-import { CurrencyDisplay, CurrencyInput } from '@/components/ui/CashupUI';
+import { CurrencyDisplay } from '@/components/ui/CashupUI';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Download, Save } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { downloadCsv } from '@/lib/csvExport';
 import { parseBankStatementDate } from '@/lib/bankStatementDate';
@@ -19,10 +19,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
 
   const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
   const [prevBankLines, setPrevBankLines] = useState<typeof bankLines>([]);
-  const [commissions, setCommissions] = useState<{ bld: number; easypay: number; lotto: number }>({ bld: 0, easypay: 0, lotto: 0 });
-  const [prevCommissions, setPrevCommissions] = useState<{ bld: number; easypay: number; lotto: number }>({ bld: 0, easypay: 0, lotto: 0 });
-  const [editingComm, setEditingComm] = useState<{ bld: number; easypay: number; lotto: number } | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [prevBankLines, setPrevBankLines] = useState<typeof bankLines>([]);
 
   const isFirstMonth = filterMonth === '2026-03';
   const prevMonth = useMemo(() => {
