@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
-import { BankStatementTab } from './BankStatementTab';
+
 import { DailySummaryReport } from './DailySummaryReport';
 import { CreditorsRecon } from '@/components/recons/CreditorsRecon';
 import { AirtimeRecon } from '@/components/recons/AirtimeRecon';
@@ -621,14 +621,13 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
 
       <Tabs defaultValue={mode === 'recons' ? 'speedpoints' : 'daily-summary'}>
         {mode === 'reports' ? (
-        <TabsList className="grid grid-cols-7 w-full">
+        <TabsList className="grid grid-cols-6 w-full">
           <TabsTrigger value="daily-summary">Daily Summary</TabsTrigger>
           <TabsTrigger value="payouts">Payouts</TabsTrigger>
           <TabsTrigger value="receipts">Receipts</TabsTrigger>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="mop">MOP</TabsTrigger>
-          <TabsTrigger value="bank">Bank</TabsTrigger>
         </TabsList>
         ) : (
         <TabsList className="grid grid-cols-6 w-full max-w-4xl">
@@ -1425,11 +1424,6 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
         {/* Cash Connect & Coins */}
         <TabsContent value="cash">
           <CashRecon filterMonth={filterMonth} />
-        </TabsContent>
-
-        {/* Bank Statement */}
-        <TabsContent value="bank">
-          <BankStatementTab filterMonth={filterMonth} monthLabel={monthLabel} />
         </TabsContent>
       </Tabs>
     </div>

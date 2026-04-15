@@ -7,7 +7,8 @@ import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Reports } from "@/components/reports/Reports";
 import { MasterDataSettings } from "@/components/settings/MasterDataSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2, GitCompareArrows, FileSpreadsheet, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2, GitCompareArrows, FileSpreadsheet, ChevronLeft, ChevronRight, Upload } from "lucide-react";
+import { BankStatementTab } from "@/components/reports/BankStatementTab";
 import { AfsJournalEntries } from "@/components/afs/AfsJournalEntries";
 import { AfsMonthly } from "@/components/afs/AfsMonthly";
 import { useCashupStore } from "@/store/cashupStore";
@@ -76,7 +77,7 @@ export default function Index() {
 
       <div className="container mx-auto px-4 py-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-8 w-full mb-4">
+          <TabsList className="grid grid-cols-9 w-full mb-4">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5 text-xs">
               <LayoutDashboard className="h-3.5 w-3.5" />
               Dashboard
@@ -104,6 +105,10 @@ export default function Index() {
             <TabsTrigger value="afs" className="flex items-center gap-1.5 text-xs">
               <FileSpreadsheet className="h-3.5 w-3.5" />
               AFS
+            </TabsTrigger>
+            <TabsTrigger value="uploads" className="flex items-center gap-1.5 text-xs">
+              <Upload className="h-3.5 w-3.5" />
+              Uploads
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-1.5 text-xs">
               <Settings className="h-3.5 w-3.5" />
@@ -174,6 +179,41 @@ export default function Index() {
                 <AfsMonthly selectedDate={selectedDate} />
               </TabsContent>
             </Tabs>
+          </TabsContent>
+          <TabsContent value="uploads">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const d = new Date(selectedDate.slice(0, 7) + '-01');
+                    d.setMonth(d.getMonth() - 1);
+                    if (d >= new Date('2026-01-01')) setSelectedDate(format(d, 'yyyy-MM') + '-01');
+                  }}
+                  className="p-1.5 rounded-md hover:bg-muted border"
+                  disabled={selectedDate.slice(0, 7) <= '2026-01'}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <input
+                  type="month"
+                  value={selectedDate.slice(0, 7)}
+                  min="2026-01"
+                  onChange={(e) => setSelectedDate(e.target.value + '-01')}
+                  className="text-sm border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <button
+                  onClick={() => {
+                    const d = new Date(selectedDate.slice(0, 7) + '-01');
+                    d.setMonth(d.getMonth() + 1);
+                    setSelectedDate(format(d, 'yyyy-MM') + '-01');
+                  }}
+                  className="p-1.5 rounded-md hover:bg-muted border"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+              <BankStatementTab filterMonth={selectedDate.slice(0, 7)} monthLabel={format(new Date(selectedDate.slice(0, 7) + '-01'), 'MMMM yyyy')} />
+            </div>
           </TabsContent>
           <TabsContent value="settings">
             <MasterDataSettings />
