@@ -162,6 +162,7 @@ export type Database = {
           bank_charges: number
           bank_charges_rate: number
           banking: number
+          blue_label_comm: number
           branch_day_end_total: number
           branch_day_end_vat: number
           cash_connect_opening_balance: number
@@ -177,6 +178,7 @@ export type Database = {
           daily_coins: number
           date: string
           deep_frozen_cc: number
+          easypay_comm: number
           easypay_opening_balance: number
           eft_invoices: Json
           entered_by: string
@@ -184,6 +186,7 @@ export type Database = {
           id: string
           invoice_notes: string
           locked: boolean
+          lotto_comm: number
           payout_invoices: Json
           transfer_from_coins: number
           updated_at: string
@@ -192,6 +195,7 @@ export type Database = {
           bank_charges?: number
           bank_charges_rate?: number
           banking?: number
+          blue_label_comm?: number
           branch_day_end_total?: number
           branch_day_end_vat?: number
           cash_connect_opening_balance?: number
@@ -207,6 +211,7 @@ export type Database = {
           daily_coins?: number
           date: string
           deep_frozen_cc?: number
+          easypay_comm?: number
           easypay_opening_balance?: number
           eft_invoices?: Json
           entered_by?: string
@@ -214,6 +219,7 @@ export type Database = {
           id?: string
           invoice_notes?: string
           locked?: boolean
+          lotto_comm?: number
           payout_invoices?: Json
           transfer_from_coins?: number
           updated_at?: string
@@ -222,6 +228,7 @@ export type Database = {
           bank_charges?: number
           bank_charges_rate?: number
           banking?: number
+          blue_label_comm?: number
           branch_day_end_total?: number
           branch_day_end_vat?: number
           cash_connect_opening_balance?: number
@@ -237,6 +244,7 @@ export type Database = {
           daily_coins?: number
           date?: string
           deep_frozen_cc?: number
+          easypay_comm?: number
           easypay_opening_balance?: number
           eft_invoices?: Json
           entered_by?: string
@@ -244,6 +252,7 @@ export type Database = {
           id?: string
           invoice_notes?: string
           locked?: boolean
+          lotto_comm?: number
           payout_invoices?: Json
           transfer_from_coins?: number
           updated_at?: string
