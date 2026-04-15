@@ -250,6 +250,8 @@ export function MonthlyDashboard({ selectedDate }: Props) {
         blueLabelComm: 0,
         easypayComm: 0,
         lottoComm: 0,
+        lottoNetSalesComm: 0,
+        lottoPayoutComm: 0,
         locked: false,
       });
     }
