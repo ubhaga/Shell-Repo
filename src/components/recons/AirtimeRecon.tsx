@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCashupStore } from '@/store/cashupStore';
 import { supabase } from '@/integrations/supabase/client';
 import { CurrencyDisplay, CurrencyInput } from '@/components/ui/CashupUI';
@@ -18,30 +18,48 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   const { cashups } = useCashupStore();
 
   const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
+  const [prevBankLines, setPrevBankLines] = useState<typeof bankLines>([]);
   const [commissions, setCommissions] = useState<{ bld: number; easypay: number; lotto: number }>({ bld: 0, easypay: 0, lotto: 0 });
+  const [prevCommissions, setPrevCommissions] = useState<{ bld: number; easypay: number; lotto: number }>({ bld: 0, easypay: 0, lotto: 0 });
   const [editingComm, setEditingComm] = useState<{ bld: number; easypay: number; lotto: number } | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const loadData = useCallback(async () => {
-    const [bankRes, commRes] = await Promise.all([
-      supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth),
-      supabase.from('creditor_opening_balances').select('supplier, amount').eq('month', filterMonth),
-    ]);
-    setBankLines((bankRes.data ?? []) as typeof bankLines);
-
-    const commMap: Record<string, number> = {};
-    ((commRes.data ?? []) as { supplier: string; amount: number }[]).forEach(r => {
-      if (r.supplier.startsWith('commission:')) {
-        commMap[r.supplier.replace('commission:', '')] = Number(r.amount);
-      }
-    });
-    setCommissions({
-      bld: commMap['bld'] ?? 0,
-      easypay: commMap['easypay'] ?? 0,
-      lotto: commMap['lotto'] ?? 0,
-    });
-    setEditingComm(null);
+  const isFirstMonth = filterMonth === '2026-03';
+  const prevMonth = useMemo(() => {
+    const d = new Date(filterMonth + '-01');
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 7);
   }, [filterMonth]);
+
+  const loadData = useCallback(async () => {
+    const bankQuery = supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth);
+    const commQuery = supabase.from('creditor_opening_balances').select('supplier, amount').eq('month', filterMonth);
+    const prevBankQuery = !isFirstMonth ? supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', prevMonth) : null;
+    const prevCommQuery = !isFirstMonth ? supabase.from('creditor_opening_balances').select('supplier, amount').eq('month', prevMonth) : null;
+
+    const [bankRes, commRes, prevBankRes, prevCommRes] = await Promise.all([
+      bankQuery, commQuery, prevBankQuery, prevCommQuery,
+    ]);
+    setBankLines(((bankRes as any)?.data ?? []) as typeof bankLines);
+
+    const parseComm = (data: any[]) => {
+      const commMap: Record<string, number> = {};
+      (data ?? []).forEach((r: { supplier: string; amount: number }) => {
+        if (r.supplier.startsWith('commission:')) {
+          commMap[r.supplier.replace('commission:', '')] = Number(r.amount);
+        }
+      });
+      return { bld: commMap['bld'] ?? 0, easypay: commMap['easypay'] ?? 0, lotto: commMap['lotto'] ?? 0 };
+    };
+
+    setCommissions(parseComm((commRes as any)?.data));
+    setEditingComm(null);
+
+    if (!isFirstMonth && prevBankRes && prevCommRes) {
+      setPrevBankLines(((prevBankRes as any)?.data ?? []) as typeof bankLines);
+      setPrevCommissions(parseComm((prevCommRes as any)?.data));
+    }
+  }, [filterMonth, isFirstMonth, prevMonth]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -51,7 +69,6 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     try {
       for (const [key, val] of Object.entries(editingComm)) {
         const supplier = `commission:${key}`;
-        // Check if row exists first
         const { data: existing } = await supabase
           .from('creditor_opening_balances')
           .select('id')
@@ -82,9 +99,66 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
 
   const currentComm = editingComm ?? commissions;
 
-  const BLD_OPENING = -11906.34;
-  const EASYPAY_OPENING = 14392.59;
-  const LOTTO_OPENING = 0;
+  const SEED_BLD = -11906.34;
+  const SEED_EASYPAY = 14392.59;
+  const SEED_LOTTO = 0;
+
+  const parseBankDate = (dateStr: string): string | null => parseBankStatementDate(dateStr);
+
+  // Helper to compute closing balances for a given month's data
+  const computeClosing = (
+    monthStr: string,
+    lines: typeof bankLines,
+    comm: { bld: number; easypay: number; lotto: number },
+    openBld: number,
+    openEp: number,
+    openLt: number,
+  ) => {
+    const mStart = startOfMonth(new Date(monthStr + '-01'));
+    const mEnd = endOfMonth(mStart);
+    const mDays = eachDayOfInterval({ start: mStart, end: mEnd });
+    const mCashups = new Map(
+      cashups.filter(c => c.month === monthStr).map(c => [c.date, c])
+    );
+
+    const bldPmts = new Map<string, number>();
+    const lottoPmts = new Map<string, number>();
+    lines.forEach(line => {
+      const desc = line.description.toUpperCase().trim();
+      const dateStr = parseBankDate(line.transaction_date);
+      if (!dateStr) return;
+      if (desc.includes('BLD DO') || desc.includes('BLUE LABEL')) {
+        bldPmts.set(dateStr, (bldPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
+      }
+      if (desc.includes('ITHUCOLL')) {
+        lottoPmts.set(dateStr, (lottoPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
+      }
+    });
+
+    let bld = openBld, ep = openEp, lt = openLt;
+    for (const day of mDays) {
+      const ds = format(day, 'yyyy-MM-dd');
+      const c = mCashups.get(ds);
+      const bldInv = c ? c.shop.receipts.filter((r: any) => r.type === 'Blue Label').reduce((s: number, r: any) => s + r.amount, 0) : 0;
+      const epInv = c ? c.shop.receipts.filter((r: any) => r.type === 'Easypay').reduce((s: number, r: any) => s + r.amount, 0) : 0;
+      const ltRec = c ? c.shop.receipts.filter((r: any) => r.type === 'Lotto Receipts').reduce((s: number, r: any) => s + r.amount, 0) : 0;
+      const ltPay = c ? (c.shop.lottoPayouts ?? 0) : 0;
+      bld = bld - bldInv + (bldPmts.get(ds) ?? 0);
+      ep = ep - epInv + (c?.shop.easyPay ?? 0);
+      lt = lt - (ltRec - ltPay) + (lottoPmts.get(ds) ?? 0);
+    }
+    // Add commission
+    return { bld: bld + comm.bld, ep: ep + comm.easypay, lt: lt + comm.lotto };
+  };
+
+  // Compute opening balances
+  const openingBalances = useMemo(() => {
+    if (isFirstMonth) return { bld: SEED_BLD, ep: SEED_EASYPAY, lt: SEED_LOTTO };
+    const prevClosing = computeClosing(prevMonth, prevBankLines, prevCommissions, SEED_BLD, SEED_EASYPAY, SEED_LOTTO);
+    // For months beyond April, we'd need to chain — but for now this handles Mar→Apr
+    // TODO: recursive chaining for future months
+    return prevClosing;
+  }, [isFirstMonth, prevMonth, prevBankLines, prevCommissions, cashups]);
 
   const monthStart = startOfMonth(new Date(filterMonth + '-01'));
   const monthEnd = endOfMonth(monthStart);
@@ -93,8 +167,6 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   const cashupByDate = new Map(
     cashups.filter(c => c.month === filterMonth).map(c => [c.date, c])
   );
-
-  const parseBankDate = (dateStr: string): string | null => parseBankStatementDate(dateStr);
 
   const bldPaymentsByDate = new Map<string, number>();
   bankLines.forEach(line => {
@@ -157,9 +229,9 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     };
   });
 
-  let bldBalance = BLD_OPENING;
-  let easypayBalance = EASYPAY_OPENING;
-  let lottoBalance = LOTTO_OPENING;
+  let bldBalance = openingBalances.bld;
+  let easypayBalance = openingBalances.ep;
+  let lottoBalance = openingBalances.lt;
 
   const hasCommEdits = editingComm !== null;
 
@@ -172,7 +244,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
           </h3>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => {
-              let bld = BLD_OPENING, ep = EASYPAY_OPENING, lt = LOTTO_OPENING;
+              let bld = openingBalances.bld, ep = openingBalances.ep, lt = openingBalances.lt;
               const csvRows = dailyRows.map(r => {
                 bld = bld - r.bldInvoice + r.bldPayment;
                 ep = ep - r.easypayInvoice + r.easypayCollection;
@@ -224,17 +296,17 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 <TableCell className="border-l"></TableCell>
                 <TableCell></TableCell>
                 <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={BLD_OPENING} />
+                  <CurrencyDisplay value={openingBalances.bld} />
                 </TableCell>
                 <TableCell className="border-l"></TableCell>
                 <TableCell></TableCell>
                 <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={EASYPAY_OPENING} />
+                  <CurrencyDisplay value={openingBalances.ep} />
                 </TableCell>
                 <TableCell className="border-l"></TableCell>
                 <TableCell></TableCell>
                 <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={LOTTO_OPENING} />
+                  <CurrencyDisplay value={openingBalances.lt} />
                 </TableCell>
               </TableRow>
               {dailyRows.map(row => {
