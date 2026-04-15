@@ -168,9 +168,11 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
       });
     });
 
-    // Deduct bank CR payments
+    // Deduct bank CR payments (check manual allocation first, then regex)
     bankLines.forEach(line => {
-      const matched = matchSupplier(line.description);
+      // Check manual allocation first
+      const allocation = bankAllocations.find(a => a.bank_line_id === line.id && a.recon_type === 'creditor');
+      const matched = allocation ? allocation.target_name : matchSupplier(line.description);
       if (matched !== supplier) return;
       const lineDate = parseBankDate(line.transaction_date);
       if (!lineDate) return;
