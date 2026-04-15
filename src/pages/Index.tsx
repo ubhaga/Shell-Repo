@@ -7,9 +7,19 @@ import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Reports } from "@/components/reports/Reports";
 import { MasterDataSettings } from "@/components/settings/MasterDataSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2, GitCompareArrows, FileSpreadsheet, ChevronLeft, ChevronRight, Upload, Fuel } from "lucide-react";
-import { BankStatementTab } from "@/components/reports/BankStatementTab";
-import { DayEndUpload } from "@/components/uploads/DayEndUpload";
+import {
+  LayoutDashboard,
+  ClipboardList,
+  Briefcase,
+  BarChart3,
+  CalendarCheck,
+  Settings,
+  Loader2,
+  GitCompareArrows,
+  FileSpreadsheet,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { AfsJournalEntries } from "@/components/afs/AfsJournalEntries";
 import { AfsMonthly } from "@/components/afs/AfsMonthly";
 import { useCashupStore } from "@/store/cashupStore";
@@ -19,10 +29,10 @@ export default function Index() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [afsSubTab, setAfsSubTab] = useState("jes");
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const cashupLoaded = useCashupStore(s => s.loaded);
-  const loadCashups = useCashupStore(s => s.loadAll);
-  const masterLoaded = useMasterDataStore(s => s.loaded);
-  const loadMaster = useMasterDataStore(s => s.loadAll);
+  const cashupLoaded = useCashupStore((s) => s.loaded);
+  const loadCashups = useCashupStore((s) => s.loadAll);
+  const masterLoaded = useMasterDataStore((s) => s.loaded);
+  const loadMaster = useMasterDataStore((s) => s.loadAll);
 
   useEffect(() => {
     if (!cashupLoaded) loadCashups();
@@ -55,12 +65,12 @@ export default function Index() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {activeTab === 'manager-monthly' ? (
+            {activeTab === "manager-monthly" ? (
               <input
                 type="month"
                 value={selectedDate.slice(0, 7)}
                 min="2026-01"
-                onChange={(e) => setSelectedDate(e.target.value + '-01')}
+                onChange={(e) => setSelectedDate(e.target.value + "-01")}
                 className="text-sm border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               />
             ) : (
@@ -78,7 +88,7 @@ export default function Index() {
 
       <div className="container mx-auto px-4 py-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-10 w-full mb-4">
+          <TabsList className="grid grid-cols-8 w-full mb-4">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5 text-xs">
               <LayoutDashboard className="h-3.5 w-3.5" />
               Dashboard
@@ -101,19 +111,11 @@ export default function Index() {
             </TabsTrigger>
             <TabsTrigger value="recons" className="flex items-center gap-1.5 text-xs">
               <GitCompareArrows className="h-3.5 w-3.5" />
-              Recons
-            </TabsTrigger>
-            <TabsTrigger value="fuel-recon" className="flex items-center gap-1.5 text-xs">
-              <Fuel className="h-3.5 w-3.5" />
-              Fuel Recon
+              Daily Sales Recons
             </TabsTrigger>
             <TabsTrigger value="afs" className="flex items-center gap-1.5 text-xs">
               <FileSpreadsheet className="h-3.5 w-3.5" />
               AFS
-            </TabsTrigger>
-            <TabsTrigger value="uploads" className="flex items-center gap-1.5 text-xs">
-              <Upload className="h-3.5 w-3.5" />
-              Uploads
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-1.5 text-xs">
               <Settings className="h-3.5 w-3.5" />
@@ -134,34 +136,43 @@ export default function Index() {
             <ManagerMonthlyForm selectedDate={selectedDate} />
           </TabsContent>
           <TabsContent value="reports">
-            <Reports mode="reports" onNavigateToDate={(date) => { setSelectedDate(date); setActiveTab('manager-daily'); }} />
+            <Reports
+              mode="reports"
+              onNavigateToDate={(date) => {
+                setSelectedDate(date);
+                setActiveTab("manager-daily");
+              }}
+            />
           </TabsContent>
           <TabsContent value="recons">
-            <Reports mode="recons" onNavigateToDate={(date) => { setSelectedDate(date); setActiveTab('cashier'); }} />
-          </TabsContent>
-          <TabsContent value="fuel-recon">
-            <div className="text-center py-16">
-              <Fuel className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-              <h2 className="text-xl font-bold mb-1">Fuel Reconciliation</h2>
-              <p className="text-muted-foreground text-sm">Coming soon — fuel recon functionality will be built here.</p>
-            </div>
+            <Reports
+              mode="recons"
+              onNavigateToDate={(date) => {
+                setSelectedDate(date);
+                setActiveTab("cashier");
+              }}
+            />
           </TabsContent>
           <TabsContent value="afs">
             <Tabs value={afsSubTab} onValueChange={setAfsSubTab}>
               <div className="flex items-center justify-between mb-4">
                 <TabsList>
-                  <TabsTrigger value="jes" className="text-xs">JE's</TabsTrigger>
-                  <TabsTrigger value="afs-monthly" className="text-xs">AFS Monthly</TabsTrigger>
+                  <TabsTrigger value="jes" className="text-xs">
+                    JE's
+                  </TabsTrigger>
+                  <TabsTrigger value="afs-monthly" className="text-xs">
+                    AFS Monthly
+                  </TabsTrigger>
                 </TabsList>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
-                      const d = new Date(selectedDate.slice(0, 7) + '-01');
+                      const d = new Date(selectedDate.slice(0, 7) + "-01");
                       d.setMonth(d.getMonth() - 1);
-                      if (d >= new Date('2026-01-01')) setSelectedDate(format(d, 'yyyy-MM') + '-01');
+                      if (d >= new Date("2026-01-01")) setSelectedDate(format(d, "yyyy-MM") + "-01");
                     }}
                     className="p-1.5 rounded-md hover:bg-muted border"
-                    disabled={selectedDate.slice(0, 7) <= '2026-01'}
+                    disabled={selectedDate.slice(0, 7) <= "2026-01"}
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
@@ -169,14 +180,14 @@ export default function Index() {
                     type="month"
                     value={selectedDate.slice(0, 7)}
                     min="2026-01"
-                    onChange={(e) => setSelectedDate(e.target.value + '-01')}
+                    onChange={(e) => setSelectedDate(e.target.value + "-01")}
                     className="text-sm border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                   <button
                     onClick={() => {
-                      const d = new Date(selectedDate.slice(0, 7) + '-01');
+                      const d = new Date(selectedDate.slice(0, 7) + "-01");
                       d.setMonth(d.getMonth() + 1);
-                      setSelectedDate(format(d, 'yyyy-MM') + '-01');
+                      setSelectedDate(format(d, "yyyy-MM") + "-01");
                     }}
                     className="p-1.5 rounded-md hover:bg-muted border"
                   >
@@ -185,56 +196,16 @@ export default function Index() {
                 </div>
               </div>
               <TabsContent value="jes">
-                <AfsJournalEntries selectedDate={selectedDate} onNavigateToDate={(date) => { setSelectedDate(date); setActiveTab('manager-daily'); }} />
+                <AfsJournalEntries
+                  selectedDate={selectedDate}
+                  onNavigateToDate={(date) => {
+                    setSelectedDate(date);
+                    setActiveTab("manager-daily");
+                  }}
+                />
               </TabsContent>
               <TabsContent value="afs-monthly">
                 <AfsMonthly selectedDate={selectedDate} />
-              </TabsContent>
-            </Tabs>
-          </TabsContent>
-          <TabsContent value="uploads">
-            <Tabs defaultValue="bank-statement">
-              <div className="flex items-center justify-between mb-4">
-                <TabsList>
-                  <TabsTrigger value="bank-statement" className="text-xs">Bank Statement</TabsTrigger>
-                  <TabsTrigger value="day-ends" className="text-xs">Day End Reports</TabsTrigger>
-                </TabsList>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      const d = new Date(selectedDate.slice(0, 7) + '-01');
-                      d.setMonth(d.getMonth() - 1);
-                      if (d >= new Date('2026-01-01')) setSelectedDate(format(d, 'yyyy-MM') + '-01');
-                    }}
-                    className="p-1.5 rounded-md hover:bg-muted border"
-                    disabled={selectedDate.slice(0, 7) <= '2026-01'}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <input
-                    type="month"
-                    value={selectedDate.slice(0, 7)}
-                    min="2026-01"
-                    onChange={(e) => setSelectedDate(e.target.value + '-01')}
-                    className="text-sm border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                  <button
-                    onClick={() => {
-                      const d = new Date(selectedDate.slice(0, 7) + '-01');
-                      d.setMonth(d.getMonth() + 1);
-                      setSelectedDate(format(d, 'yyyy-MM') + '-01');
-                    }}
-                    className="p-1.5 rounded-md hover:bg-muted border"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-              <TabsContent value="bank-statement">
-                <BankStatementTab filterMonth={selectedDate.slice(0, 7)} monthLabel={format(new Date(selectedDate.slice(0, 7) + '-01'), 'MMMM yyyy')} />
-              </TabsContent>
-              <TabsContent value="day-ends">
-                <DayEndUpload filterMonth={selectedDate.slice(0, 7)} />
               </TabsContent>
             </Tabs>
           </TabsContent>
