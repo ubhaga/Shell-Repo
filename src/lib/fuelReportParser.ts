@@ -53,6 +53,15 @@ export interface PumpVarianceRow {
   incUnsettledVariance: number;
 }
 
+/** Strip POS system page break markers from report content */
+export function stripPageBreaks(content: string): string {
+  return content
+    .replace(/<---\s*Ver:.*?Rpt Type:\s*\w+\s*--->/g, '')
+    .replace(/<<\s*Page Break\s*>>/g, '')
+    .replace(/^.*Page:\s*\d+\s*$/gm, '') // standalone "Page: N" lines
+    .replace(/\n{3,}/g, '\n\n');
+}
+
 function parseNum(s: string): number {
   return parseFloat(s.replace(/,/g, '')) || 0;
 }
@@ -63,7 +72,6 @@ function convertDate(dateStr: string): string {
   if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
   return dateStr;
 }
-
 export function parseEodShort(content: string): EodShortRow[] {
   const rows: EodShortRow[] = [];
   const lines = content.split('\n');
