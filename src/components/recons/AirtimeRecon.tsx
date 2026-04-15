@@ -443,7 +443,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                   <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.easypayInvoice, 0)} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.easypayCollection, 0)} highlight />
+                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.easypayCollection + r.epComm, 0)} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs font-bold">
                   <CurrencyDisplay value={easypayBalance} highlight />
@@ -452,7 +452,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                   <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.lottoInvoice, 0)} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs">
-                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.lottoPayment, 0)} highlight />
+                  <CurrencyDisplay value={dailyRows.reduce((s, r) => s + r.lottoPayment + r.ltComm, 0)} highlight />
                 </TableCell>
                 <TableCell className="text-right text-xs font-bold">
                   <CurrencyDisplay value={lottoBalance} highlight />
