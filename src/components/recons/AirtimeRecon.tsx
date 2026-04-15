@@ -15,7 +15,7 @@ interface AirtimeReconProps {
 }
 
 export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
-  const { cashups } = useCashupStore();
+  const { cashups, managerEntries } = useCashupStore();
 
   const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
   const [prevBankLines, setPrevBankLines] = useState<typeof bankLines>([]);
@@ -210,6 +210,9 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     const easypayInvoice = cashup
       ? cashup.shop.receipts.filter(r => r.type === 'Easypay').reduce((s, r) => s + r.amount, 0)
       : 0;
+    // Add Deep Frozen paid in CC from manager daily to Easypay invoice
+    const managerEntry = managerEntries.find(e => e.date === dateStr);
+    const deepFrozenCC = managerEntry?.deepFrozenCC ?? 0;
     const lottoReceipts = cashup
       ? cashup.shop.receipts.filter(r => r.type === 'Lotto Receipts').reduce((s, r) => s + r.amount, 0)
       : 0;
@@ -222,7 +225,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       date: dateStr,
       bldInvoice,
       bldPayment: bldPaymentsByDate.get(dateStr) ?? 0,
-      easypayInvoice,
+      easypayInvoice: easypayInvoice + deepFrozenCC,
       easypayCollection: cashup?.shop.easyPay ?? 0,
       lottoInvoice,
       lottoPayment: lottoPaymentsByDate.get(dateStr) ?? 0,
