@@ -19,7 +19,6 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
 
   const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
   const [prevBankLines, setPrevBankLines] = useState<typeof bankLines>([]);
-  const [prevBankLines, setPrevBankLines] = useState<typeof bankLines>([]);
 
   const isFirstMonth = filterMonth === '2026-03';
   const prevMonth = useMemo(() => {
