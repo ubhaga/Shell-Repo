@@ -207,52 +207,29 @@ export function parseMtdSummary(rawContent: string): MtdSummaryGrade[] {
 
 export function parsePumpVariance(rawContent: string): PumpVarianceRow[] {
   const content = stripPageBreaks(rawContent);
+  const sectionStart = content.indexOf('EOD Pump Variance');
+
+  if (sectionStart === -1) return [];
+
+  const section = content.slice(sectionStart);
   const rows: PumpVarianceRow[] = [];
-  const lines = content.split('\n');
-  let inSection = false;
-  let pastHeader = false;
+  const rowPattern = /^\s*(\d+)\s+(\d+)\s+(\S+(?:\s+\S+)*?)\s{2,}([\d.,\-]+)\s+([\d.,\-]+)\s+([\d.,\-]+)\s+([\d.,\-]+)\s+([\d.,\-]+)\s+([\d.,\-]+)\s+([\d.,\-]+)/gm;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    if (line.includes('EOD Pump Variance')) {
-      inSection = true;
-      pastHeader = false;
-      continue;
-    }
-
-    if (inSection && !pastHeader && line.includes('Pump No') && line.includes('Grade ID')) {
-      // Next line is dashes, skip it
-      pastHeader = true;
-      i++; // skip the dashes line
-      continue;
-    }
-
-    if (inSection && pastHeader) {
-      if (line.includes('~~~~~~') || line.includes('------') && rows.length > 0) {
-        break;
-      }
-      if (line.trim() === '') break;
-
-      const m = line.match(
-        /^\s*(\d+)\s+(\d+)\s+(\S+(?:\s+\S+)*?)\s{2,}([\d.,\-]+)\s+([\d.,\-]+)\s+([\d.,\-]+)\s+([\d.,\-]+)\s+([\d.,\-]+)\s+([\d.,\-]+)\s+([\d.,\-]+)/
-      );
-      if (m) {
-        rows.push({
-          pumpNo: m[1],
-          gradeId: m[2],
-          gradeDescription: m[3].trim(),
-          startReading: parseNum(m[4]),
-          endReading: parseNum(m[5]),
-          calculatedVolume: parseNum(m[6]),
-          actualVolume: parseNum(m[7]),
-          volumeVariance: parseNum(m[8]),
-          unsettledVolume: parseNum(m[9]),
-          incUnsettledVariance: parseNum(m[10]),
-        });
-      }
-    }
+  for (const match of section.matchAll(rowPattern)) {
+    rows.push({
+      pumpNo: match[1],
+      gradeId: match[2],
+      gradeDescription: match[3].trim(),
+      startReading: parseNum(match[4]),
+      endReading: parseNum(match[5]),
+      calculatedVolume: parseNum(match[6]),
+      actualVolume: parseNum(match[7]),
+      volumeVariance: parseNum(match[8]),
+      unsettledVolume: parseNum(match[9]),
+      incUnsettledVariance: parseNum(match[10]),
+    });
   }
+
   return rows;
 }
 
