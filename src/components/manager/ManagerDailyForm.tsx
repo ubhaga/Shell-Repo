@@ -25,7 +25,15 @@ function computeEffectiveClosingForDate(
   getCashup: (
     d: string,
   ) =>
-    | { shop: { coins: number; easyPay: number; cashDepositedBanking: number; deepFrozenCC?: number; cashConnectTotal?: number } }
+    | {
+        shop: {
+          coins: number;
+          easyPay: number;
+          cashDepositedBanking: number;
+          deepFrozenCC?: number;
+          cashConnectTotal?: number;
+        };
+      }
     | undefined,
 ): EffectiveClosing | null {
   const SEED_DATE = "2026-01-01";
@@ -325,7 +333,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   const dailyCashupCoins = cashup?.shop.coins ?? 0;
   const dailyCashupEasypay = cashup?.shop.easyPay ?? 0;
   const dailyCashupCashConnect = cashup?.shop.cashDepositedBanking ?? 0;
-   const dailyDeepFrozenCC = form.deepFrozenCC;
+  const dailyDeepFrozenCC = form.deepFrozenCC;
 
   // Opening balances: always use chain-derived prev-day closing (never the stale stored value)
   const effectiveCoinsOpening = usePrevClosingAsOpening ? prevCoinsClosing : form.coinsOpeningBalance;
@@ -344,7 +352,8 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
 
   // 2.1 Banking — derived from CC Bag Closure Cash Connect using configurable rate
   const effectiveRate = form.bankChargesRate || 37.9; // cents per R100 inclusive
-  const bankChargesCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) / 100) * (effectiveRate / 100) * 100) / 100;
+  const bankChargesCalc =
+    Math.round((Math.abs(form.ccBagClosureCashConnect) / 100) * (effectiveRate / 100) * 100) / 100;
   const bankingCalc = Math.round((Math.abs(form.ccBagClosureCashConnect) - bankChargesCalc) * 100) / 100;
 
   const openingIsReadOnly = true;
@@ -352,7 +361,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   // Commission day rules
   const selectedParsed = parseISO(selectedDate);
   const isFirstOfMonth = selectedParsed.getDate() === 1;
-  const isLastOfMonth = format(lastDayOfMonth(selectedParsed), 'yyyy-MM-dd') === selectedDate;
+  const isLastOfMonth = format(lastDayOfMonth(selectedParsed), "yyyy-MM-dd") === selectedDate;
   const isSat = isSaturday(selectedParsed);
   const showBlueLabelComm = isFirstOfMonth;
   const showEasypayComm = isLastOfMonth;
@@ -494,11 +503,12 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
     else await addManagerEntry(payload);
 
     // Propagate rate change to all subsequent saved entries
-    const laterEntries = useCashupStore.getState().managerEntries.filter(e => e.date > selectedDate);
+    const laterEntries = useCashupStore.getState().managerEntries.filter((e) => e.date > selectedDate);
     let updatedCount = 0;
     for (const entry of laterEntries) {
       if (entry.bankChargesRate !== effectiveRate) {
-        const recalcCharges = Math.round((Math.abs(entry.ccBagClosureCashConnect) / 100) * (effectiveRate / 100) * 100) / 100;
+        const recalcCharges =
+          Math.round((Math.abs(entry.ccBagClosureCashConnect) / 100) * (effectiveRate / 100) * 100) / 100;
         const recalcBanking = Math.round((Math.abs(entry.ccBagClosureCashConnect) - recalcCharges) * 100) / 100;
         await updateManagerEntry(entry.id, {
           bankChargesRate: effectiveRate,
@@ -512,9 +522,10 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
     setForm(payload);
     const now = format(new Date(), "dd MMM yyyy HH:mm:ss");
     setSavedAt((prev) => prev ?? now);
-    const desc = updatedCount > 0
-      ? `Saved for ${format(new Date(selectedDate), "dd MMM yyyy")} — rate updated on ${updatedCount} subsequent day(s)`
-      : `Saved for ${format(new Date(selectedDate), "dd MMM yyyy")}`;
+    const desc =
+      updatedCount > 0
+        ? `Saved for ${format(new Date(selectedDate), "dd MMM yyyy")} — rate updated on ${updatedCount} subsequent day(s)`
+        : `Saved for ${format(new Date(selectedDate), "dd MMM yyyy")}`;
     toast({ title: "Manager entry saved", description: desc });
   };
 
@@ -875,9 +886,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
 
             {/* Deep Frozen paid in CC — editable, after closing balance, Easy Pay + Total columns */}
             <tr className="border-t bg-muted/20">
-              <td className="px-3 py-1.5 text-xs text-muted-foreground">
-                Deep Frozen paid in CC
-              </td>
+              <td className="px-3 py-1.5 text-xs text-muted-foreground">Deep Frozen paid in CC</td>
               <td className="px-3 py-1.5 text-center text-xs text-muted-foreground align-middle">—</td>
               <td className="px-3 py-1.5">
                 <CurrencyInput
@@ -908,7 +917,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
       {/* 2.1 Banking — full width, below 2 */}
       <Section title="2.1 Banking" color="blue">
         <DataRow label="Charges cents per R100 (incl)">
-           <CurrencyInput
+          <CurrencyInput
             value={form.bankChargesRate}
             onChange={(v) => setForm((f) => ({ ...f, bankChargesRate: v }))}
             className="w-[120px]"
@@ -953,7 +962,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
           )}
           {showLottoComm && (
             <>
-              <DataRow label="3.3 Lotto Net Sales Comm (Saturday)">
+              <DataRow label="3.3 Total Sales Comm (Saturday)">
                 <CurrencyInput
                   value={form.lottoNetSalesComm}
                   onChange={(v) => setForm((f) => ({ ...f, lottoNetSalesComm: v, lottoComm: v + f.lottoPayoutComm }))}
@@ -983,7 +992,9 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
           <Button variant="ghost" size="sm" onClick={() => goDay(-1)} disabled={selectedDate <= "2026-01-01"}>
             <ChevronLeft className="h-4 w-4" /> Previous Day
           </Button>
-        ) : <div />}
+        ) : (
+          <div />
+        )}
         <div className="flex flex-col items-center gap-1">
           <Button onClick={handleSave} size="lg" className="w-full max-w-xs" disabled={isLocked}>
             <Save className="h-4 w-4 mr-2" />
@@ -999,7 +1010,9 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
           <Button variant="ghost" size="sm" onClick={() => goDay(1)}>
             Next Day <ChevronRight className="h-4 w-4" />
           </Button>
-        ) : <div />}
+        ) : (
+          <div />
+        )}
       </div>
     </div>
   );
