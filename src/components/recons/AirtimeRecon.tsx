@@ -185,7 +185,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
                 return [r.date, r.bldInvoice, r.bldPayment, bld, r.easypayInvoice, r.easypayCollection, ep, r.lottoInvoice, r.lottoPayment, lt];
               });
               csvRows.push(['Commission', '', '', currentComm.bld, '', '', currentComm.easypay, '', '', currentComm.lotto]);
-              csvRows.push(['Final Balance', '', '', bld + currentComm.bld, '', '', ep - currentComm.easypay, '', '', lt + currentComm.lotto]);
+              csvRows.push(['Final Balance', '', '', bld + currentComm.bld, '', '', ep + currentComm.easypay, '', '', lt + currentComm.lotto]);
               downloadCsv(
                 ['Date', 'BLD Invoice', 'BLD Payment', 'BLD Balance', 'Easypay Invoice', 'Easypay Collection', 'Easypay Balance', 'Lotto Invoice', 'Lotto Payment', 'Lotto Balance'],
                 csvRows, `airtime-lotto-recon-${filterMonth}.csv`
