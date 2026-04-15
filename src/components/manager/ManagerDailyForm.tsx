@@ -926,6 +926,42 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
         </DataRow>
       </Section>
 
+      {/* 3. Airtime / Lotto Commissions — only shown when relevant fields are active */}
+      {(showBlueLabelComm || showEasypayComm || showLottoComm) && (
+        <Section title="3. Airtime / Lotto Commissions" color="green">
+          {showBlueLabelComm && (
+            <DataRow label="3.1 Blue Label Commission (1st of month)">
+              <CurrencyInput
+                value={form.blueLabelComm}
+                onChange={(v) => setForm((f) => ({ ...f, blueLabelComm: v }))}
+                className="w-[160px]"
+                allowNegative
+              />
+            </DataRow>
+          )}
+          {showEasypayComm && (
+            <DataRow label="3.2 Easy Pay Commission (last day of month)">
+              <CurrencyInput
+                value={form.easypayComm}
+                onChange={(v) => setForm((f) => ({ ...f, easypayComm: v }))}
+                className="w-[160px]"
+                allowNegative
+              />
+            </DataRow>
+          )}
+          {showLottoComm && (
+            <DataRow label="3.3 Lotto Commission (Saturday)">
+              <CurrencyInput
+                value={form.lottoComm}
+                onChange={(v) => setForm((f) => ({ ...f, lottoComm: v }))}
+                className="w-[160px]"
+                allowNegative
+              />
+            </DataRow>
+          )}
+        </Section>
+      )}
+
       {/* Save button + nav at bottom */}
       <div className="flex items-center justify-between gap-2 pt-2 pb-4">
         {onDateChange ? (
