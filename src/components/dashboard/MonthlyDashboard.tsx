@@ -1,9 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useCashupStore } from "@/store/cashupStore";
 import { CurrencyDisplay } from "@/components/ui/CashupUI";
 import { CheckCircle, XCircle, MinusCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, addMonths, subMonths } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { parseBankStatementDate } from "@/lib/bankStatementDate";
 
 import type { DailyCashup, ManagerDailyEntry } from "@/types/cashup";
 
@@ -190,15 +192,96 @@ function StatusIcon({ status }: { status: "green" | "red" | "none" }) {
 }
 
 export function MonthlyDashboard({ selectedDate }: Props) {
-  const { getCashupByDate, getManagerEntryByDate, updateManagerEntry, addManagerEntry } = useCashupStore();
+  const { getCashupByDate, getManagerEntryByDate, updateManagerEntry, addManagerEntry, cashups, managerEntries, getMonthlyFiguresByMonth } = useCashupStore();
   const [editingExplanations, setEditingExplanations] = useState<Record<string, string>>({});
   const [monthOffset, setMonthOffset] = useState(0);
+  const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
+  const [prevBankLines, setPrevBankLines] = useState<typeof bankLines>([]);
 
   const baseMonth = startOfMonth(parseISO(selectedDate));
   const currentMonth = monthOffset === 0 ? baseMonth : addMonths(baseMonth, monthOffset);
   const monthStart = currentMonth;
   const monthEnd = endOfMonth(currentMonth);
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const filterMonth = format(monthStart, 'yyyy-MM');
+
+  const SEED_BLD = -11906.34;
+  const SEED_EASYPAY = 14392.59;
+  const SEED_LOTTO = -7691.21;
+
+  const isFirstMonth = filterMonth === '2026-03';
+  const prevMonth = useMemo(() => {
+    const d = new Date(filterMonth + '-01');
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 7);
+  }, [filterMonth]);
+
+  useEffect(() => {
+    const load = async () => {
+      const bankRes = await supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth);
+      setBankLines(((bankRes as any)?.data ?? []) as typeof bankLines);
+      if (!isFirstMonth) {
+        const prevRes = await supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', prevMonth);
+        setPrevBankLines(((prevRes as any)?.data ?? []) as typeof bankLines);
+      }
+    };
+    load();
+  }, [filterMonth, isFirstMonth, prevMonth]);
+
+  const computeAirtimeClosing = useCallback((
+    monthStr: string,
+    lines: typeof bankLines,
+    openBld: number, openEp: number, openLt: number,
+  ) => {
+    const mStart = startOfMonth(new Date(monthStr + '-01'));
+    const mEnd = endOfMonth(mStart);
+    const mDays = eachDayOfInterval({ start: mStart, end: mEnd });
+    const mCashups = new Map(cashups.filter(c => c.month === monthStr).map(c => [c.date, c]));
+    const bldPmts = new Map<string, number>();
+    const lottoPmts = new Map<string, number>();
+    lines.forEach(line => {
+      const desc = line.description.toUpperCase().trim();
+      const dateStr = parseBankStatementDate(line.transaction_date);
+      if (!dateStr) return;
+      if (desc.includes('BLD DO') || desc.includes('BLUE LABEL')) bldPmts.set(dateStr, (bldPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
+      if (desc.includes('ITHUCOLL')) lottoPmts.set(dateStr, (lottoPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
+    });
+    let bld = openBld, ep = openEp, lt = openLt;
+    for (const day of mDays) {
+      const ds = format(day, 'yyyy-MM-dd');
+      const c = mCashups.get(ds);
+      const bldInv = c ? c.shop.receipts.filter((r: any) => r.type === 'Blue Label').reduce((s: number, r: any) => s + r.amount, 0) : 0;
+      const epInv = c ? c.shop.receipts.filter((r: any) => r.type === 'Easypay').reduce((s: number, r: any) => s + r.amount, 0) : 0;
+      const mgrEntry = managerEntries.find(e => e.date === ds);
+      const dfCC = mgrEntry?.deepFrozenCC ?? 0;
+      const ltRec = c ? c.shop.receipts.filter((r: any) => r.type === 'Lotto Receipts').reduce((s: number, r: any) => s + r.amount, 0) : 0;
+      const ltPay = c ? (c.shop.lottoPayouts ?? 0) : 0;
+      bld = bld - bldInv + (bldPmts.get(ds) ?? 0) + (mgrEntry?.blueLabelComm ?? 0);
+      ep = ep - (epInv + dfCC) + (c?.shop.easyPay ?? 0) + (mgrEntry?.easypayComm ?? 0);
+      lt = lt - (ltRec - ltPay) + (lottoPmts.get(ds) ?? 0) + (mgrEntry?.lottoComm ?? 0);
+    }
+    return { bld, ep, lt };
+  }, [cashups, managerEntries]);
+
+  const airtimeClosing = useMemo(() => {
+    const opening = isFirstMonth
+      ? { bld: SEED_BLD, ep: SEED_EASYPAY, lt: SEED_LOTTO }
+      : computeAirtimeClosing(prevMonth, prevBankLines, SEED_BLD, SEED_EASYPAY, SEED_LOTTO);
+    return computeAirtimeClosing(filterMonth, bankLines, opening.bld, opening.ep, opening.lt);
+  }, [filterMonth, bankLines, prevBankLines, isFirstMonth, prevMonth, computeAirtimeClosing]);
+
+  const airtimeMonthly = getMonthlyFiguresByMonth(filterMonth);
+  const airtimeStatus = useMemo(() => {
+    if (!airtimeMonthly) return null;
+    const mBld = airtimeMonthly.airtimeBldBalance ?? 0;
+    const mEp = airtimeMonthly.airtimeEasypayBalance ?? 0;
+    const mLt = airtimeMonthly.airtimeLottoBalance ?? 0;
+    return {
+      bldOk: Math.abs((-airtimeClosing.bld) - mBld) < 2,
+      epOk: Math.abs(airtimeClosing.ep - mEp) < 2,
+      ltOk: Math.abs((-airtimeClosing.lt) - mLt) < 2,
+    };
+  }, [airtimeClosing, airtimeMonthly]);
 
   const rows: DayMetrics[] = days.map((day) => {
     const ds = format(day, "yyyy-MM-dd");
@@ -466,6 +549,42 @@ export function MonthlyDashboard({ selectedDate }: Props) {
             )}
           </table>
         </div>
+      </div>
+
+      {/* Airtime Recon Reconciliation */}
+      <div className="border rounded-xl overflow-hidden">
+        <div className="bg-muted/50 px-3 py-2 border-b font-semibold text-sm">
+          Airtime / Lotto Reconciliation
+        </div>
+        <div className="grid grid-cols-3 gap-0 text-sm">
+          {[
+            { label: 'Blue Label', ok: airtimeStatus?.bldOk ?? null },
+            { label: 'Easy Pay', ok: airtimeStatus?.epOk ?? null },
+            { label: 'Lotto', ok: airtimeStatus?.ltOk ?? null },
+          ].map(({ label, ok }) => (
+            <div key={label} className={`flex items-center justify-center gap-2 px-3 py-3 border-r last:border-r-0 ${
+              ok === null ? 'bg-muted/20' : ok ? 'bg-green-50 dark:bg-green-950/20' : 'bg-red-50 dark:bg-red-950/20'
+            }`}>
+              {ok === null ? (
+                <MinusCircle className="h-4 w-4 text-muted-foreground/40" />
+              ) : ok ? (
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              ) : (
+                <XCircle className="h-4 w-4 text-red-600" />
+              )}
+              <span className={`text-xs font-semibold ${
+                ok === null ? 'text-muted-foreground' : ok ? 'text-green-700' : 'text-red-600'
+              }`}>
+                {label}: {ok === null ? 'No data' : ok ? 'PASS' : 'FAIL'}
+              </span>
+            </div>
+          ))}
+        </div>
+        {!airtimeMonthly && (
+          <div className="text-xs text-muted-foreground text-center py-1 border-t">
+            No monthly figures entered — enter in Manager Monthly Section 4
+          </div>
+        )}
       </div>
     </div>
   );
