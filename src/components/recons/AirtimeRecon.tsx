@@ -171,11 +171,6 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
             Airtime / Lotto Reconciliation — {format(monthStart, 'MMMM yyyy')}
           </h3>
           <div className="flex gap-2">
-            {hasCommEdits && (
-              <Button size="sm" onClick={handleSaveCommissions} disabled={saving}>
-                <Save className="h-3.5 w-3.5 mr-1" />Save Commissions
-              </Button>
-            )}
             <Button size="sm" variant="outline" onClick={() => {
               let bld = BLD_OPENING, ep = EASYPAY_OPENING, lt = LOTTO_OPENING;
               const csvRows = dailyRows.map(r => {
@@ -375,6 +370,13 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
             </TableBody>
           </Table>
         </div>
+        {hasCommEdits && (
+          <div className="px-4 py-2 border-t bg-muted/30 flex justify-end">
+            <Button size="sm" onClick={handleSaveCommissions} disabled={saving}>
+              <Save className="h-3.5 w-3.5 mr-1" />Save Commissions
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
