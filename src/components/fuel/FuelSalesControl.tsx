@@ -36,8 +36,7 @@ export function FuelSalesControl({ selectedDate }: Props) {
   if (loading) return <div className="py-8 text-center text-muted-foreground text-sm">Loading...</div>;
   if (grades.length === 0) return <div className="py-8 text-center text-muted-foreground text-sm">No fuel sales data found. Upload a Day End Report first.</div>;
 
-  const fmtN = (n: number) => n.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const fmtV = (n: number) => n.toLocaleString('en-ZA', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  const fmt = (n: number) => n.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
     <div className="space-y-6">
