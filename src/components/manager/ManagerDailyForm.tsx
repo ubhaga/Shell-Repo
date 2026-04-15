@@ -7,7 +7,7 @@ import { Section, DataRow, CurrencyInput, CurrencyDisplay } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Save, AlertCircle, CheckCircle, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { format, subDays, addDays, parseISO } from "date-fns";
+import { format, subDays, addDays, parseISO, lastDayOfMonth, isSaturday } from "date-fns";
 
 // ---- Recursive chain helper ----
 // Walk forward from Jan 1 2026 to compute the TRUE effective closing balance for any date.
