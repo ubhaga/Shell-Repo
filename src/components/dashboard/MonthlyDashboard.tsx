@@ -1,9 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useCashupStore } from "@/store/cashupStore";
 import { CurrencyDisplay } from "@/components/ui/CashupUI";
 import { CheckCircle, XCircle, MinusCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, addMonths, subMonths } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { parseBankStatementDate } from "@/lib/bankStatementDate";
 
 import type { DailyCashup, ManagerDailyEntry } from "@/types/cashup";
 
