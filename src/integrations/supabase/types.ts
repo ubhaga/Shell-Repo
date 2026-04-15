@@ -187,6 +187,8 @@ export type Database = {
           invoice_notes: string
           locked: boolean
           lotto_comm: number
+          lotto_net_sales_comm: number
+          lotto_payout_comm: number
           payout_invoices: Json
           transfer_from_coins: number
           updated_at: string
@@ -220,6 +222,8 @@ export type Database = {
           invoice_notes?: string
           locked?: boolean
           lotto_comm?: number
+          lotto_net_sales_comm?: number
+          lotto_payout_comm?: number
           payout_invoices?: Json
           transfer_from_coins?: number
           updated_at?: string
@@ -253,6 +257,8 @@ export type Database = {
           invoice_notes?: string
           locked?: boolean
           lotto_comm?: number
+          lotto_net_sales_comm?: number
+          lotto_payout_comm?: number
           payout_invoices?: Json
           transfer_from_coins?: number
           updated_at?: string
