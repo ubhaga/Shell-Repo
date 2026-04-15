@@ -51,7 +51,6 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   const computeClosing = (
     monthStr: string,
     lines: typeof bankLines,
-    comm: { bld: number; easypay: number; lotto: number },
     openBld: number,
     openEp: number,
     openLt: number,
