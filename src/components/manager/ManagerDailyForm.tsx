@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Save, AlertCircle, CheckCircle, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format, subDays, addDays, parseISO, lastDayOfMonth, isSaturday } from "date-fns";
+import { ManualPumpReadings } from "./ManualPumpReadings";
 
 // ---- Recursive chain helper ----
 // Walk forward from Jan 1 2026 to compute the TRUE effective closing balance for any date.
@@ -983,6 +984,9 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
           )}
         </Section>
       )}
+
+      {/* 4. Manual Pump Readings */}
+      <ManualPumpReadings selectedDate={selectedDate} />
 
       {/* Save button + nav at bottom */}
       <div className="flex items-center justify-between gap-2 pt-2 pb-4">
