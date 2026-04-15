@@ -15,7 +15,7 @@ interface AirtimeReconProps {
 }
 
 export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
-  const { cashups } = useCashupStore();
+  const { cashups, managerEntries } = useCashupStore();
 
   const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
   const [prevBankLines, setPrevBankLines] = useState<typeof bankLines>([]);
@@ -141,10 +141,12 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       const c = mCashups.get(ds);
       const bldInv = c ? c.shop.receipts.filter((r: any) => r.type === 'Blue Label').reduce((s: number, r: any) => s + r.amount, 0) : 0;
       const epInv = c ? c.shop.receipts.filter((r: any) => r.type === 'Easypay').reduce((s: number, r: any) => s + r.amount, 0) : 0;
+      const mgrEntry = managerEntries.find(e => e.date === ds);
+      const dfCC = mgrEntry?.deepFrozenCC ?? 0;
       const ltRec = c ? c.shop.receipts.filter((r: any) => r.type === 'Lotto Receipts').reduce((s: number, r: any) => s + r.amount, 0) : 0;
       const ltPay = c ? (c.shop.lottoPayouts ?? 0) : 0;
       bld = bld - bldInv + (bldPmts.get(ds) ?? 0);
-      ep = ep - epInv + (c?.shop.easyPay ?? 0);
+      ep = ep - (epInv + dfCC) + (c?.shop.easyPay ?? 0);
       lt = lt - (ltRec - ltPay) + (lottoPmts.get(ds) ?? 0);
     }
     // Add commission
@@ -210,6 +212,9 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     const easypayInvoice = cashup
       ? cashup.shop.receipts.filter(r => r.type === 'Easypay').reduce((s, r) => s + r.amount, 0)
       : 0;
+    // Add Deep Frozen paid in CC from manager daily to Easypay invoice
+    const managerEntry = managerEntries.find(e => e.date === dateStr);
+    const deepFrozenCC = managerEntry?.deepFrozenCC ?? 0;
     const lottoReceipts = cashup
       ? cashup.shop.receipts.filter(r => r.type === 'Lotto Receipts').reduce((s, r) => s + r.amount, 0)
       : 0;
@@ -222,7 +227,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       date: dateStr,
       bldInvoice,
       bldPayment: bldPaymentsByDate.get(dateStr) ?? 0,
-      easypayInvoice,
+      easypayInvoice: easypayInvoice + deepFrozenCC,
       easypayCollection: cashup?.shop.easyPay ?? 0,
       lottoInvoice,
       lottoPayment: lottoPaymentsByDate.get(dateStr) ?? 0,
