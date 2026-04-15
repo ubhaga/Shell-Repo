@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      bank_line_allocations: {
+        Row: {
+          bank_line_id: string
+          created_at: string
+          id: string
+          month: string
+          recon_type: string
+          target_name: string
+        }
+        Insert: {
+          bank_line_id: string
+          created_at?: string
+          id?: string
+          month: string
+          recon_type?: string
+          target_name?: string
+        }
+        Update: {
+          bank_line_id?: string
+          created_at?: string
+          id?: string
+          month?: string
+          recon_type?: string
+          target_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_line_allocations_bank_line_id_fkey"
+            columns: ["bank_line_id"]
+            isOneToOne: true
+            referencedRelation: "bank_statement_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bank_statement_lines: {
         Row: {
           amount: number

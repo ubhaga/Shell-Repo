@@ -12,6 +12,7 @@ import { format, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
 import { toast } from 'sonner';
 import { downloadCsv } from '@/lib/csvExport';
 import { parseBankStatementDateToDate } from '@/lib/bankStatementDate';
+import { useBankAllocations } from '@/hooks/useBankAllocations';
 
 interface CreditorsReconProps {
   filterMonth: string;
@@ -20,9 +21,10 @@ interface CreditorsReconProps {
 export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   const { managerEntries } = useCashupStore();
   const { eftSuppliers } = useMasterDataStore();
+  const { allocations: bankAllocations } = useBankAllocations(filterMonth);
 
-  // Load bank lines for CR payments
-  const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
+  // Load bank lines for CR payments (now includes id for allocation matching)
+  const [bankLines, setBankLines] = useState<{ id: string; amount: number; description: string; transaction_date: string }[]>([]);
   const [openingBalances, setOpeningBalances] = useState<Record<string, number>>({});
   const [editingOB, setEditingOB] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -41,7 +43,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     setPrevMonth(pm);
 
     const [bankRes, obRes] = await Promise.all([
-      supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth),
+      supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', filterMonth),
       supabase.from('creditor_opening_balances').select('*').eq('month', filterMonth),
     ]);
 
@@ -55,7 +57,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
 
     if (filterMonth > '2026-03') {
       const [prevBankRes, prevObRes] = await Promise.all([
-        supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', pm),
+        supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', pm),
         supabase.from('creditor_opening_balances').select('*').eq('month', pm),
       ]);
       setPrevMonthBankLines((prevBankRes.data ?? []) as typeof bankLines);
@@ -166,9 +168,11 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
       });
     });
 
-    // Deduct bank CR payments
+    // Deduct bank CR payments (check manual allocation first, then regex)
     bankLines.forEach(line => {
-      const matched = matchSupplier(line.description);
+      // Check manual allocation first
+      const allocation = bankAllocations.find(a => a.bank_line_id === line.id && a.recon_type === 'creditor');
+      const matched = allocation ? allocation.target_name : matchSupplier(line.description);
       if (matched !== supplier) return;
       const lineDate = parseBankDate(line.transaction_date);
       if (!lineDate) return;
