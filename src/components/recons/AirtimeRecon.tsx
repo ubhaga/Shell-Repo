@@ -43,7 +43,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
 
   const SEED_BLD = -11906.34;
   const SEED_EASYPAY = 14392.59;
-  const SEED_LOTTO = 7691.21;
+  const SEED_LOTTO = -7691.21;
 
   const parseBankDate = (dateStr: string): string | null => parseBankStatementDate(dateStr);
 
