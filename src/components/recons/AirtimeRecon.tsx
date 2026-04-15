@@ -160,7 +160,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     // For months beyond April, we'd need to chain — but for now this handles Mar→Apr
     // TODO: recursive chaining for future months
     return prevClosing;
-  }, [isFirstMonth, prevMonth, prevBankLines, prevCommissions, cashups]);
+  }, [isFirstMonth, prevMonth, prevBankLines, prevCommissions, cashups, managerEntries]);
 
   const monthStart = startOfMonth(new Date(filterMonth + '-01'));
   const monthEnd = endOfMonth(monthStart);
