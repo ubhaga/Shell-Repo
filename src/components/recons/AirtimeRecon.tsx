@@ -94,18 +94,15 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       ep = ep - (epInv + dfCC) + (c?.shop.easyPay ?? 0) + epComm;
       lt = lt - (ltRec - ltPay) + (lottoPmts.get(ds) ?? 0) + ltComm;
     }
-    // Add monthly commission adjustments
-    return { bld: bld + comm.bld, ep: ep + comm.easypay, lt: lt + comm.lotto };
+    return { bld, ep, lt };
   };
 
   // Compute opening balances
   const openingBalances = useMemo(() => {
     if (isFirstMonth) return { bld: SEED_BLD, ep: SEED_EASYPAY, lt: SEED_LOTTO };
-    const prevClosing = computeClosing(prevMonth, prevBankLines, prevCommissions, SEED_BLD, SEED_EASYPAY, SEED_LOTTO);
-    // For months beyond April, we'd need to chain — but for now this handles Mar→Apr
-    // TODO: recursive chaining for future months
+    const prevClosing = computeClosing(prevMonth, prevBankLines, SEED_BLD, SEED_EASYPAY, SEED_LOTTO);
     return prevClosing;
-  }, [isFirstMonth, prevMonth, prevBankLines, prevCommissions, cashups, managerEntries]);
+  }, [isFirstMonth, prevMonth, prevBankLines, cashups, managerEntries]);
 
   const monthStart = startOfMonth(new Date(filterMonth + '-01'));
   const monthEnd = endOfMonth(monthStart);
