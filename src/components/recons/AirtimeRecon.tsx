@@ -204,6 +204,10 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     easypayCollection: number;
     lottoInvoice: number;
     lottoPayment: number;
+    // Commission amounts shown separately
+    bldComm: number;
+    epComm: number;
+    ltComm: number;
   };
 
   const dailyRows: DayRow[] = days.map(day => {
@@ -216,10 +220,8 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     const easypayInvoice = cashup
       ? cashup.shop.receipts.filter(r => r.type === 'Easypay').reduce((s, r) => s + r.amount, 0)
       : 0;
-    // Add Deep Frozen paid in CC from manager daily to Easypay invoice
     const managerEntry = managerEntries.find(e => e.date === dateStr);
     const deepFrozenCC = managerEntry?.deepFrozenCC ?? 0;
-    // Manager daily commissions shown as payments on their specific days
     const bldComm = managerEntry?.blueLabelComm ?? 0;
     const epComm = managerEntry?.easypayComm ?? 0;
     const ltComm = managerEntry?.lottoComm ?? 0;
@@ -234,11 +236,14 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     return {
       date: dateStr,
       bldInvoice,
-      bldPayment: (bldPaymentsByDate.get(dateStr) ?? 0) + bldComm,
+      bldPayment: bldPaymentsByDate.get(dateStr) ?? 0,
       easypayInvoice: easypayInvoice + deepFrozenCC,
-      easypayCollection: (cashup?.shop.easyPay ?? 0) + epComm,
+      easypayCollection: cashup?.shop.easyPay ?? 0,
       lottoInvoice,
-      lottoPayment: (lottoPaymentsByDate.get(dateStr) ?? 0) + ltComm,
+      lottoPayment: lottoPaymentsByDate.get(dateStr) ?? 0,
+      bldComm,
+      epComm,
+      ltComm,
     };
   });
 
