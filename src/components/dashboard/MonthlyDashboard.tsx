@@ -246,6 +246,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
         bankChargesRate: 0,
         bankCharges: 0,
         banking: 0,
+        deepFrozenCC: 0,
         locked: false,
       });
     }
