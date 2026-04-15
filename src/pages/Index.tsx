@@ -9,6 +9,7 @@ import { MasterDataSettings } from "@/components/settings/MasterDataSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutDashboard, ClipboardList, Briefcase, BarChart3, CalendarCheck, Settings, Loader2, GitCompareArrows, FileSpreadsheet, ChevronLeft, ChevronRight, Upload } from "lucide-react";
 import { BankStatementTab } from "@/components/reports/BankStatementTab";
+import { DayEndUpload } from "@/components/uploads/DayEndUpload";
 import { AfsJournalEntries } from "@/components/afs/AfsJournalEntries";
 import { AfsMonthly } from "@/components/afs/AfsMonthly";
 import { useCashupStore } from "@/store/cashupStore";
@@ -213,6 +214,7 @@ export default function Index() {
                 </button>
               </div>
               <BankStatementTab filterMonth={selectedDate.slice(0, 7)} monthLabel={format(new Date(selectedDate.slice(0, 7) + '-01'), 'MMMM yyyy')} />
+              <DayEndUpload filterMonth={selectedDate.slice(0, 7)} />
             </div>
           </TabsContent>
           <TabsContent value="settings">
