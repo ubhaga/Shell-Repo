@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Trash2, Pencil, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useMasterDataStore } from '@/store/masterDataStore';
+import { useMasterDataStore, type TankDescription } from '@/store/masterDataStore';
 import { toast } from '@/hooks/use-toast';
 
 interface EditableListProps {
