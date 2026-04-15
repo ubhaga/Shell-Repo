@@ -10,6 +10,12 @@ import { supabase } from '@/integrations/supabase/client';
 
 const DEFAULT_EFT_SUPPLIERS = [...SUPPLIERS].sort();
 
+export interface TankDescription {
+  tankNumber: string;
+  grade: string;
+  size: number;
+}
+
 interface MasterDataStore {
   payoutSuppliers: string[];
   eftSuppliers: string[];
@@ -17,6 +23,7 @@ interface MasterDataStore {
   cashierNames: string[];
   managerNames: string[];
   categories: string[];
+  tanks: TankDescription[];
   loaded: boolean;
 
   loadAll: () => Promise<void>;
@@ -44,16 +51,20 @@ interface MasterDataStore {
   addCategory: (name: string) => void;
   updateCategory: (old: string, next: string) => void;
   deleteCategory: (name: string) => void;
+
+  addTank: (tank: TankDescription) => void;
+  updateTank: (index: number, tank: TankDescription) => void;
+  deleteTank: (index: number) => void;
 }
 
 const replace = (list: string[], old: string, next: string) =>
   list.map(i => (i === old ? next : i));
 
 // Persist a single key to the master_data table
-async function persistKey(key: string, data: string[]) {
+async function persistKey(key: string, data: unknown) {
   await supabase
     .from('master_data')
-    .upsert({ key, data: data as unknown as never, updated_at: new Date().toISOString() } as never, { onConflict: 'key' });
+    .upsert({ key, data: data as never, updated_at: new Date().toISOString() } as never, { onConflict: 'key' });
 }
 
 export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
@@ -63,6 +74,7 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
   cashierNames: [...DEFAULT_CASHIER_NAMES],
   managerNames: [...DEFAULT_MANAGER_NAMES],
   categories: [...DEFAULT_CATEGORIES].sort(),
+  tanks: [] as TankDescription[],
   loaded: false,
 
   loadAll: async () => {
@@ -77,6 +89,7 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
         cashierNames: map.cashierNames ?? get().cashierNames,
         managerNames: map.managerNames ?? get().managerNames,
         categories: map.categories ?? get().categories,
+        tanks: (map.tanks as unknown as TankDescription[]) ?? get().tanks,
         loaded: true,
       });
     } else {
@@ -223,6 +236,29 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
       const list = s.categories.filter(i => i !== name);
       persistKey('categories', list);
       return { categories: list };
+    });
+  },
+
+  addTank: (tank) => {
+    set(s => {
+      const next = [...s.tanks, tank];
+      persistKey('tanks', next);
+      return { tanks: next };
+    });
+  },
+  updateTank: (index, tank) => {
+    set(s => {
+      const next = [...s.tanks];
+      next[index] = tank;
+      persistKey('tanks', next);
+      return { tanks: next };
+    });
+  },
+  deleteTank: (index) => {
+    set(s => {
+      const next = s.tanks.filter((_, i) => i !== index);
+      persistKey('tanks', next);
+      return { tanks: next };
     });
   },
 }));

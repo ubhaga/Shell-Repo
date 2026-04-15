@@ -26,12 +26,17 @@ import { BankStatementTab } from "@/components/reports/BankStatementTab";
 import { DayEndUpload } from "@/components/uploads/DayEndUpload";
 import { AfsJournalEntries } from "@/components/afs/AfsJournalEntries";
 import { AfsMonthly } from "@/components/afs/AfsMonthly";
+import { FuelDashboard } from "@/components/fuel/FuelDashboard";
+import { FuelSalesControl } from "@/components/fuel/FuelSalesControl";
+import { MeterSalesControl } from "@/components/fuel/MeterSalesControl";
+import { PosSalesPerTank } from "@/components/fuel/PosSalesPerTank";
 import { useCashupStore } from "@/store/cashupStore";
 import { useMasterDataStore } from "@/store/masterDataStore";
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [afsSubTab, setAfsSubTab] = useState("jes");
+  const [fuelSubTab, setFuelSubTab] = useState("fuel-dashboard");
   const [uploadsSubTab, setUploadsSubTab] = useState("bank");
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const cashupLoaded = useCashupStore((s) => s.loaded);
@@ -223,11 +228,37 @@ export default function Index() {
             </Tabs>
           </TabsContent>
           <TabsContent value="fuel-recon">
-            <div className="text-center py-12 text-muted-foreground">
-              <Fuel className="h-10 w-10 mx-auto mb-3 opacity-40" />
-              <p className="text-sm font-medium">Fuel Recon</p>
-              <p className="text-xs">Coming soon</p>
-            </div>
+            <Tabs value={fuelSubTab} onValueChange={setFuelSubTab}>
+              <div className="flex items-center justify-between mb-4">
+                <TabsList>
+                  <TabsTrigger value="fuel-dashboard" className="text-xs">Daily Summ Dashboard</TabsTrigger>
+                  <TabsTrigger value="fuel-sales" className="text-xs">Fuel Sales Control</TabsTrigger>
+                  <TabsTrigger value="meter-sales" className="text-xs">Meter Sales Control</TabsTrigger>
+                  <TabsTrigger value="pos-sales" className="text-xs">POS Sales Per Tank</TabsTrigger>
+                </TabsList>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="month"
+                    value={selectedDate.slice(0, 7)}
+                    min="2026-01"
+                    onChange={(e) => setSelectedDate(e.target.value + "-01")}
+                    className="text-sm border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+              </div>
+              <TabsContent value="fuel-dashboard">
+                <FuelDashboard selectedDate={selectedDate} />
+              </TabsContent>
+              <TabsContent value="fuel-sales">
+                <FuelSalesControl selectedDate={selectedDate} />
+              </TabsContent>
+              <TabsContent value="meter-sales">
+                <MeterSalesControl selectedDate={selectedDate} />
+              </TabsContent>
+              <TabsContent value="pos-sales">
+                <PosSalesPerTank selectedDate={selectedDate} />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
           <TabsContent value="uploads">
             <Tabs value={uploadsSubTab} onValueChange={setUploadsSubTab}>
