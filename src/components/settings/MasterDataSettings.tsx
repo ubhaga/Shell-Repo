@@ -211,26 +211,26 @@ export function MasterDataSettings() {
 
 function TankDescriptionList() {
   const store = useMasterDataStore();
-  const [newTank, setNewTank] = useState({ tankNumber: '', grade: '', size: '' });
+  const [newTank, setNewTank] = useState({ tankNumber: '', grade: '', size: '', color: '#3B82F6' });
   const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [editVal, setEditVal] = useState({ tankNumber: '', grade: '', size: '' });
+  const [editVal, setEditVal] = useState({ tankNumber: '', grade: '', size: '', color: '#3B82F6' });
 
   const handleAdd = () => {
     if (!newTank.tankNumber.trim() || !newTank.grade.trim()) return;
-    store.addTank({ tankNumber: newTank.tankNumber.trim(), grade: newTank.grade.trim(), size: parseFloat(newTank.size) || 0 });
-    setNewTank({ tankNumber: '', grade: '', size: '' });
+    store.addTank({ tankNumber: newTank.tankNumber.trim(), grade: newTank.grade.trim(), size: parseFloat(newTank.size) || 0, color: newTank.color });
+    setNewTank({ tankNumber: '', grade: '', size: '', color: '#3B82F6' });
     toast({ title: 'Tank added' });
   };
 
   const startEdit = (i: number) => {
     const t = store.tanks[i];
     setEditIdx(i);
-    setEditVal({ tankNumber: t.tankNumber, grade: t.grade, size: String(t.size) });
+    setEditVal({ tankNumber: t.tankNumber, grade: t.grade, size: String(t.size), color: t.color || '#3B82F6' });
   };
 
   const confirmEdit = () => {
     if (editIdx === null) return;
-    store.updateTank(editIdx, { tankNumber: editVal.tankNumber.trim(), grade: editVal.grade.trim(), size: parseFloat(editVal.size) || 0 });
+    store.updateTank(editIdx, { tankNumber: editVal.tankNumber.trim(), grade: editVal.grade.trim(), size: parseFloat(editVal.size) || 0, color: editVal.color });
     setEditIdx(null);
     toast({ title: 'Tank updated' });
   };
@@ -248,10 +248,13 @@ function TankDescriptionList() {
           placeholder="Grade (e.g. ULP95)" className="flex-1 text-sm border border-input rounded-md px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
         <input value={newTank.size} onChange={e => setNewTank(p => ({ ...p, size: e.target.value }))} type="number"
           placeholder="Size (L)" className="w-28 text-sm border border-input rounded-md px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+        <input type="color" value={newTank.color} onChange={e => setNewTank(p => ({ ...p, color: e.target.value }))}
+          className="w-10 h-8 rounded border border-input cursor-pointer p-0.5" title="Tank colour" />
         <Button size="sm" onClick={handleAdd} className="shrink-0"><Plus className="h-3.5 w-3.5 mr-1" /> Add</Button>
       </div>
       <div className="divide-y">
         <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/30 text-xs font-medium text-muted-foreground">
+          <span className="w-10">Colour</span>
           <span className="w-24">Tank #</span>
           <span className="flex-1">Grade</span>
           <span className="w-28 text-right">Size (L)</span>
@@ -261,6 +264,8 @@ function TankDescriptionList() {
           <div key={i} className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted/30 group">
             {editIdx === i ? (
               <>
+                <input type="color" value={editVal.color} onChange={e => setEditVal(p => ({ ...p, color: e.target.value }))}
+                  className="w-10 h-6 rounded border border-input cursor-pointer p-0.5" />
                 <input value={editVal.tankNumber} onChange={e => setEditVal(p => ({ ...p, tankNumber: e.target.value }))}
                   className="w-24 text-sm border border-input rounded px-2 py-0.5 bg-background" autoFocus />
                 <input value={editVal.grade} onChange={e => setEditVal(p => ({ ...p, grade: e.target.value }))}
@@ -274,6 +279,7 @@ function TankDescriptionList() {
               </>
             ) : (
               <>
+                <span className="w-10 flex items-center"><span className="w-6 h-6 rounded-full border" style={{ backgroundColor: tank.color || '#3B82F6' }} /></span>
                 <span className="w-24 text-sm font-medium">{tank.tankNumber}</span>
                 <span className="flex-1 text-sm">{tank.grade}</span>
                 <span className="w-28 text-sm text-right">{tank.size.toLocaleString()}</span>

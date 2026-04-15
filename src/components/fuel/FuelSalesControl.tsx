@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { parseMtdSummary, type MtdSummaryGrade } from '@/lib/fuelReportParser';
 import { format } from 'date-fns';
+import { useMasterDataStore, getTankColor } from '@/store/masterDataStore';
 
 interface Props {
   selectedDate: string;
@@ -10,6 +11,7 @@ interface Props {
 export function FuelSalesControl({ selectedDate }: Props) {
   const [grades, setGrades] = useState<MtdSummaryGrade[]>([]);
   const [loading, setLoading] = useState(true);
+  const tanks = useMasterDataStore(s => s.tanks);
   const month = selectedDate.slice(0, 7);
 
   const load = useCallback(async () => {
@@ -42,7 +44,8 @@ export function FuelSalesControl({ selectedDate }: Props) {
     <div className="space-y-6">
       {grades.map(grade => (
         <div key={grade.gradeId} className="border rounded-lg overflow-hidden">
-          <div className="bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold flex items-center justify-between">
+          <div className="px-4 py-2 text-sm font-semibold flex items-center justify-between text-white"
+            style={{ backgroundColor: getTankColor(tanks, grade.gradeId) || getTankColor(tanks, grade.description) || 'hsl(var(--primary))' }}>
             <span>Tank {grade.gradeId} — {grade.description}</span>
             <span className="text-xs font-normal opacity-80">
               MTD Variance: {fmt(grade.monthlyVariance)}L ({fmt(grade.variancePercentage)}%)
