@@ -32,7 +32,7 @@ function stripPageBreaks(content: string): string {
   return content
     .replace(/<---\s*Ver:.*?Rpt Type:\s*\w+\s*--->/g, '')
     .replace(/<<\s*Page Break\s*>>/g, '')
-    .replace(/^.*Page:\s*\d+\s*$/gm, '')
+    .replace(/\s+Page\s*:\s*\d+\s*$/gm, '')
     .replace(/\n{3,}/g, '\n\n');
 }
 
