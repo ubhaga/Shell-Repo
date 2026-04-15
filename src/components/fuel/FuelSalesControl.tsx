@@ -80,10 +80,10 @@ export function FuelSalesControl({ selectedDate }: Props) {
                     <td className="px-2 py-1 text-right">{fmt(row.closingDip)}</td>
                     <td className="px-2 py-1 text-right">{fmt(row.daysTankVolSales)}</td>
                     <td className="px-2 py-1 text-right">{fmt(row.mtdTankVolSales)}</td>
-                    <td className={`px-2 py-1 text-right font-medium ${row.daysPumpVolVariance < 0 ? 'text-red-600' : row.daysPumpVolVariance > 0 ? 'text-amber-600' : ''}`}>
+                    <td className={`px-2 py-1 text-right font-medium ${row.daysPumpVolVariance > 0 ? 'text-green-600' : row.daysPumpVolVariance < 0 ? 'text-red-600' : ''}`}>
                       {fmt(row.daysPumpVolVariance)}
                     </td>
-                    <td className={`px-2 py-1 text-right font-medium ${row.mtdPumpVolVariance < 0 ? 'text-red-600' : row.mtdPumpVolVariance > 0 ? 'text-amber-600' : ''}`}>
+                    <td className={`px-2 py-1 text-right font-medium ${row.mtdPumpVolVariance > 0 ? 'text-green-600' : row.mtdPumpVolVariance < 0 ? 'text-red-600' : ''}`}>
                       {fmt(row.mtdPumpVolVariance)}
                     </td>
                   </tr>
@@ -95,7 +95,7 @@ export function FuelSalesControl({ selectedDate }: Props) {
                   <td className="px-2 py-1.5 text-right">{fmt(grade.monthlyTankSales)}</td>
                   <td className="px-2 py-1.5 text-right"></td>
                   <td className="px-2 py-1.5 text-right"></td>
-                  <td className={`px-2 py-1.5 text-right ${grade.monthlyVariance < 0 ? 'text-red-600' : 'text-amber-600'}`}>
+                  <td className={`px-2 py-1.5 text-right ${grade.monthlyVariance > 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {fmt(grade.monthlyVariance)}
                   </td>
                 </tr>
