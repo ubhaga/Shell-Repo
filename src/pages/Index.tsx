@@ -240,6 +240,7 @@ export default function Index() {
                   <TabsTrigger value="meter-sales" className="text-xs">
                     Electric Meter Sales Control
                   </TabsTrigger>
+
                   <TabsTrigger value="meter-sales" className="text-xs">
                     Manual Meter Sales Control
                   </TabsTrigger>
