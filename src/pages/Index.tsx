@@ -231,10 +231,21 @@ export default function Index() {
             <Tabs value={fuelSubTab} onValueChange={setFuelSubTab}>
               <div className="flex items-center justify-between mb-4">
                 <TabsList>
-                  <TabsTrigger value="fuel-dashboard" className="text-xs">Daily Summ Dashboard</TabsTrigger>
-                  <TabsTrigger value="fuel-sales" className="text-xs">Fuel Sales Control</TabsTrigger>
-                  <TabsTrigger value="meter-sales" className="text-xs">Meter Sales Control</TabsTrigger>
-                  <TabsTrigger value="pos-sales" className="text-xs">POS Sales Per Tank</TabsTrigger>
+                  <TabsTrigger value="fuel-dashboard" className="text-xs">
+                    Daily Summ Dashboard
+                  </TabsTrigger>
+                  <TabsTrigger value="fuel-sales" className="text-xs">
+                    Fuel Sales Control
+                  </TabsTrigger>
+                  <TabsTrigger value="meter-sales" className="text-xs">
+                    Electric Meter Sales Control
+                  </TabsTrigger>
+                  <TabsTrigger value="meter-sales" className="text-xs">
+                    Manual Meter Sales Control
+                  </TabsTrigger>
+                  <TabsTrigger value="pos-sales" className="text-xs">
+                    POS Sales Per Tank
+                  </TabsTrigger>
                 </TabsList>
                 <div className="flex items-center gap-2">
                   <input
@@ -263,11 +274,18 @@ export default function Index() {
           <TabsContent value="uploads">
             <Tabs value={uploadsSubTab} onValueChange={setUploadsSubTab}>
               <TabsList className="mb-4">
-                <TabsTrigger value="dayend" className="text-xs">Day End Reports</TabsTrigger>
-                <TabsTrigger value="bank" className="text-xs">Bank Statement</TabsTrigger>
+                <TabsTrigger value="dayend" className="text-xs">
+                  Day End Reports
+                </TabsTrigger>
+                <TabsTrigger value="bank" className="text-xs">
+                  Bank Statement
+                </TabsTrigger>
               </TabsList>
               <TabsContent value="bank">
-                <BankStatementTab filterMonth={selectedDate.slice(0, 7)} monthLabel={format(new Date(selectedDate.slice(0, 7) + "-01"), "MMMM yyyy")} />
+                <BankStatementTab
+                  filterMonth={selectedDate.slice(0, 7)}
+                  monthLabel={format(new Date(selectedDate.slice(0, 7) + "-01"), "MMMM yyyy")}
+                />
               </TabsContent>
               <TabsContent value="dayend">
                 <DayEndUpload filterMonth={selectedDate.slice(0, 7)} />
