@@ -172,28 +172,31 @@ export function MeterSalesControl({ selectedDate }: Props) {
               <div key={day.date}>
                 <button
                   onClick={() => setExpandedDate(isExpanded ? null : day.date)}
-                  className="w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-muted/30"
+                  className="w-full grid grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-6 px-4 py-2 text-sm hover:bg-muted/30 text-left"
                 >
                   <span className="font-medium">{format(new Date(day.date), 'EEE dd MMM')}</span>
-                  <span className="flex items-center gap-4">
-                    <span className="text-xs text-muted-foreground">{day.rows.length} pumps</span>
-                    <span className={`text-xs font-semibold ${effectiveVar < 0 ? 'text-red-600' : effectiveVar > 0 ? 'text-amber-600' : 'text-green-600'}`}>
-                      Var: {fmtV(effectiveVar)}L
-                    </span>
-                    <span className={`text-xs ${dayCumVar < 0 ? 'text-red-600' : dayCumVar > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                      Cum: {fmtV(dayCumVar)}L
-                    </span>
-                    {showManual && (
-                      <>
-                        <span className={`text-xs font-semibold ${!dayHasManual ? 'text-muted-foreground' : manualTotals.var < 0 ? 'text-red-600' : manualTotals.var > 0 ? 'text-amber-600' : 'text-green-600'}`}>
-                          Var (Manual): {dayHasManual ? `${fmtV(manualTotals.var)}L` : '—'}
-                        </span>
-                        <span className={`text-xs ${dayCumManual < 0 ? 'text-red-600' : dayCumManual > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                          Cum (Manual): {fmtV(dayCumManual)}L
-                        </span>
-                      </>
-                    )}
+                  <span className="text-xs text-muted-foreground tabular-nums w-20 text-right">{day.rows.length} pumps</span>
+                  <span className={`text-xs font-semibold tabular-nums w-32 text-right ${effectiveVar < 0 ? 'text-red-600' : effectiveVar > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+                    Var: {fmtV(effectiveVar)}L
                   </span>
+                  <span className={`text-xs font-semibold tabular-nums w-32 text-right ${dayCumVar < 0 ? 'text-rose-700' : dayCumVar > 0 ? 'text-orange-700' : 'text-muted-foreground'}`}>
+                    Cum: {fmtV(dayCumVar)}L
+                  </span>
+                  {showManual ? (
+                    <>
+                      <span className={`text-xs font-semibold tabular-nums w-40 text-right ${!dayHasManual ? 'text-muted-foreground' : manualTotals.var < 0 ? 'text-blue-600' : manualTotals.var > 0 ? 'text-purple-600' : 'text-green-600'}`}>
+                        Var (Manual): {dayHasManual ? `${fmtV(manualTotals.var)}L` : '—'}
+                      </span>
+                      <span className={`text-xs font-semibold tabular-nums w-40 text-right ${dayCumManual < 0 ? 'text-blue-800' : dayCumManual > 0 ? 'text-purple-800' : 'text-muted-foreground'}`}>
+                        Cum (Manual): {fmtV(dayCumManual)}L
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-40" />
+                      <span className="w-40" />
+                    </>
+                  )}
                 </button>
                 {isExpanded && (
                   <div className="overflow-x-auto border-t bg-muted/10">
