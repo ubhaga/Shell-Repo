@@ -85,6 +85,7 @@ export function MeterSalesControl({ selectedDate }: Props) {
     const t = today[key];
     const p = prev[key];
     if (t == null || p == null || t === 0 || p === 0) return null;
+    if (t < p) return (1000000 - p) + t; // meter rollover at 1,000,000
     return t - p;
   };
 
