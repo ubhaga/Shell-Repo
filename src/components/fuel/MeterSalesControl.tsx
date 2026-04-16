@@ -324,7 +324,8 @@ export function MeterSalesControl({ selectedDate }: Props) {
                 )}
               </div>
             );
-          })}
+          });
+          })()}
         </div>
       </div>
     </div>
