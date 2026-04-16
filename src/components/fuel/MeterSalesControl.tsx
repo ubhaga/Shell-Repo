@@ -151,6 +151,14 @@ export function MeterSalesControl({ selectedDate }: Props) {
               const calc = rev && rev.revised_calc_volume !== 0 ? rev.revised_calc_volume : r.calculatedVolume;
               return s + (r.actualVolume - calc);
             }, 0);
+            const manualTotals = day.rows.reduce((acc, r) => {
+              const mv = getManualVol(day.date, r.pumpNo);
+              if (mv != null) {
+                acc.var += r.actualVolume - mv;
+                acc.has = true;
+              }
+              return acc;
+            }, { var: 0, has: false });
             return (
               <div key={day.date}>
                 <button
@@ -163,6 +171,11 @@ export function MeterSalesControl({ selectedDate }: Props) {
                     <span className={`text-xs font-semibold ${effectiveVar < 0 ? 'text-red-600' : effectiveVar > 0 ? 'text-amber-600' : 'text-green-600'}`}>
                       Var: {fmtV(effectiveVar)}L
                     </span>
+                    {showManual && (
+                      <span className={`text-xs font-semibold ${!manualTotals.has ? 'text-muted-foreground' : manualTotals.var < 0 ? 'text-red-600' : manualTotals.var > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+                        Var (Manual): {manualTotals.has ? `${fmtV(manualTotals.var)}L` : '—'}
+                      </span>
+                    )}
                   </span>
                 </button>
                 {isExpanded && (
