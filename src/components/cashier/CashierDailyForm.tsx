@@ -502,44 +502,71 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
       {/* ─── SECTION 2: PAYOUTS (Shop only) ─── */}
       <div className="border rounded-lg overflow-hidden">
         <div className="bg-red-600 text-white px-3 py-2 font-semibold text-sm">2. Cash Payouts — Shop Till Only</div>
-        <div className="px-3 py-1 text-xs text-muted-foreground grid grid-cols-3 gap-2 font-semibold border-b bg-muted/30">
-          <span>Vendor</span>
-          <span className="text-right col-span-1">Amount (Incl.)</span>
-          <span></span>
-        </div>
-        {form.shop.payouts.map((p) => (
-          <div key={p.id} className="flex items-center gap-2 px-3 py-1 border-b">
-            <select
-              value={p.vendor}
-              onChange={(e) => updatePayout(p.id, { vendor: e.target.value })}
-              className="input-cell flex-1 text-left text-sm"
-            >
-              <option value="">Select vendor...</option>
-              {SUPPLIERS.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-            <CurrencyInput value={p.amount} onChange={(v) => updatePayout(p.id, { amount: v })} />
-            <button onClick={() => removePayout(p.id)} className="text-destructive hover:text-destructive/70 p-1">
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ))}
-        <div className="px-3 py-1.5 flex items-center justify-between border-b">
-          <Button variant="outline" size="sm" onClick={addPayout} className="text-xs h-7">
-            <Plus className="h-3 w-3 mr-1" />
-            Add Payout
-          </Button>
-          <div className="flex gap-4 text-sm font-semibold pr-8">
-            <span className="text-muted-foreground">Payouts (excl. Lotto):</span>
-            <CurrencyDisplay value={shopPayoutsTotal} />
-          </div>
-        </div>
-        <div className="flex items-center justify-between px-3 py-1.5 text-sm">
-          <span className="text-muted-foreground">Lotto Payouts Only</span>
-          <CurrencyInput value={form.shop.lottoPayouts} onChange={(v) => setShop({ lottoPayouts: v })} />
-        </div>
+        {useDayEndPayouts ? (
+          <>
+            <div className="px-3 py-2 text-xs text-muted-foreground border-b bg-muted/30">
+              Cash payouts are pulled from the uploaded Day End report (Daily Takings Summary → Payouts × -1) and cannot be edited here.
+            </div>
+            <div className="flex items-center justify-between px-3 py-2 border-b text-sm">
+              <span className="font-medium">Day End Payouts</span>
+              {dayEndStatus === "loading" && (
+                <span className="text-xs text-muted-foreground italic">Loading…</span>
+              )}
+              {dayEndStatus === "missing" && (
+                <span className="text-xs text-amber-700 font-medium">No day end uploaded for this date</span>
+              )}
+              {dayEndStatus === "loaded" && (
+                <CurrencyDisplay value={dayEndPayoutsAmount ?? 0} highlight />
+              )}
+            </div>
+            <div className="flex items-center justify-between px-3 py-1.5 text-sm">
+              <span className="text-muted-foreground">Lotto Payouts Only</span>
+              <CurrencyInput value={form.shop.lottoPayouts} onChange={(v) => setShop({ lottoPayouts: v })} />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="px-3 py-1 text-xs text-muted-foreground grid grid-cols-3 gap-2 font-semibold border-b bg-muted/30">
+              <span>Vendor</span>
+              <span className="text-right col-span-1">Amount (Incl.)</span>
+              <span></span>
+            </div>
+            {form.shop.payouts.map((p) => (
+              <div key={p.id} className="flex items-center gap-2 px-3 py-1 border-b">
+                <select
+                  value={p.vendor}
+                  onChange={(e) => updatePayout(p.id, { vendor: e.target.value })}
+                  className="input-cell flex-1 text-left text-sm"
+                >
+                  <option value="">Select vendor...</option>
+                  {SUPPLIERS.map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
+                </select>
+                <CurrencyInput value={p.amount} onChange={(v) => updatePayout(p.id, { amount: v })} />
+                <button onClick={() => removePayout(p.id)} className="text-destructive hover:text-destructive/70 p-1">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+            <div className="px-3 py-1.5 flex items-center justify-between border-b">
+              <Button variant="outline" size="sm" onClick={addPayout} className="text-xs h-7">
+                <Plus className="h-3 w-3 mr-1" />
+                Add Payout
+              </Button>
+              <div className="flex gap-4 text-sm font-semibold pr-8">
+                <span className="text-muted-foreground">Payouts (excl. Lotto):</span>
+                <CurrencyDisplay value={shopPayoutsTotal} />
+              </div>
+            </div>
+            <div className="flex items-center justify-between px-3 py-1.5 text-sm">
+              <span className="text-muted-foreground">Lotto Payouts Only</span>
+              <CurrencyInput value={form.shop.lottoPayouts} onChange={(v) => setShop({ lottoPayouts: v })} />
+            </div>
+          </>
+        )}
       </div>
+
 
       {/* ─── SECTION 3: RECEIPTS (Shop only) ─── */}
       <div className="border rounded-lg overflow-hidden">
