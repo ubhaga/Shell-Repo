@@ -472,6 +472,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pump_variance_revisions: {
+        Row: {
+          created_at: string
+          date: string
+          explanation: string
+          id: string
+          month: string
+          pump_no: string
+          revised_calc_volume: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          explanation?: string
+          id?: string
+          month: string
+          pump_no: string
+          revised_calc_volume?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          explanation?: string
+          id?: string
+          month?: string
+          pump_no?: string
+          revised_calc_volume?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       speedpoint_diff_clearances: {
         Row: {
           amount: number
