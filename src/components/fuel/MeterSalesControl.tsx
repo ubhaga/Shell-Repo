@@ -132,7 +132,10 @@ export function MeterSalesControl({ selectedDate }: Props) {
                               </td>
                               <td className="px-2 py-1 text-right">{fmtV(r.startReading)}</td>
                               <td className="px-2 py-1 text-right">{fmtV(r.endReading)}</td>
-                              <td className="px-2 py-1 text-right">{fmtV(r.calculatedVolume)}</td>
+                              <td className={`px-2 py-1 text-right ${r.calculatedVolume < 0 ? 'text-red-600 font-semibold bg-red-50' : ''}`}>
+                                {r.calculatedVolume < 0 && <span className="mr-1">⚠</span>}
+                                {fmtV(r.calculatedVolume)}
+                              </td>
                               <td className="px-2 py-1 text-right">{fmtV(r.actualVolume)}</td>
                               <td className={`px-2 py-1 text-right font-medium ${r.volumeVariance < 0 ? 'text-red-600' : r.volumeVariance > 0 ? 'text-amber-600' : ''}`}>
                                 {fmtV(r.volumeVariance)}
