@@ -142,7 +142,10 @@ export function MeterSalesControl({ selectedDate }: Props) {
           <p className="text-xs text-muted-foreground">Meter readings per pump per day. Click a day to expand. Enter a Revised Calc Vol to override variance and add an explanation.</p>
         </div>
         <div className="divide-y">
-          {dayData.map(day => {
+          {(() => {
+            let cumVar = 0;
+            let cumManual = 0;
+            return dayData.map(day => {
             const isExpanded = expandedDate === day.date;
             const showManual = day.date >= MANUAL_CUTOFF;
             // Effective variance using revisions where present
@@ -159,6 +162,11 @@ export function MeterSalesControl({ selectedDate }: Props) {
               }
               return acc;
             }, { var: 0, has: false });
+            cumVar += effectiveVar;
+            if (manualTotals.has) cumManual += manualTotals.var;
+            const dayCumVar = cumVar;
+            const dayCumManual = cumManual;
+            const dayHasManual = manualTotals.has;
             return (
               <div key={day.date}>
                 <button
@@ -171,10 +179,18 @@ export function MeterSalesControl({ selectedDate }: Props) {
                     <span className={`text-xs font-semibold ${effectiveVar < 0 ? 'text-red-600' : effectiveVar > 0 ? 'text-amber-600' : 'text-green-600'}`}>
                       Var: {fmtV(effectiveVar)}L
                     </span>
+                    <span className={`text-xs ${dayCumVar < 0 ? 'text-red-600' : dayCumVar > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                      Cum: {fmtV(dayCumVar)}L
+                    </span>
                     {showManual && (
-                      <span className={`text-xs font-semibold ${!manualTotals.has ? 'text-muted-foreground' : manualTotals.var < 0 ? 'text-red-600' : manualTotals.var > 0 ? 'text-amber-600' : 'text-green-600'}`}>
-                        Var (Manual): {manualTotals.has ? `${fmtV(manualTotals.var)}L` : '—'}
-                      </span>
+                      <>
+                        <span className={`text-xs font-semibold ${!dayHasManual ? 'text-muted-foreground' : manualTotals.var < 0 ? 'text-red-600' : manualTotals.var > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+                          Var (Manual): {dayHasManual ? `${fmtV(manualTotals.var)}L` : '—'}
+                        </span>
+                        <span className={`text-xs ${dayCumManual < 0 ? 'text-red-600' : dayCumManual > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                          Cum (Manual): {fmtV(dayCumManual)}L
+                        </span>
+                      </>
                     )}
                   </span>
                 </button>
@@ -308,7 +324,8 @@ export function MeterSalesControl({ selectedDate }: Props) {
                 )}
               </div>
             );
-          })}
+          });
+          })()}
         </div>
       </div>
     </div>
