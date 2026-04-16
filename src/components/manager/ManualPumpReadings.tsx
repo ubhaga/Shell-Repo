@@ -92,11 +92,16 @@ export function ManualPumpReadings({ selectedDate }: Props) {
 
   const fmtV = (n: number) => n.toLocaleString('en-ZA', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
-  // Calculate volumes per pump
+  // Calculate volumes per pump (handle meter rollover at 1,000,000)
   const getVolume = (key: PumpKey) => {
     const today = currentReadings[key] ?? 0;
     const prev = prevReadings[key] ?? 0;
-    return today > 0 && prev > 0 ? today - prev : 0;
+    if (today <= 0 || prev <= 0) return 0;
+    if (today < prev) {
+      // Meter rolled over from 999999 → 0
+      return (1000000 - prev) + today;
+    }
+    return today - prev;
   };
 
   // Tank summary
