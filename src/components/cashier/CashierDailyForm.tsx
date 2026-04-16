@@ -136,6 +136,55 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
   const setShop = (patch: Partial<typeof form.shop>) => setForm((f) => ({ ...f, shop: { ...f.shop, ...patch } }));
   const setOpt = (patch: Partial<typeof form.opt>) => setForm((f) => ({ ...f, opt: { ...f.opt, ...patch } }));
 
+  // From 1 April 2026 onwards, cash payouts come from the uploaded day end report
+  // (Daily Takings Summary → Payouts × -1) and are not editable line-by-line.
+  const useDayEndPayouts = selectedDate >= DAY_END_PAYOUTS_CUTOFF;
+  const [dayEndPayoutsAmount, setDayEndPayoutsAmount] = useState<number | null>(null);
+  const [dayEndStatus, setDayEndStatus] = useState<"idle" | "loading" | "loaded" | "missing">("idle");
+
+  useEffect(() => {
+    if (!useDayEndPayouts) {
+      setDayEndPayoutsAmount(null);
+      setDayEndStatus("idle");
+      return;
+    }
+    let cancelled = false;
+    setDayEndStatus("loading");
+    (async () => {
+      const { data } = await supabase
+        .from("day_end_uploads")
+        .select("content")
+        .eq("date", selectedDate)
+        .maybeSingle();
+      if (cancelled) return;
+      const amt = data?.content ? extractDayEndPayouts(data.content) : null;
+      setDayEndPayoutsAmount(amt);
+      setDayEndStatus(amt != null ? "loaded" : "missing");
+    })();
+    return () => { cancelled = true; };
+  }, [selectedDate, useDayEndPayouts]);
+
+  // Sync the synthetic payout line into form.shop.payouts so all downstream
+  // calculations (recons, AFS, manager invoices) keep working.
+  useEffect(() => {
+    if (!useDayEndPayouts) return;
+    const target = dayEndPayoutsAmount ?? 0;
+    const current = form.shop.payouts;
+    const onlyDayEnd =
+      current.length === 1 &&
+      current[0].vendor === DAY_END_PAYOUT_VENDOR &&
+      Math.abs(current[0].amount - target) < 0.005;
+    if (onlyDayEnd && current.length === 1) return;
+    setForm((f) => ({
+      ...f,
+      shop: {
+        ...f.shop,
+        payouts: [{ id: "day-end-payouts", vendor: DAY_END_PAYOUT_VENDOR, amount: target }],
+      },
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useDayEndPayouts, dayEndPayoutsAmount, selectedDate]);
+
   // ---- CALCULATIONS ----
   const shopPayoutsTotal = form.shop.payouts.reduce((s, p) => s + p.amount, 0);
   const shopNetSales = form.shop.income - form.shop.returns - form.shop.returns_today;
