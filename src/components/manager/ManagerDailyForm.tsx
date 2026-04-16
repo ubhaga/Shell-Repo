@@ -9,6 +9,10 @@ import { Plus, Trash2, Save, AlertCircle, CheckCircle, Lock, ChevronLeft, Chevro
 import { toast } from "@/hooks/use-toast";
 import { format, subDays, addDays, parseISO, lastDayOfMonth, isSaturday } from "date-fns";
 import { ManualPumpReadings } from "./ManualPumpReadings";
+import { supabase } from "@/integrations/supabase/client";
+import { extractDayEndInvoiceTotals } from "@/lib/dayEndInvoiceTotals";
+
+const DAY_END_INVOICE_CUTOFF = "2026-04-01";
 
 // ---- Recursive chain helper ----
 // Walk forward from Jan 1 2026 to compute the TRUE effective closing balance for any date.
@@ -324,8 +328,62 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   const totalAllInvoices = payoutInvoiceTotal + eftInvoiceTotal;
   const totalAllVat = payoutVatTotal + eftVatTotal;
 
-  const invMatch = Math.abs(totalAllInvoices - form.branchDayEndTotal) < 0.5;
-  const vatMatch = Math.abs(totalAllVat - form.branchDayEndVat) < 1.0;
+  // From 1 April 2026: pull Branch Day End Total/VAT from the uploaded day-end report
+  // (EOD Creditors Transactions → "Total for : G.R.N. / TAX INVOICE").
+  const useDayEndInvoiceAuto = selectedDate >= DAY_END_INVOICE_CUTOFF;
+  const [dayEndInvoiceTotals, setDayEndInvoiceTotals] = useState<{ incl: number; vat: number } | null>(null);
+  const [dayEndInvoiceStatus, setDayEndInvoiceStatus] = useState<"idle" | "loading" | "loaded" | "missing">("idle");
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!useDayEndInvoiceAuto) {
+      setDayEndInvoiceTotals(null);
+      setDayEndInvoiceStatus("idle");
+      return;
+    }
+    setDayEndInvoiceStatus("loading");
+    (async () => {
+      const { data } = await supabase
+        .from("day_end_uploads")
+        .select("content")
+        .eq("date", selectedDate)
+        .maybeSingle();
+      if (cancelled) return;
+      const totals = data?.content ? extractDayEndInvoiceTotals(data.content) : null;
+      if (totals) {
+        setDayEndInvoiceTotals(totals);
+        setDayEndInvoiceStatus("loaded");
+      } else {
+        setDayEndInvoiceTotals(null);
+        setDayEndInvoiceStatus("missing");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDate, useDayEndInvoiceAuto]);
+
+  // Sync resolved totals into form so downstream logic + persistence keep working.
+  useEffect(() => {
+    if (!useDayEndInvoiceAuto) return;
+    const incl = dayEndInvoiceTotals?.incl ?? 0;
+    const vat = dayEndInvoiceTotals?.vat ?? 0;
+    setForm((f) =>
+      f.branchDayEndTotal === incl && f.branchDayEndVat === vat
+        ? f
+        : { ...f, branchDayEndTotal: incl, branchDayEndVat: vat },
+    );
+  }, [useDayEndInvoiceAuto, dayEndInvoiceTotals?.incl, dayEndInvoiceTotals?.vat]);
+
+  const branchDayEndTotalEffective = useDayEndInvoiceAuto
+    ? dayEndInvoiceTotals?.incl ?? 0
+    : form.branchDayEndTotal;
+  const branchDayEndVatEffective = useDayEndInvoiceAuto
+    ? dayEndInvoiceTotals?.vat ?? 0
+    : form.branchDayEndVat;
+
+  const invMatch = Math.abs(totalAllInvoices - branchDayEndTotalEffective) < 0.5;
+  const vatMatch = Math.abs(totalAllVat - branchDayEndVatEffective) < 1.0;
 
   // Daily Cashup pulled directly from Cashier form (read-only)
   // Cash Connect = Cash Connect Total (sum of Banking + EasyPay + Coins) from cashier
@@ -428,9 +486,11 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
       return;
     }
 
-    // 3. Branch Day End is mandatory if any invoices exist
+    // 3. Branch Day End is mandatory if any invoices exist (manual entry only — pre-April).
+    //    From 1 April 2026 onwards, Branch Day End Total/VAT come from the uploaded
+    //    day-end report (EOD Creditors Transactions) and are not user-entered.
     const hasAnyInvoices = form.payoutInvoices.length > 0 || form.eftInvoices.length > 0;
-    if (hasAnyInvoices) {
+    if (hasAnyInvoices && !useDayEndInvoiceAuto) {
       if (!form.branchDayEndTotal || form.branchDayEndTotal === 0) {
         toast({
           title: "Missing Branch Day End Total",
@@ -684,40 +744,63 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
           <CurrencyDisplay value={eftInvoiceTotal} />
         </DataRow>
         <DataRow label="TOTAL ALL INVOICES" total>
-          <CurrencyDisplay value={totalAllInvoices} highlight />
-        </DataRow>
-        <DataRow label="Total VAT" total>
-          <CurrencyDisplay value={totalAllVat} />
-        </DataRow>
-        <div className="border-t mt-1 pt-1">
-          <DataRow label="Branch Day End Total (enter)">
-            <CurrencyInput
-              value={form.branchDayEndTotal}
-              onChange={(v) => setForm((f) => ({ ...f, branchDayEndTotal: v }))}
-            />
-          </DataRow>
-          <DataRow label="Branch Day End VAT (enter)">
-            <CurrencyInput
-              value={form.branchDayEndVat}
-              onChange={(v) => setForm((f) => ({ ...f, branchDayEndVat: v }))}
-            />
-          </DataRow>
-          <div className="px-3 py-2 flex gap-3 text-sm">
-            <div className={`flex items-center gap-1.5 rounded px-2 py-1 ${invMatch ? "status-green" : "status-red"}`}>
+          <div className="flex items-center justify-end gap-3">
+            <CurrencyDisplay value={totalAllInvoices} highlight />
+            <div className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs ${invMatch ? "status-green" : "status-red"}`}>
               {invMatch ? <CheckCircle className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
-              Total:{" "}
               {invMatch
                 ? "MATCH"
-                : `Diff ${new Intl.NumberFormat("en-ZA", { minimumFractionDigits: 2 }).format(Math.abs(totalAllInvoices - form.branchDayEndTotal))}`}
-            </div>
-            <div className={`flex items-center gap-1.5 rounded px-2 py-1 ${vatMatch ? "status-green" : "status-red"}`}>
-              {vatMatch ? <CheckCircle className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
-              VAT:{" "}
-              {vatMatch
-                ? "MATCH"
-                : `Diff ${new Intl.NumberFormat("en-ZA", { minimumFractionDigits: 2 }).format(Math.abs(totalAllVat - form.branchDayEndVat))}`}
+                : `Diff ${new Intl.NumberFormat("en-ZA", { minimumFractionDigits: 2 }).format(Math.abs(totalAllInvoices - branchDayEndTotalEffective))}`}
             </div>
           </div>
+        </DataRow>
+        <DataRow label="Total VAT" total>
+          <div className="flex items-center justify-end gap-3">
+            <CurrencyDisplay value={totalAllVat} />
+            <div className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs ${vatMatch ? "status-green" : "status-red"}`}>
+              {vatMatch ? <CheckCircle className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
+              {vatMatch
+                ? "MATCH"
+                : `Diff ${new Intl.NumberFormat("en-ZA", { minimumFractionDigits: 2 }).format(Math.abs(totalAllVat - branchDayEndVatEffective))}`}
+            </div>
+          </div>
+        </DataRow>
+        <div className="border-t mt-1 pt-1">
+          {!useDayEndInvoiceAuto && (
+            <>
+              <DataRow label="Branch Day End Total (enter)">
+                <CurrencyInput
+                  value={form.branchDayEndTotal}
+                  onChange={(v) => setForm((f) => ({ ...f, branchDayEndTotal: v }))}
+                />
+              </DataRow>
+              <DataRow label="Branch Day End VAT (enter)">
+                <CurrencyInput
+                  value={form.branchDayEndVat}
+                  onChange={(v) => setForm((f) => ({ ...f, branchDayEndVat: v }))}
+                />
+              </DataRow>
+            </>
+          )}
+          {useDayEndInvoiceAuto && (
+            <>
+              <DataRow label="Branch Day End Total (from Day End upload)">
+                <CurrencyDisplay value={branchDayEndTotalEffective} />
+              </DataRow>
+              <DataRow label="Branch Day End VAT (from Day End upload)">
+                <CurrencyDisplay value={branchDayEndVatEffective} />
+              </DataRow>
+              {dayEndInvoiceStatus === "missing" && (
+                <div className="px-3 py-1.5 text-xs text-destructive flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  No Day End report uploaded for this date — totals default to 0. Upload the day-end .rpt to populate.
+                </div>
+              )}
+              {dayEndInvoiceStatus === "loading" && (
+                <div className="px-3 py-1.5 text-xs text-muted-foreground">Loading from Day End upload…</div>
+              )}
+            </>
+          )}
           <div className="border-t mt-1 pt-2 pb-2 px-3">
             <label className="text-xs text-muted-foreground font-medium">Explanations / Notes</label>
             <input
