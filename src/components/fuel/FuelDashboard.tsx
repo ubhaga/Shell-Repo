@@ -99,7 +99,7 @@ export function FuelDashboard({ selectedDate }: Props) {
   if (loading) return <div className="py-8 text-center text-muted-foreground text-sm">Loading...</div>;
   if (days.length === 0) return <div className="py-8 text-center text-muted-foreground text-sm">No fuel data found. Upload Day End Reports first.</div>;
 
-  const fmtV = (n: number) => n.toLocaleString('en-ZA', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  const fmtV = (n: number) => n.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const getVarColor = (n: number, threshold = 5) =>
     Math.abs(n) > threshold ? 'text-red-600' : Math.abs(n) > 1 ? 'text-amber-600' : 'text-green-600';

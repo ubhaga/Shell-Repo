@@ -45,7 +45,7 @@ export function PosSalesPerTank({ selectedDate }: Props) {
   if (dayData.length === 0) return <div className="py-8 text-center text-muted-foreground text-sm">No POS fuel sales data found. Upload Day End Reports first.</div>;
 
   const fmtN = (n: number) => n.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const fmtV = (n: number) => n.toLocaleString('en-ZA', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  const fmtV = (n: number) => n.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
     <div className="space-y-4">
