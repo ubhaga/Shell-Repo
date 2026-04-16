@@ -766,40 +766,14 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
           </div>
         </DataRow>
         <div className="border-t mt-1 pt-1">
-          {!useDayEndInvoiceAuto && (
-            <>
-              <DataRow label="Branch Day End Total (enter)">
-                <CurrencyInput
-                  value={form.branchDayEndTotal}
-                  onChange={(v) => setForm((f) => ({ ...f, branchDayEndTotal: v }))}
-                />
-              </DataRow>
-              <DataRow label="Branch Day End VAT (enter)">
-                <CurrencyInput
-                  value={form.branchDayEndVat}
-                  onChange={(v) => setForm((f) => ({ ...f, branchDayEndVat: v }))}
-                />
-              </DataRow>
-            </>
+          {useDayEndInvoiceAuto && dayEndInvoiceStatus === "missing" && (
+            <div className="px-3 py-1.5 text-xs text-destructive flex items-center gap-1.5">
+              <AlertCircle className="h-3.5 w-3.5" />
+              No Day End report uploaded for this date — Branch Day End totals default to 0. Upload the day-end .rpt to populate.
+            </div>
           )}
-          {useDayEndInvoiceAuto && (
-            <>
-              <DataRow label="Branch Day End Total (from Day End upload)">
-                <CurrencyDisplay value={branchDayEndTotalEffective} />
-              </DataRow>
-              <DataRow label="Branch Day End VAT (from Day End upload)">
-                <CurrencyDisplay value={branchDayEndVatEffective} />
-              </DataRow>
-              {dayEndInvoiceStatus === "missing" && (
-                <div className="px-3 py-1.5 text-xs text-destructive flex items-center gap-1.5">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  No Day End report uploaded for this date — totals default to 0. Upload the day-end .rpt to populate.
-                </div>
-              )}
-              {dayEndInvoiceStatus === "loading" && (
-                <div className="px-3 py-1.5 text-xs text-muted-foreground">Loading from Day End upload…</div>
-              )}
-            </>
+          {useDayEndInvoiceAuto && dayEndInvoiceStatus === "loading" && (
+            <div className="px-3 py-1.5 text-xs text-muted-foreground">Loading Branch Day End from upload…</div>
           )}
           <div className="border-t mt-1 pt-2 pb-2 px-3">
             <label className="text-xs text-muted-foreground font-medium">Explanations / Notes</label>
