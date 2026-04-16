@@ -176,18 +176,18 @@ export function MeterSalesControl({ selectedDate }: Props) {
                 >
                   <span className="font-medium">{format(new Date(day.date), 'EEE dd MMM')}</span>
                   <span className="text-xs text-muted-foreground tabular-nums w-20 text-right">{day.rows.length} pumps</span>
-                  <span className={`text-xs font-semibold tabular-nums w-32 text-right ${effectiveVar < 0 ? 'text-red-600' : effectiveVar > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+                  <span className="text-xs font-semibold tabular-nums w-32 text-right text-amber-700">
                     Var: {fmtV(effectiveVar)}L
                   </span>
-                  <span className={`text-xs font-semibold tabular-nums w-32 text-right ${dayCumVar < 0 ? 'text-rose-700' : dayCumVar > 0 ? 'text-orange-700' : 'text-muted-foreground'}`}>
+                  <span className="text-xs font-semibold tabular-nums w-32 text-right text-amber-700">
                     Cum: {fmtV(dayCumVar)}L
                   </span>
                   {showManual ? (
                     <>
-                      <span className={`text-xs font-semibold tabular-nums w-40 text-right ${!dayHasManual ? 'text-muted-foreground' : manualTotals.var < 0 ? 'text-blue-600' : manualTotals.var > 0 ? 'text-purple-600' : 'text-green-600'}`}>
+                      <span className="text-xs font-semibold tabular-nums w-40 text-right text-blue-700">
                         Var (Manual): {dayHasManual ? `${fmtV(manualTotals.var)}L` : '—'}
                       </span>
-                      <span className={`text-xs font-semibold tabular-nums w-40 text-right ${dayCumManual < 0 ? 'text-blue-800' : dayCumManual > 0 ? 'text-purple-800' : 'text-muted-foreground'}`}>
+                      <span className="text-xs font-semibold tabular-nums w-40 text-right text-blue-700">
                         Cum (Manual): {fmtV(dayCumManual)}L
                       </span>
                     </>
