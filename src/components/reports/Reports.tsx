@@ -638,7 +638,7 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
           <div className="bg-card border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
               <h3 className="font-semibold text-sm">Detailed Payouts — {monthLabel}</h3>
-              <Button size="sm" variant="outline" onClick={() => exportCSV(payoutReport.map(({status, ...rest}) => ({...rest, invoice: status === 'matched' ? 'Yes' : status === 'matched-other-day' ? 'Yes (diff day)' : 'No'})), `payouts-${filterMonth}.csv`)}>
+              <Button size="sm" variant="outline" onClick={() => exportCSV(payoutReport.map(({status, ...rest}) => ({...rest, cashierPayout: status === 'matched' ? 'Yes' : status === 'matched-other-day' ? 'Yes (diff day)' : 'No'})), `payouts-${filterMonth}.csv`)}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
             </div>
@@ -646,22 +646,23 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
-                  <TableHead>Cashier</TableHead>
-                  <TableHead>Vendor</TableHead>
+                  <TableHead>Supplier</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Amount (Incl.)</TableHead>
-                  <TableHead className="text-center">Invoice</TableHead>
+                  <TableHead>Doc No.</TableHead>
+                  <TableHead className="text-right">Excl.</TableHead>
+                  <TableHead className="text-right">VAT</TableHead>
+                  <TableHead className="text-right">Incl.</TableHead>
+                  <TableHead className="text-center">Cashier Payout</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {payoutReport.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No payout data for this month</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No payout invoices for this month</TableCell></TableRow>
                 ) : (
                   <>
                     {payoutReport.map((r, i) => (
                       <TableRow key={i}>
                         <TableCell className="text-sm">{formatDate(r.date)}</TableCell>
-                        <TableCell className="text-sm">{r.cashier}</TableCell>
                         <TableCell className="text-sm">
                           {onNavigateToDate ? (
                             <button
@@ -675,12 +676,15 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
                                 }, 200);
                               }}
                             >
-                              {r.vendor}
+                              {r.supplier || '—'}
                             </button>
-                          ) : r.vendor}
+                          ) : (r.supplier || '—')}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{r.category || '—'}</TableCell>
-                        <TableCell className="text-right"><CurrencyDisplay value={r.amount} /></TableCell>
+                        <TableCell className="text-sm">{r.docNum || '—'}</TableCell>
+                        <TableCell className="text-right"><CurrencyDisplay value={r.excl} /></TableCell>
+                        <TableCell className="text-right"><CurrencyDisplay value={r.vat} /></TableCell>
+                        <TableCell className="text-right"><CurrencyDisplay value={r.inclusive} /></TableCell>
                         <TableCell className="text-center">
                           {r.status === 'matched'
                             ? <span className="text-green-600 font-bold">✓</span>
@@ -691,8 +695,11 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
                       </TableRow>
                     ))}
                     <TableRow className="bg-secondary font-semibold">
-                      <TableCell colSpan={5}>TOTAL</TableCell>
+                      <TableCell colSpan={4}>TOTAL</TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={payoutExclTotal} highlight /></TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={payoutVatTotal} highlight /></TableCell>
                       <TableCell className="text-right"><CurrencyDisplay value={payoutTotal} highlight /></TableCell>
+                      <TableCell />
                     </TableRow>
                   </>
                 )}
@@ -714,23 +721,24 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
                     {(() => {
                       const catTotals = payoutReport.reduce((acc, r) => {
                         const cat = r.category || 'Uncategorised';
-                        acc[cat] = (acc[cat] || 0) + r.amount;
+                        if (!acc[cat]) acc[cat] = { incl: 0, vat: 0 };
+                        acc[cat].incl += r.inclusive;
+                        acc[cat].vat += r.vat;
                         return acc;
-                      }, {} as Record<string, number>);
-                      const sorted = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
-                      const grandIncl = sorted.reduce((s, [, v]) => s + v, 0);
-                      const grandVat = grandIncl * 15 / 115;
+                      }, {} as Record<string, { incl: number; vat: number }>);
+                      const sorted = Object.entries(catTotals).sort((a, b) => b[1].incl - a[1].incl);
+                      const grandIncl = sorted.reduce((s, [, v]) => s + v.incl, 0);
+                      const grandVat = sorted.reduce((s, [, v]) => s + v.vat, 0);
                       const grandExcl = grandIncl - grandVat;
                       return (
                         <>
-                          {sorted.map(([cat, incl]) => {
-                            const vat = incl * 15 / 115;
-                            const excl = incl - vat;
+                          {sorted.map(([cat, v]) => {
+                            const excl = v.incl - v.vat;
                             return (
                               <TableRow key={cat}>
                                 <TableCell className="text-sm">{cat}</TableCell>
-                                <TableCell className="text-right"><CurrencyDisplay value={incl} /></TableCell>
-                                <TableCell className="text-right"><CurrencyDisplay value={vat} /></TableCell>
+                                <TableCell className="text-right"><CurrencyDisplay value={v.incl} /></TableCell>
+                                <TableCell className="text-right"><CurrencyDisplay value={v.vat} /></TableCell>
                                 <TableCell className="text-right"><CurrencyDisplay value={excl} /></TableCell>
                               </TableRow>
                             );
