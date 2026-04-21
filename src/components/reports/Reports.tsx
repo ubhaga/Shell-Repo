@@ -168,74 +168,62 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
     }
   };
 
-  // Build lookup: vendor -> array of dates with invoices (and categories)
-  const managerPayoutByVendor = new Map<string, Map<string, { count: number; categories: string[] }>>();
-  monthManagers.forEach(e => {
-    e.payoutInvoices.forEach(inv => {
-      const vendor = inv.supplier.toLowerCase().trim();
-      if (!managerPayoutByVendor.has(vendor)) managerPayoutByVendor.set(vendor, new Map());
-      const dateMap = managerPayoutByVendor.get(vendor)!;
-      const existing = dateMap.get(e.date) ?? { count: 0, categories: [] };
-      existing.count += 1;
-      existing.categories.push(inv.category || '');
-      dateMap.set(e.date, existing);
+  // Build cashier payout lookup: vendor -> date -> remaining count
+  // Used to flag whether each manager invoice line has a matching cashier payout
+  const cashierPayoutByVendor = new Map<string, Map<string, number>>();
+  monthCashups.forEach(c => {
+    c.shop.payouts.forEach(p => {
+      const vendor = p.vendor.toLowerCase().trim();
+      if (!vendor || p.amount === 0) return;
+      if (!cashierPayoutByVendor.has(vendor)) cashierPayoutByVendor.set(vendor, new Map());
+      const dateMap = cashierPayoutByVendor.get(vendor)!;
+      dateMap.set(c.date, (dateMap.get(c.date) ?? 0) + 1);
     });
+    if (c.shop.lottoPayouts > 0) {
+      const v = 'lotto';
+      if (!cashierPayoutByVendor.has(v)) cashierPayoutByVendor.set(v, new Map());
+      const dm = cashierPayoutByVendor.get(v)!;
+      dm.set(c.date, (dm.get(c.date) ?? 0) + 1);
+    }
   });
-  // Track consumption: vendor+date -> consumed count
-  const invoiceConsumed = new Map<string, number>();
 
   type MatchStatus = 'matched' | 'matched-other-day' | 'unmatched';
 
-  const matchPayout = (payoutDate: string, vendor: string): { status: MatchStatus; category: string } => {
-    const v = vendor.toLowerCase().trim();
-    const dateMap = managerPayoutByVendor.get(v);
-    if (!dateMap) return { status: 'unmatched', category: '' };
-    // Try same-day first
-    const sameKey = `${v}|${payoutDate}`;
-    const sameEntry = dateMap.get(payoutDate);
-    const sameAvail = sameEntry ? sameEntry.count - (invoiceConsumed.get(sameKey) ?? 0) : 0;
+  const matchInvoiceToCashier = (invoiceDate: string, supplier: string): MatchStatus => {
+    const v = supplier.toLowerCase().trim();
+    if (!v) return 'unmatched';
+    const dateMap = cashierPayoutByVendor.get(v);
+    if (!dateMap) return 'unmatched';
+    const sameAvail = dateMap.get(invoiceDate) ?? 0;
     if (sameAvail > 0) {
-      const idx = invoiceConsumed.get(sameKey) ?? 0;
-      invoiceConsumed.set(sameKey, idx + 1);
-      return { status: 'matched', category: sameEntry!.categories[idx] || '' };
+      dateMap.set(invoiceDate, sameAvail - 1);
+      return 'matched';
     }
-    // Try other days
-    for (const [date, entry] of dateMap) {
-      const otherKey = `${v}|${date}`;
-      const idx = invoiceConsumed.get(otherKey) ?? 0;
-      const otherAvail = entry.count - idx;
-      if (otherAvail > 0) {
-        invoiceConsumed.set(otherKey, idx + 1);
-        return { status: 'matched-other-day', category: entry.categories[idx] || '' };
+    for (const [date, count] of dateMap) {
+      if (count > 0) {
+        dateMap.set(date, count - 1);
+        return 'matched-other-day';
       }
     }
-    return { status: 'unmatched', category: '' };
+    return 'unmatched';
   };
 
-  const payoutReport = monthCashups.flatMap(c =>
-    c.shop.payouts.map(p => {
-      const match = matchPayout(c.date, p.vendor);
-      return {
-        date: c.date,
-        cashier: c.cashierName,
-        vendor: p.vendor,
-        category: match.category,
-        amount: p.amount,
-        status: match.status as MatchStatus,
-      };
-    })
-  ).concat(monthCashups.map(c => {
-    const match = matchPayout(c.date, 'Lotto');
-    return {
-      date: c.date,
-      cashier: c.cashierName,
-      vendor: 'Lotto',
-      category: match.category,
-      amount: c.shop.lottoPayouts,
-      status: match.status as MatchStatus,
-    };
-  }).filter(r => r.amount > 0));
-  const payoutTotal = payoutReport.reduce((s, r) => s + r.amount, 0);
+  // Detailed payout report — sourced from Manager Daily 1.1 Payout Invoices
+  const payoutReport = monthManagers.flatMap(e =>
+    e.payoutInvoices.map(inv => ({
+      date: e.date,
+      supplier: inv.supplier,
+      category: inv.category,
+      docNum: inv.branchDocNum,
+      inclusive: inv.inclusive,
+      vat: inv.vat,
+      excl: inv.inclusive - inv.vat,
+      status: matchInvoiceToCashier(e.date, inv.supplier) as MatchStatus,
+    })),
+  );
+  const payoutTotal = payoutReport.reduce((s, r) => s + r.inclusive, 0);
+  const payoutVatTotal = payoutReport.reduce((s, r) => s + r.vat, 0);
+  const payoutExclTotal = payoutTotal - payoutVatTotal;
 
   // Receipts report
   const receiptsReport = monthCashups.flatMap(c =>
