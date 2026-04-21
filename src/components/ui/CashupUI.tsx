@@ -74,6 +74,7 @@ interface SectionProps {
   title: string;
   children: React.ReactNode;
   color?: 'blue' | 'red' | 'green' | 'purple' | 'orange' | 'default';
+  id?: string;
 }
 
 const colorMap = {
@@ -85,9 +86,9 @@ const colorMap = {
   default: 'bg-primary text-primary-foreground',
 };
 
-export function Section({ title, children, color = 'default' }: SectionProps) {
+export function Section({ title, children, color = 'default', id }: SectionProps) {
   return (
-    <div className="mb-3">
+    <div className="mb-3" id={id}>
       <div className={cn('px-3 py-2 rounded-t-md font-semibold text-sm', colorMap[color])}>{title}</div>
       <div className="border border-t-0 rounded-b-md">{children}</div>
     </div>

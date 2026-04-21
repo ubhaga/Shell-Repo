@@ -708,7 +708,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
       )}
 
       {/* 1.1 Payout Invoices */}
-      <Section title="1.1 Payout Invoices (to enter on branch system)" color="red">
+      <Section id="payout-invoices" title="1.1 Payout Invoices (to enter on branch system)" color="red">
         <InvoiceTable
           lines={form.payoutInvoices}
           supplierList={SUPPLIERS}
