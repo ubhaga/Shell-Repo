@@ -679,7 +679,13 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
                             <button
                               type="button"
                               className="text-primary underline hover:text-primary/80 cursor-pointer text-left"
-                              onClick={() => onNavigateToDate(r.date)}
+                              onClick={() => {
+                                onNavigateToDate(r.date);
+                                setTimeout(() => {
+                                  const el = document.getElementById('payout-invoices');
+                                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }, 200);
+                              }}
                             >
                               {r.vendor}
                             </button>
