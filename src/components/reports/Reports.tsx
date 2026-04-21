@@ -168,74 +168,62 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
     }
   };
 
-  // Build lookup: vendor -> array of dates with invoices (and categories)
-  const managerPayoutByVendor = new Map<string, Map<string, { count: number; categories: string[] }>>();
-  monthManagers.forEach(e => {
-    e.payoutInvoices.forEach(inv => {
-      const vendor = inv.supplier.toLowerCase().trim();
-      if (!managerPayoutByVendor.has(vendor)) managerPayoutByVendor.set(vendor, new Map());
-      const dateMap = managerPayoutByVendor.get(vendor)!;
-      const existing = dateMap.get(e.date) ?? { count: 0, categories: [] };
-      existing.count += 1;
-      existing.categories.push(inv.category || '');
-      dateMap.set(e.date, existing);
+  // Build cashier payout lookup: vendor -> date -> remaining count
+  // Used to flag whether each manager invoice line has a matching cashier payout
+  const cashierPayoutByVendor = new Map<string, Map<string, number>>();
+  monthCashups.forEach(c => {
+    c.shop.payouts.forEach(p => {
+      const vendor = p.vendor.toLowerCase().trim();
+      if (!vendor || p.amount === 0) return;
+      if (!cashierPayoutByVendor.has(vendor)) cashierPayoutByVendor.set(vendor, new Map());
+      const dateMap = cashierPayoutByVendor.get(vendor)!;
+      dateMap.set(c.date, (dateMap.get(c.date) ?? 0) + 1);
     });
+    if (c.shop.lottoPayouts > 0) {
+      const v = 'lotto';
+      if (!cashierPayoutByVendor.has(v)) cashierPayoutByVendor.set(v, new Map());
+      const dm = cashierPayoutByVendor.get(v)!;
+      dm.set(c.date, (dm.get(c.date) ?? 0) + 1);
+    }
   });
-  // Track consumption: vendor+date -> consumed count
-  const invoiceConsumed = new Map<string, number>();
 
   type MatchStatus = 'matched' | 'matched-other-day' | 'unmatched';
 
-  const matchPayout = (payoutDate: string, vendor: string): { status: MatchStatus; category: string } => {
-    const v = vendor.toLowerCase().trim();
-    const dateMap = managerPayoutByVendor.get(v);
-    if (!dateMap) return { status: 'unmatched', category: '' };
-    // Try same-day first
-    const sameKey = `${v}|${payoutDate}`;
-    const sameEntry = dateMap.get(payoutDate);
-    const sameAvail = sameEntry ? sameEntry.count - (invoiceConsumed.get(sameKey) ?? 0) : 0;
+  const matchInvoiceToCashier = (invoiceDate: string, supplier: string): MatchStatus => {
+    const v = supplier.toLowerCase().trim();
+    if (!v) return 'unmatched';
+    const dateMap = cashierPayoutByVendor.get(v);
+    if (!dateMap) return 'unmatched';
+    const sameAvail = dateMap.get(invoiceDate) ?? 0;
     if (sameAvail > 0) {
-      const idx = invoiceConsumed.get(sameKey) ?? 0;
-      invoiceConsumed.set(sameKey, idx + 1);
-      return { status: 'matched', category: sameEntry!.categories[idx] || '' };
+      dateMap.set(invoiceDate, sameAvail - 1);
+      return 'matched';
     }
-    // Try other days
-    for (const [date, entry] of dateMap) {
-      const otherKey = `${v}|${date}`;
-      const idx = invoiceConsumed.get(otherKey) ?? 0;
-      const otherAvail = entry.count - idx;
-      if (otherAvail > 0) {
-        invoiceConsumed.set(otherKey, idx + 1);
-        return { status: 'matched-other-day', category: entry.categories[idx] || '' };
+    for (const [date, count] of dateMap) {
+      if (count > 0) {
+        dateMap.set(date, count - 1);
+        return 'matched-other-day';
       }
     }
-    return { status: 'unmatched', category: '' };
+    return 'unmatched';
   };
 
-  const payoutReport = monthCashups.flatMap(c =>
-    c.shop.payouts.map(p => {
-      const match = matchPayout(c.date, p.vendor);
-      return {
-        date: c.date,
-        cashier: c.cashierName,
-        vendor: p.vendor,
-        category: match.category,
-        amount: p.amount,
-        status: match.status as MatchStatus,
-      };
-    })
-  ).concat(monthCashups.map(c => {
-    const match = matchPayout(c.date, 'Lotto');
-    return {
-      date: c.date,
-      cashier: c.cashierName,
-      vendor: 'Lotto',
-      category: match.category,
-      amount: c.shop.lottoPayouts,
-      status: match.status as MatchStatus,
-    };
-  }).filter(r => r.amount > 0));
-  const payoutTotal = payoutReport.reduce((s, r) => s + r.amount, 0);
+  // Detailed payout report — sourced from Manager Daily 1.1 Payout Invoices
+  const payoutReport = monthManagers.flatMap(e =>
+    e.payoutInvoices.map(inv => ({
+      date: e.date,
+      supplier: inv.supplier,
+      category: inv.category,
+      docNum: inv.branchDocNum,
+      inclusive: inv.inclusive,
+      vat: inv.vat,
+      excl: inv.inclusive - inv.vat,
+      status: matchInvoiceToCashier(e.date, inv.supplier) as MatchStatus,
+    })),
+  );
+  const payoutTotal = payoutReport.reduce((s, r) => s + r.inclusive, 0);
+  const payoutVatTotal = payoutReport.reduce((s, r) => s + r.vat, 0);
+  const payoutExclTotal = payoutTotal - payoutVatTotal;
 
   // Receipts report
   const receiptsReport = monthCashups.flatMap(c =>
@@ -650,7 +638,7 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
           <div className="bg-card border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
               <h3 className="font-semibold text-sm">Detailed Payouts — {monthLabel}</h3>
-              <Button size="sm" variant="outline" onClick={() => exportCSV(payoutReport.map(({status, ...rest}) => ({...rest, invoice: status === 'matched' ? 'Yes' : status === 'matched-other-day' ? 'Yes (diff day)' : 'No'})), `payouts-${filterMonth}.csv`)}>
+              <Button size="sm" variant="outline" onClick={() => exportCSV(payoutReport.map(({status, ...rest}) => ({...rest, cashierPayout: status === 'matched' ? 'Yes' : status === 'matched-other-day' ? 'Yes (diff day)' : 'No'})), `payouts-${filterMonth}.csv`)}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
             </div>
@@ -658,22 +646,23 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
-                  <TableHead>Cashier</TableHead>
-                  <TableHead>Vendor</TableHead>
+                  <TableHead>Supplier</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Amount (Incl.)</TableHead>
-                  <TableHead className="text-center">Invoice</TableHead>
+                  <TableHead>Doc No.</TableHead>
+                  <TableHead className="text-right">Excl.</TableHead>
+                  <TableHead className="text-right">VAT</TableHead>
+                  <TableHead className="text-right">Incl.</TableHead>
+                  <TableHead className="text-center">Cashier Payout</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {payoutReport.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No payout data for this month</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No payout invoices for this month</TableCell></TableRow>
                 ) : (
                   <>
                     {payoutReport.map((r, i) => (
                       <TableRow key={i}>
                         <TableCell className="text-sm">{formatDate(r.date)}</TableCell>
-                        <TableCell className="text-sm">{r.cashier}</TableCell>
                         <TableCell className="text-sm">
                           {onNavigateToDate ? (
                             <button
@@ -687,12 +676,15 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
                                 }, 200);
                               }}
                             >
-                              {r.vendor}
+                              {r.supplier || '—'}
                             </button>
-                          ) : r.vendor}
+                          ) : (r.supplier || '—')}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{r.category || '—'}</TableCell>
-                        <TableCell className="text-right"><CurrencyDisplay value={r.amount} /></TableCell>
+                        <TableCell className="text-sm">{r.docNum || '—'}</TableCell>
+                        <TableCell className="text-right"><CurrencyDisplay value={r.excl} /></TableCell>
+                        <TableCell className="text-right"><CurrencyDisplay value={r.vat} /></TableCell>
+                        <TableCell className="text-right"><CurrencyDisplay value={r.inclusive} /></TableCell>
                         <TableCell className="text-center">
                           {r.status === 'matched'
                             ? <span className="text-green-600 font-bold">✓</span>
@@ -703,8 +695,11 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
                       </TableRow>
                     ))}
                     <TableRow className="bg-secondary font-semibold">
-                      <TableCell colSpan={5}>TOTAL</TableCell>
+                      <TableCell colSpan={4}>TOTAL</TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={payoutExclTotal} highlight /></TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={payoutVatTotal} highlight /></TableCell>
                       <TableCell className="text-right"><CurrencyDisplay value={payoutTotal} highlight /></TableCell>
+                      <TableCell />
                     </TableRow>
                   </>
                 )}
@@ -726,23 +721,24 @@ export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'report
                     {(() => {
                       const catTotals = payoutReport.reduce((acc, r) => {
                         const cat = r.category || 'Uncategorised';
-                        acc[cat] = (acc[cat] || 0) + r.amount;
+                        if (!acc[cat]) acc[cat] = { incl: 0, vat: 0 };
+                        acc[cat].incl += r.inclusive;
+                        acc[cat].vat += r.vat;
                         return acc;
-                      }, {} as Record<string, number>);
-                      const sorted = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
-                      const grandIncl = sorted.reduce((s, [, v]) => s + v, 0);
-                      const grandVat = grandIncl * 15 / 115;
+                      }, {} as Record<string, { incl: number; vat: number }>);
+                      const sorted = Object.entries(catTotals).sort((a, b) => b[1].incl - a[1].incl);
+                      const grandIncl = sorted.reduce((s, [, v]) => s + v.incl, 0);
+                      const grandVat = sorted.reduce((s, [, v]) => s + v.vat, 0);
                       const grandExcl = grandIncl - grandVat;
                       return (
                         <>
-                          {sorted.map(([cat, incl]) => {
-                            const vat = incl * 15 / 115;
-                            const excl = incl - vat;
+                          {sorted.map(([cat, v]) => {
+                            const excl = v.incl - v.vat;
                             return (
                               <TableRow key={cat}>
                                 <TableCell className="text-sm">{cat}</TableCell>
-                                <TableCell className="text-right"><CurrencyDisplay value={incl} /></TableCell>
-                                <TableCell className="text-right"><CurrencyDisplay value={vat} /></TableCell>
+                                <TableCell className="text-right"><CurrencyDisplay value={v.incl} /></TableCell>
+                                <TableCell className="text-right"><CurrencyDisplay value={v.vat} /></TableCell>
                                 <TableCell className="text-right"><CurrencyDisplay value={excl} /></TableCell>
                               </TableRow>
                             );
