@@ -74,6 +74,7 @@ interface SectionProps {
   title: string;
   children: React.ReactNode;
   color?: 'blue' | 'red' | 'green' | 'purple' | 'orange' | 'default';
+  id?: string;
 }
 
 const colorMap = {
