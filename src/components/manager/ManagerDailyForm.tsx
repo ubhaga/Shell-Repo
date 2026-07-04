@@ -529,7 +529,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
     if (showLottoComm && form.lottoComm === 0) {
       toast({
         title: "Missing Lotto Commission",
-        description: "Lotto Commission is mandatory every Saturday.",
+        description: "Lotto Commission is mandatory every Monday.",
         variant: "destructive",
       });
       return;
