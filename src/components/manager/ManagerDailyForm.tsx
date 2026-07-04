@@ -1018,7 +1018,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
           )}
           {showLottoComm && (
             <>
-              <DataRow label="3.3 Total Sales Comm (Saturday)">
+              <DataRow label="3.3 Total Sales Comm (Monday)">
                 <CurrencyInput
                   value={form.lottoNetSalesComm}
                   onChange={(v) => setForm((f) => ({ ...f, lottoNetSalesComm: v, lottoComm: v + f.lottoPayoutComm }))}
@@ -1026,7 +1026,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
                   allowNegative
                 />
               </DataRow>
-              <DataRow label="3.3 Total Payout Comm (Saturday)">
+              <DataRow label="3.3 Total Payout Comm (Monday)">
                 <CurrencyInput
                   value={form.lottoPayoutComm}
                   onChange={(v) => setForm((f) => ({ ...f, lottoPayoutComm: v, lottoComm: f.lottoNetSalesComm + v }))}
