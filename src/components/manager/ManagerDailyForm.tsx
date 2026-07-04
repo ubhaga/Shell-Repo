@@ -7,7 +7,7 @@ import { Section, DataRow, CurrencyInput, CurrencyDisplay } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Save, AlertCircle, CheckCircle, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { format, subDays, addDays, parseISO, lastDayOfMonth, isSaturday } from "date-fns";
+import { format, subDays, addDays, parseISO, lastDayOfMonth, isMonday } from "date-fns";
 import { ManualPumpReadings } from "./ManualPumpReadings";
 import { supabase } from "@/integrations/supabase/client";
 import { extractDayEndInvoiceTotals } from "@/lib/dayEndInvoiceTotals";
