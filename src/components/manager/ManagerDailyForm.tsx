@@ -7,7 +7,7 @@ import { Section, DataRow, CurrencyInput, CurrencyDisplay } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Save, AlertCircle, CheckCircle, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { format, subDays, addDays, parseISO, lastDayOfMonth, isSaturday } from "date-fns";
+import { format, subDays, addDays, parseISO, lastDayOfMonth, isMonday } from "date-fns";
 import { ManualPumpReadings } from "./ManualPumpReadings";
 import { supabase } from "@/integrations/supabase/client";
 import { extractDayEndInvoiceTotals } from "@/lib/dayEndInvoiceTotals";
@@ -419,10 +419,10 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   const selectedParsed = parseISO(selectedDate);
   const isFirstOfMonth = selectedParsed.getDate() === 1;
   const isLastOfMonth = format(lastDayOfMonth(selectedParsed), "yyyy-MM-dd") === selectedDate;
-  const isSat = isSaturday(selectedParsed);
+  const isMon = isMonday(selectedParsed);
   const showBlueLabelComm = isFirstOfMonth;
   const showEasypayComm = isLastOfMonth;
-  const showLottoComm = isSat;
+  const showLottoComm = isMon;
 
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
@@ -529,7 +529,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
     if (showLottoComm && form.lottoComm === 0) {
       toast({
         title: "Missing Lotto Commission",
-        description: "Lotto Commission is mandatory every Saturday.",
+        description: "Lotto Commission is mandatory every Monday.",
         variant: "destructive",
       });
       return;
@@ -1018,7 +1018,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
           )}
           {showLottoComm && (
             <>
-              <DataRow label="3.3 Total Sales Comm (Saturday)">
+              <DataRow label="3.3 Total Sales Comm (Monday)">
                 <CurrencyInput
                   value={form.lottoNetSalesComm}
                   onChange={(v) => setForm((f) => ({ ...f, lottoNetSalesComm: v, lottoComm: v + f.lottoPayoutComm }))}
@@ -1026,7 +1026,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
                   allowNegative
                 />
               </DataRow>
-              <DataRow label="3.3 Total Payout Comm (Saturday)">
+              <DataRow label="3.3 Total Payout Comm (Monday)">
                 <CurrencyInput
                   value={form.lottoPayoutComm}
                   onChange={(v) => setForm((f) => ({ ...f, lottoPayoutComm: v, lottoComm: f.lottoNetSalesComm + v }))}
