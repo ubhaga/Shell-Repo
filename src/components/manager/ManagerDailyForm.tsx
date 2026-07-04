@@ -419,10 +419,10 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   const selectedParsed = parseISO(selectedDate);
   const isFirstOfMonth = selectedParsed.getDate() === 1;
   const isLastOfMonth = format(lastDayOfMonth(selectedParsed), "yyyy-MM-dd") === selectedDate;
-  const isSat = isSaturday(selectedParsed);
+  const isMon = isMonday(selectedParsed);
   const showBlueLabelComm = isFirstOfMonth;
   const showEasypayComm = isLastOfMonth;
-  const showLottoComm = isSat;
+  const showLottoComm = isMon;
 
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
