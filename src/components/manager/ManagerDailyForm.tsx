@@ -420,8 +420,8 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   const isFirstOfMonth = selectedParsed.getDate() === 1;
   const isLastOfMonth = format(lastDayOfMonth(selectedParsed), "yyyy-MM-dd") === selectedDate;
   const isMon = isMonday(selectedParsed);
-  const showBlueLabelComm = isFirstOfMonth;
-  const showEasypayComm = isLastOfMonth;
+  const showBlueLabelComm = isLastOfMonth;
+  const showEasypayComm = isFirstOfMonth;
   const showLottoComm = isMon;
 
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -513,7 +513,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
     if (showBlueLabelComm && form.blueLabelComm === 0) {
       toast({
         title: "Missing Blue Label Commission",
-        description: "Blue Label Commission is mandatory on the 1st of the month.",
+        description: "Blue Label Commission is mandatory on the last day of the month.",
         variant: "destructive",
       });
       return;
@@ -521,7 +521,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
     if (showEasypayComm && form.easypayComm === 0) {
       toast({
         title: "Missing Easy Pay Commission",
-        description: "Easy Pay Commission is mandatory on the last day of the month.",
+        description: "Easy Pay Commission is mandatory on the 1st of the month.",
         variant: "destructive",
       });
       return;
@@ -997,7 +997,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
       {(showBlueLabelComm || showEasypayComm || showLottoComm) && (
         <Section title="3. Airtime / Lotto Commissions" color="green">
           {showBlueLabelComm && (
-            <DataRow label="3.1 Blue Label Commission (1st of month)">
+            <DataRow label="3.1 Blue Label Commission (last day of month)">
               <CurrencyInput
                 value={form.blueLabelComm}
                 onChange={(v) => setForm((f) => ({ ...f, blueLabelComm: v }))}
@@ -1007,7 +1007,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
             </DataRow>
           )}
           {showEasypayComm && (
-            <DataRow label="3.2 Easy Pay Commission (last day of month)">
+            <DataRow label="3.2 Easy Pay Commission (1st of month)">
               <CurrencyInput
                 value={form.easypayComm}
                 onChange={(v) => setForm((f) => ({ ...f, easypayComm: v }))}
