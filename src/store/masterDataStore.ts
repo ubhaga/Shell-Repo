@@ -27,6 +27,8 @@ interface MasterDataStore {
   payoutSuppliers: string[];
   eftSuppliers: string[];
   accounts: string[];
+  /** Optional account number per debtor account (keyed by account name) */
+  accountNumbers: Record<string, string>;
   cashierNames: string[];
   managerNames: string[];
   categories: string[];
@@ -46,6 +48,7 @@ interface MasterDataStore {
   addAccount: (name: string) => void;
   updateAccount: (old: string, next: string) => void;
   deleteAccount: (name: string) => void;
+  setAccountNumber: (name: string, number: string) => void;
 
   addCashierName: (name: string) => void;
   updateCashierName: (old: string, next: string) => void;
