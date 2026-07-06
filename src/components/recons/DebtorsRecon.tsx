@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCashupStore } from '@/store/cashupStore';
+import { useMasterDataStore } from '@/store/masterDataStore';
 import { supabase } from '@/integrations/supabase/client';
 import { CurrencyDisplay, CurrencyInput } from '@/components/ui/CashupUI';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -23,8 +24,9 @@ const BANK_PAYMENT_RULES: { pattern: RegExp; account: string }[] = [
   { pattern: /CR BP ZOO.*LAKE.*DSL|BP ZOO LAKE DSL/i, account: 'Bp Zoolake' },
 ];
 
-// The debtors we track
-const DEBTOR_ACCOUNTS = [
+// Fallback debtors (used to seed the master-data list on first run and to guarantee
+// accounts referenced by BANK_PAYMENT_RULES / JE3 always appear even if removed from settings)
+const FALLBACK_DEBTOR_ACCOUNTS = [
   'Mahindra',
   'Lancaster Pharmacy',
   'Hyde Park Toyota',
@@ -49,6 +51,23 @@ const JE3_WRITEOFF_ACCOUNTS = ['Generator', 'Shop Expense', 'Umesh'];
 export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
   const { cashups } = useCashupStore();
   const { allocations: bankAllocations } = useBankAllocations(filterMonth);
+  const masterAccounts = useMasterDataStore(s => s.accounts);
+
+  // Always display every debtor from Master Data settings, plus any fallback
+  // debtors that bank/JE3 rules still reference (so nothing silently disappears).
+  const DEBTOR_ACCOUNTS = useMemo(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    [...masterAccounts, ...FALLBACK_DEBTOR_ACCOUNTS].forEach(name => {
+      const key = name.trim();
+      if (!key) return;
+      const lower = key.toLowerCase();
+      if (seen.has(lower)) return;
+      seen.add(lower);
+      out.push(key);
+    });
+    return out;
+  }, [masterAccounts]);
 
   const [bankLines, setBankLines] = useState<{ id: string; amount: number; description: string; transaction_date: string }[]>([]);
   const [openingBalances, setOpeningBalances] = useState<Record<string, number>>({});
