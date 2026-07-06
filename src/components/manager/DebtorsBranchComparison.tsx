@@ -225,6 +225,15 @@ export function DebtorsBranchComparison({ month }: Props) {
         <CurrencyDisplay value={totals.diff} className="text-right" highlight />
         <span />
       </div>
+      <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr_2fr] gap-2 px-3 py-2 border-b bg-secondary/40 text-sm items-start">
+        <span className="col-span-5 text-muted-foreground text-xs">Totals Explanation</span>
+        <Textarea
+          value={totalsExplanation}
+          onChange={e => setTotalsExplanation(e.target.value)}
+          className="w-full min-h-[60px] text-xs"
+          placeholder="Explain overall variance..."
+        />
+      </div>
       <div className="p-3">
         <Button size="sm" onClick={handleSave} disabled={saving}>
           <Save className="h-3.5 w-3.5 mr-1" />{saving ? 'Saving...' : 'Save Branch Values'}
