@@ -215,6 +215,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
   const [je1Explanation, setJe1Explanation] = useState('');
   const [je2Explanation, setJe2Explanation] = useState('');
   const [je3Explanation, setJe3Explanation] = useState('');
+  const [je4Explanation, setJe4Explanation] = useState('');
 
   useEffect(() => {
     const key = `je_explanations_${month}`;
@@ -224,13 +225,16 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
         setJe1Explanation(d.je1 ?? '');
         setJe2Explanation(d.je2 ?? '');
         setJe3Explanation(d.je3 ?? '');
+        setJe4Explanation(d.je4 ?? '');
       } else {
         setJe1Explanation('');
         setJe2Explanation('');
         setJe3Explanation('');
+        setJe4Explanation('');
       }
     });
   }, [month]);
+
 
   const togglePayoutCat = (cat: string) => {
     setExpandedPayoutCats((prev) => {
