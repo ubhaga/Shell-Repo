@@ -39,6 +39,7 @@ export function DebtorsBranchComparison({ month }: Props) {
   const [prevOpeningBalances, setPrevOpeningBalances] = useState<Record<string, number>>({});
   const [allocations, setAllocations] = useState<{ bank_line_id: string; recon_type: string; target_name: string }[]>([]);
   const [inputs, setInputs] = useState<Record<string, BranchInput>>({});
+  const [totalsExplanation, setTotalsExplanation] = useState('');
   const [saving, setSaving] = useState(false);
 
   const isFirstMonth = month === '2026-03';
