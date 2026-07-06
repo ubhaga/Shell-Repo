@@ -87,6 +87,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
   const [prevMonthOpeningBalances, setPrevMonthOpeningBalances] = useState<Record<string, number>>({});
   const [editingOB, setEditingOB] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const isFirstMonth = filterMonth === '2026-03';
 
   // Previous month for rolling balances
