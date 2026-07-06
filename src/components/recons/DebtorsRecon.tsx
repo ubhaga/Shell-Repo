@@ -52,9 +52,11 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
   const { cashups } = useCashupStore();
   const { allocations: bankAllocations } = useBankAllocations(filterMonth);
   const masterAccounts = useMasterDataStore(s => s.accounts);
+  const accountNumbers = useMasterDataStore(s => s.accountNumbers);
 
   // Always display every debtor from Master Data settings, plus any fallback
   // debtors that bank/JE3 rules still reference (so nothing silently disappears).
+  // Sort: numeric A/c No first (ascending), then alphabetically by name.
   const DEBTOR_ACCOUNTS = useMemo(() => {
     const seen = new Set<string>();
     const out: string[] = [];
@@ -66,8 +68,17 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
       seen.add(lower);
       out.push(key);
     });
-    return out;
-  }, [masterAccounts]);
+    return out.sort((a, b) => {
+      const va = Number(accountNumbers[a] ?? '');
+      const vb = Number(accountNumbers[b] ?? '');
+      const aNum = accountNumbers[a] && !Number.isNaN(va);
+      const bNum = accountNumbers[b] && !Number.isNaN(vb);
+      if (aNum && bNum) return va - vb || a.localeCompare(b);
+      if (aNum) return -1;
+      if (bNum) return 1;
+      return a.localeCompare(b);
+    });
+  }, [masterAccounts, accountNumbers]);
 
   const [bankLines, setBankLines] = useState<{ id: string; amount: number; description: string; transaction_date: string }[]>([]);
   const [openingBalances, setOpeningBalances] = useState<Record<string, number>>({});

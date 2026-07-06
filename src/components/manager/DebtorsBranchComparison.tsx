@@ -37,6 +37,7 @@ type BranchInput = { branch: number; adjustment: number; explanation: string };
 export function DebtorsBranchComparison({ month }: Props) {
   const { cashups } = useCashupStore();
   const masterAccounts = useMasterDataStore(s => s.accounts);
+  const accountNumbers = useMasterDataStore(s => s.accountNumbers);
   const DEBTOR_ACCOUNTS = useMemo(() => {
     const seen = new Set<string>();
     const out: string[] = [];
@@ -48,8 +49,17 @@ export function DebtorsBranchComparison({ month }: Props) {
       seen.add(lower);
       out.push(key);
     });
-    return out;
-  }, [masterAccounts]);
+    return out.sort((a, b) => {
+      const va = Number(accountNumbers[a] ?? '');
+      const vb = Number(accountNumbers[b] ?? '');
+      const aNum = accountNumbers[a] && !Number.isNaN(va);
+      const bNum = accountNumbers[b] && !Number.isNaN(vb);
+      if (aNum && bNum) return va - vb || a.localeCompare(b);
+      if (aNum) return -1;
+      if (bNum) return 1;
+      return a.localeCompare(b);
+    });
+  }, [masterAccounts, accountNumbers]);
   const [bankLines, setBankLines] = useState<BankLine[]>([]);
   const [prevBankLines, setPrevBankLines] = useState<BankLine[]>([]);
   const [openingBalances, setOpeningBalances] = useState<Record<string, number>>({});

@@ -27,6 +27,8 @@ interface MasterDataStore {
   payoutSuppliers: string[];
   eftSuppliers: string[];
   accounts: string[];
+  /** Optional account number per debtor account (keyed by account name) */
+  accountNumbers: Record<string, string>;
   cashierNames: string[];
   managerNames: string[];
   categories: string[];
@@ -46,6 +48,7 @@ interface MasterDataStore {
   addAccount: (name: string) => void;
   updateAccount: (old: string, next: string) => void;
   deleteAccount: (name: string) => void;
+  setAccountNumber: (name: string, number: string) => void;
 
   addCashierName: (name: string) => void;
   updateCashierName: (old: string, next: string) => void;
@@ -78,6 +81,7 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
   payoutSuppliers: [...SUPPLIERS].sort(),
   eftSuppliers: DEFAULT_EFT_SUPPLIERS,
   accounts: [...DEFAULT_ACCOUNTS],
+  accountNumbers: {} as Record<string, string>,
   cashierNames: [...DEFAULT_CASHIER_NAMES],
   managerNames: [...DEFAULT_MANAGER_NAMES],
   categories: [...DEFAULT_CATEGORIES].sort(),
@@ -87,16 +91,17 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
   loadAll: async () => {
     const { data } = await supabase.from('master_data').select('*');
     if (data && data.length > 0) {
-      const map: Record<string, string[]> = {};
-      data.forEach((r: { key: string; data: unknown }) => { map[r.key] = r.data as string[]; });
+      const map: Record<string, unknown> = {};
+      data.forEach((r: { key: string; data: unknown }) => { map[r.key] = r.data; });
       set({
-        payoutSuppliers: map.payoutSuppliers ?? get().payoutSuppliers,
-        eftSuppliers: map.eftSuppliers ?? get().eftSuppliers,
-        accounts: map.accounts ?? get().accounts,
-        cashierNames: map.cashierNames ?? get().cashierNames,
-        managerNames: map.managerNames ?? get().managerNames,
-        categories: map.categories ?? get().categories,
-        tanks: (map.tanks as unknown as TankDescription[]) ?? get().tanks,
+        payoutSuppliers: (map.payoutSuppliers as string[]) ?? get().payoutSuppliers,
+        eftSuppliers: (map.eftSuppliers as string[]) ?? get().eftSuppliers,
+        accounts: (map.accounts as string[]) ?? get().accounts,
+        accountNumbers: (map.accountNumbers as Record<string, string>) ?? get().accountNumbers,
+        cashierNames: (map.cashierNames as string[]) ?? get().cashierNames,
+        managerNames: (map.managerNames as string[]) ?? get().managerNames,
+        categories: (map.categories as string[]) ?? get().categories,
+        tanks: (map.tanks as TankDescription[]) ?? get().tanks,
         loaded: true,
       });
     } else {
@@ -169,14 +174,36 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
     set(s => {
       const list = replace(s.accounts, old, next);
       persistKey('accounts', list);
-      return { accounts: list };
+      // Migrate account number under new name
+      const nums = { ...s.accountNumbers };
+      if (old !== next && nums[old] !== undefined) {
+        nums[next] = nums[old];
+        delete nums[old];
+        persistKey('accountNumbers', nums);
+      }
+      return { accounts: list, accountNumbers: nums };
     });
   },
   deleteAccount: (name) => {
     set(s => {
       const list = s.accounts.filter(i => i !== name);
       persistKey('accounts', list);
-      return { accounts: list };
+      const nums = { ...s.accountNumbers };
+      if (nums[name] !== undefined) {
+        delete nums[name];
+        persistKey('accountNumbers', nums);
+      }
+      return { accounts: list, accountNumbers: nums };
+    });
+  },
+  setAccountNumber: (name, number) => {
+    set(s => {
+      const nums = { ...s.accountNumbers };
+      const trimmed = number.trim();
+      if (trimmed) nums[name] = trimmed;
+      else delete nums[name];
+      persistKey('accountNumbers', nums);
+      return { accountNumbers: nums };
     });
   },
 
