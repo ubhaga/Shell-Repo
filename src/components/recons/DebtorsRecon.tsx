@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCashupStore } from '@/store/cashupStore';
+import { useMasterDataStore } from '@/store/masterDataStore';
 import { supabase } from '@/integrations/supabase/client';
 import { CurrencyDisplay, CurrencyInput } from '@/components/ui/CashupUI';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
