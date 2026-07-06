@@ -186,7 +186,7 @@ export function DebtorsBranchComparison({ month }: Props) {
     const adjustmentJe3 = isJe3 ? purchase : 0;
     const reconClosing = ob + purchase - bankPmt - adjustmentJe3;
     const input = inputs[name] ?? { branch: 0, adjustment: 0, explanation: '' };
-    const difference = reconClosing - input.branch - input.adjustment;
+    const difference = input.branch - reconClosing;
     return { name, reconClosing, ...input, difference };
   });
 
