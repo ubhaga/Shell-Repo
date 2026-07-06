@@ -182,7 +182,7 @@ export function DebtorsBranchComparison({ month }: Props) {
     setSaving(true);
     try {
       await supabase.from('master_data').upsert(
-        { key: `debtors_branch_${month}`, data: inputs as never, updated_at: new Date().toISOString() } as never,
+        { key: `debtors_branch_${month}`, data: { inputs, totals_explanation: totalsExplanation } as never, updated_at: new Date().toISOString() } as never,
         { onConflict: 'key' },
       );
       toast({ title: 'Debtors branch comparison saved' });
