@@ -69,10 +69,10 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
       out.push(key);
     });
     return out.sort((a, b) => {
-      const va = Number(accountNumbers[a] ?? '');
-      const vb = Number(accountNumbers[b] ?? '');
-      const aNum = accountNumbers[a] && !Number.isNaN(va);
-      const bNum = accountNumbers[b] && !Number.isNaN(vb);
+      const va = acctSortValue(accountNumbers[a]);
+      const vb = acctSortValue(accountNumbers[b]);
+      const aNum = !Number.isNaN(va);
+      const bNum = !Number.isNaN(vb);
       if (aNum && bNum) return va - vb || a.localeCompare(b);
       if (aNum) return -1;
       if (bNum) return 1;
