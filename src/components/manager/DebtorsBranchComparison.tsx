@@ -63,7 +63,9 @@ export function DebtorsBranchComparison({ month }: Props) {
       if (r.supplier.startsWith('debtor:')) obMap[r.supplier.replace('debtor:', '')] = Number(r.amount);
     });
     setOpeningBalances(obMap);
-    setInputs(((brRes.data?.data as Record<string, BranchInput>) ?? {}));
+      const savedData = (brRes.data?.data ?? {}) as Record<string, unknown>;
+      setInputs((savedData.inputs as Record<string, BranchInput>) ?? {});
+      setTotalsExplanation((savedData.totals_explanation as string) ?? '');
 
     if (!isFirstMonth) {
       const [prevBank, prevOb] = await Promise.all([
