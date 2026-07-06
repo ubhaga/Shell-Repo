@@ -152,6 +152,24 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     return totals;
   }, [filterMonth, cashups]);
 
+  // Per-debtor purchase line items (date, source, seqNo, amount)
+  const purchaseDetails = useMemo(() => {
+    const map: Record<string, { date: string; source: string; seqNo?: string; amount: number }[]> = {};
+    DEBTOR_ACCOUNTS.forEach(a => { map[a] = []; });
+    const monthlyCashups = cashups.filter(c => c.month === filterMonth);
+    for (const c of monthlyCashups) {
+      for (const a of c.shop.accounts ?? []) {
+        if (map[a.name] && a.amount) map[a.name].push({ date: c.date, source: 'Shop', seqNo: a.seqNo, amount: a.amount });
+      }
+      for (const a of c.opt.accounts ?? []) {
+        if (map[a.name] && a.amount) map[a.name].push({ date: c.date, source: 'OPT', seqNo: a.seqNo, amount: a.amount });
+      }
+    }
+    Object.values(map).forEach(arr => arr.sort((x, y) => x.date.localeCompare(y.date)));
+    return map;
+  }, [filterMonth, cashups]);
+
+
   const prevMonthPurchases = useMemo(() => {
     const monthlyCashups = cashups.filter(c => c.month === prevMonth);
     const totals: Record<string, number> = {};
