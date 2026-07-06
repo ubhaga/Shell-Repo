@@ -319,13 +319,15 @@ export function MasterDataSettings() {
           Other Lists
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          <EditableList
+          <AccountsList
             title="Accounts (Debtors)"
             color="bg-blue-600"
             items={store.accounts}
+            accountNumbers={store.accountNumbers}
             onAdd={item => store.addAccount(item)}
             onUpdate={(old, next) => store.updateAccount(old, next)}
             onDelete={item => store.deleteAccount(item)}
+            onSetNumber={(name, number) => store.setAccountNumber(name, number)}
           />
           <EditableList
             title="Cashier Names"
