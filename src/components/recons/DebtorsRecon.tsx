@@ -51,6 +51,23 @@ const JE3_WRITEOFF_ACCOUNTS = ['Generator', 'Shop Expense', 'Umesh'];
 export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
   const { cashups } = useCashupStore();
   const { allocations: bankAllocations } = useBankAllocations(filterMonth);
+  const masterAccounts = useMasterDataStore(s => s.accounts);
+
+  // Always display every debtor from Master Data settings, plus any fallback
+  // debtors that bank/JE3 rules still reference (so nothing silently disappears).
+  const DEBTOR_ACCOUNTS = useMemo(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    [...masterAccounts, ...FALLBACK_DEBTOR_ACCOUNTS].forEach(name => {
+      const key = name.trim();
+      if (!key) return;
+      const lower = key.toLowerCase();
+      if (seen.has(lower)) return;
+      seen.add(lower);
+      out.push(key);
+    });
+    return out;
+  }, [masterAccounts]);
 
   const [bankLines, setBankLines] = useState<{ id: string; amount: number; description: string; transaction_date: string }[]>([]);
   const [openingBalances, setOpeningBalances] = useState<Record<string, number>>({});
