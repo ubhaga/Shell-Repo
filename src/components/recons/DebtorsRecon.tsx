@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CurrencyDisplay, CurrencyInput } from '@/components/ui/CashupUI';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Save, Download } from 'lucide-react';
+import { Save, Download, ChevronRight, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { downloadCsv } from '@/lib/csvExport';
 import { useBankAllocations } from '@/hooks/useBankAllocations';
