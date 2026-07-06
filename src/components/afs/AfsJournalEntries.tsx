@@ -251,11 +251,12 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     });
   };
 
-  const saveExplanation = (field: 'je1' | 'je2' | 'je3', value: string) => {
+  const saveExplanation = (field: 'je1' | 'je2' | 'je3' | 'je4', value: string) => {
     const key = `je_explanations_${month}`;
-    const current = { je1: je1Explanation, je2: je2Explanation, je3: je3Explanation, [field]: value };
+    const current = { je1: je1Explanation, je2: je2Explanation, je3: je3Explanation, je4: je4Explanation, [field]: value };
     supabase.from('master_data').upsert({ key, data: current as any }, { onConflict: 'key' }).then();
   };
+
 
   // ── JE 3 — Debtors Writeoff ──
   const je3 = useMemo(() => {
