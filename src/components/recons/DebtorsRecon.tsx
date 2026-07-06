@@ -24,8 +24,9 @@ const BANK_PAYMENT_RULES: { pattern: RegExp; account: string }[] = [
   { pattern: /CR BP ZOO.*LAKE.*DSL|BP ZOO LAKE DSL/i, account: 'Bp Zoolake' },
 ];
 
-// The debtors we track
-const DEBTOR_ACCOUNTS = [
+// Fallback debtors (used to seed the master-data list on first run and to guarantee
+// accounts referenced by BANK_PAYMENT_RULES / JE3 always appear even if removed from settings)
+const FALLBACK_DEBTOR_ACCOUNTS = [
   'Mahindra',
   'Lancaster Pharmacy',
   'Hyde Park Toyota',
