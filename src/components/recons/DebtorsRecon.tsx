@@ -472,6 +472,10 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
                                     <td className="text-right"><CurrencyDisplay value={d.amount} /></td>
                                   </tr>
                                 ))}
+                                <tr className="border-t font-semibold">
+                                  <td colSpan={2}>Total Purchases</td>
+                                  <td className="text-right"><CurrencyDisplay value={pDetails.reduce((s, d) => s + d.amount, 0)} /></td>
+                                </tr>
                               </tbody>
                             </table>
                           )}
