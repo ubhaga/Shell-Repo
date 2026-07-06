@@ -81,6 +81,7 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
   payoutSuppliers: [...SUPPLIERS].sort(),
   eftSuppliers: DEFAULT_EFT_SUPPLIERS,
   accounts: [...DEFAULT_ACCOUNTS],
+  accountNumbers: {} as Record<string, string>,
   cashierNames: [...DEFAULT_CASHIER_NAMES],
   managerNames: [...DEFAULT_MANAGER_NAMES],
   categories: [...DEFAULT_CATEGORIES].sort(),
