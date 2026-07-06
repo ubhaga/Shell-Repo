@@ -190,36 +190,36 @@ export function DebtorsBranchComparison({ month }: Props) {
 
   return (
     <Section title="5. Debtors Branch Comparison" color="purple">
-      <div className="grid grid-cols-[2fr_1.6fr_1fr_1fr_1fr_1fr] gap-2 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
-        <span>Explanation</span>
+      <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr_2fr] gap-2 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
         <span>Debtor</span>
         <span className="text-right">Recon Closing</span>
         <span className="text-right">Branch Value</span>
         <span className="text-right">Adjustment</span>
         <span className="text-right">Difference</span>
+        <span>Explanation</span>
       </div>
       {rows.map(r => (
-        <div key={r.name} className="grid grid-cols-[2fr_1.6fr_1fr_1fr_1fr_1fr] gap-2 px-3 py-1.5 border-b text-sm items-center">
+        <div key={r.name} className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr_2fr] gap-2 px-3 py-1.5 border-b text-sm items-center">
+          <span className="text-muted-foreground">{r.name}</span>
+          <CurrencyDisplay value={r.reconClosing} className="text-right" />
+          <CurrencyInput value={r.branch} onChange={v => setInput(r.name, { branch: v })} className="text-right w-full" allowNegative />
+          <CurrencyInput value={r.adjustment} onChange={v => setInput(r.name, { adjustment: v })} className="text-right w-full" allowNegative />
+          <CurrencyDisplay value={r.difference} className={`text-right font-semibold ${Math.abs(r.difference) < 0.01 ? 'text-green-600' : 'text-destructive'}`} />
           <input
             value={r.explanation}
             onChange={e => setInput(r.name, { explanation: e.target.value })}
             className="input-cell w-full text-left text-xs"
             placeholder={Math.abs(r.difference) < 0.01 ? '' : 'Explain variance...'}
           />
-          <span className="text-muted-foreground">{r.name}</span>
-          <CurrencyDisplay value={r.reconClosing} className="text-right" />
-          <CurrencyInput value={r.branch} onChange={v => setInput(r.name, { branch: v })} className="text-right w-full" allowNegative />
-          <CurrencyInput value={r.adjustment} onChange={v => setInput(r.name, { adjustment: v })} className="text-right w-full" allowNegative />
-          <CurrencyDisplay value={r.difference} className={`text-right font-semibold ${Math.abs(r.difference) < 0.01 ? 'text-green-600' : 'text-destructive'}`} />
         </div>
       ))}
-      <div className="grid grid-cols-[2fr_1.6fr_1fr_1fr_1fr_1fr] gap-2 px-3 py-2 bg-secondary font-semibold text-sm items-center">
-        <span />
+      <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr_2fr] gap-2 px-3 py-2 bg-secondary font-semibold text-sm items-center">
         <span>Totals</span>
         <CurrencyDisplay value={totals.recon} className="text-right" highlight />
         <CurrencyDisplay value={totals.branch} className="text-right" highlight />
         <CurrencyDisplay value={totals.adj} className="text-right" highlight />
         <CurrencyDisplay value={totals.diff} className="text-right" highlight />
+        <span />
       </div>
       <div className="p-3">
         <Button size="sm" onClick={handleSave} disabled={saving}>
