@@ -285,6 +285,17 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     return { debits, totalDebits };
   }, [month, cashups]);
 
+  // ── JE 4 — Coins Banked ──
+  const je4 = useMemo(() => {
+    const monthlyManagers = managerEntries.filter((e) => e.date.startsWith(month));
+    const totalTransferFromCoins = monthlyManagers.reduce(
+      (s, e) => s + Math.abs(e.transferFromCoins ?? 0),
+      0
+    );
+    return { amount: totalTransferFromCoins };
+  }, [month, managerEntries]);
+
+
   return (
     <div className="space-y-6">
       {/* JE 1 */}
