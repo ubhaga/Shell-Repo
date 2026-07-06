@@ -17,9 +17,24 @@ import { CashRecon } from '@/components/recons/CashRecon';
 import { OtherAdjustmentsRecon } from '@/components/recons/OtherAdjustmentsRecon';
 import { DebtorsRecon } from '@/components/recons/DebtorsRecon';
 
-export function Reports({ mode = 'reports', onNavigateToDate }: { mode?: 'reports' | 'recons'; onNavigateToDate?: (date: string) => void }) {
+export function Reports({
+  mode = 'reports',
+  selectedDate,
+  onMonthChange,
+  onNavigateToDate,
+}: {
+  mode?: 'reports' | 'recons';
+  selectedDate?: string;
+  onMonthChange?: (month: string) => void;
+  onNavigateToDate?: (date: string) => void;
+}) {
   const { cashups, managerEntries } = useCashupStore();
-  const [filterMonth, setFilterMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [internalFilterMonth, setInternalFilterMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const filterMonth = selectedDate?.slice(0, 7) ?? internalFilterMonth;
+  const setFilterMonth = (month: string) => {
+    if (onMonthChange) onMonthChange(month);
+    else setInternalFilterMonth(month);
+  };
 
   const monthCashups = cashups.filter(c => c.month === filterMonth);
   const monthManagers = managerEntries.filter(e => e.date.startsWith(filterMonth));
