@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Save, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { DebtorsBranchComparison } from "./DebtorsBranchComparison";
 
 interface Props {
   selectedDate: string;
