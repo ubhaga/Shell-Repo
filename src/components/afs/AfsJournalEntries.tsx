@@ -215,6 +215,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
   const [je1Explanation, setJe1Explanation] = useState('');
   const [je2Explanation, setJe2Explanation] = useState('');
   const [je3Explanation, setJe3Explanation] = useState('');
+  const [je4Explanation, setJe4Explanation] = useState('');
 
   useEffect(() => {
     const key = `je_explanations_${month}`;
@@ -224,13 +225,16 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
         setJe1Explanation(d.je1 ?? '');
         setJe2Explanation(d.je2 ?? '');
         setJe3Explanation(d.je3 ?? '');
+        setJe4Explanation(d.je4 ?? '');
       } else {
         setJe1Explanation('');
         setJe2Explanation('');
         setJe3Explanation('');
+        setJe4Explanation('');
       }
     });
   }, [month]);
+
 
   const togglePayoutCat = (cat: string) => {
     setExpandedPayoutCats((prev) => {
@@ -247,11 +251,12 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     });
   };
 
-  const saveExplanation = (field: 'je1' | 'je2' | 'je3', value: string) => {
+  const saveExplanation = (field: 'je1' | 'je2' | 'je3' | 'je4', value: string) => {
     const key = `je_explanations_${month}`;
-    const current = { je1: je1Explanation, je2: je2Explanation, je3: je3Explanation, [field]: value };
+    const current = { je1: je1Explanation, je2: je2Explanation, je3: je3Explanation, je4: je4Explanation, [field]: value };
     supabase.from('master_data').upsert({ key, data: current as any }, { onConflict: 'key' }).then();
   };
+
 
   // ── JE 3 — Debtors Writeoff ──
   const je3 = useMemo(() => {
@@ -279,6 +284,17 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     const totalDebits = debits.reduce((s, d) => s + d.amount, 0);
     return { debits, totalDebits };
   }, [month, cashups]);
+
+  // ── JE 4 — Coins Banked ──
+  const je4 = useMemo(() => {
+    const monthlyManagers = managerEntries.filter((e) => e.date.startsWith(month));
+    const totalTransferFromCoins = monthlyManagers.reduce(
+      (s, e) => s + Math.abs(e.transferFromCoins ?? 0),
+      0
+    );
+    return { amount: totalTransferFromCoins };
+  }, [month, managerEntries]);
+
 
   return (
     <div className="space-y-6">
@@ -589,6 +605,60 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
           </div>
         </CardContent>
       </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">JE 4 — Coins Banked ({month})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Description</TableHead>
+                <TableHead className="text-xs text-right">Debit</TableHead>
+                <TableHead className="text-xs text-right">Credit</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="text-sm py-1.5">Shift Clearing</TableCell>
+                <TableCell className="text-right py-1.5">
+                  <CurrencyDisplay value={je4.amount} />
+                </TableCell>
+                <TableCell className="text-right py-1.5" />
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-sm py-1.5">Petty Cash</TableCell>
+                <TableCell className="text-right py-1.5" />
+                <TableCell className="text-right py-1.5">
+                  <CurrencyDisplay value={je4.amount} />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell className="font-semibold text-sm">Totals</TableCell>
+                <TableCell className="text-right">
+                  <CurrencyDisplay value={je4.amount} highlight />
+                </TableCell>
+                <TableCell className="text-right">
+                  <CurrencyDisplay value={je4.amount} highlight />
+                </TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+          <div className="mt-3">
+            <label className="text-xs font-medium text-muted-foreground">Adjustment Explanations</label>
+            <Textarea
+              value={je4Explanation}
+              onChange={(e) => setJe4Explanation(e.target.value)}
+              onBlur={() => saveExplanation('je4', je4Explanation)}
+              placeholder="Enter adjustment explanations for JE 4..."
+              className="mt-1 min-h-[60px] text-sm"
+            />
+          </div>
+        </CardContent>
+      </Card>
     </div>
+
   );
 }
