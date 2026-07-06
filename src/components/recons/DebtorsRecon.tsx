@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CurrencyDisplay, CurrencyInput } from '@/components/ui/CashupUI';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Save, Download } from 'lucide-react';
+import { Save, Download, ChevronRight, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { downloadCsv } from '@/lib/csvExport';
 import { useBankAllocations } from '@/hooks/useBankAllocations';
@@ -87,6 +87,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
   const [prevMonthOpeningBalances, setPrevMonthOpeningBalances] = useState<Record<string, number>>({});
   const [editingOB, setEditingOB] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const isFirstMonth = filterMonth === '2026-03';
 
   // Previous month for rolling balances
@@ -150,6 +151,25 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     }
     return totals;
   }, [filterMonth, cashups]);
+
+  // Per-debtor purchase line items (date, source, amount)
+  const purchaseDetails = useMemo(() => {
+    const map: Record<string, { date: string; source: string; amount: number }[]> = {};
+    DEBTOR_ACCOUNTS.forEach(a => { map[a] = []; });
+    const monthlyCashups = cashups.filter(c => c.month === filterMonth);
+    for (const c of monthlyCashups) {
+      for (const a of c.shop.accounts ?? []) {
+        if (map[a.name] && a.amount) map[a.name].push({ date: c.date, source: 'Shop', amount: a.amount });
+      }
+      for (const a of c.opt.accounts ?? []) {
+        if (map[a.name] && a.amount) map[a.name].push({ date: c.date, source: 'OPT', amount: a.amount });
+      }
+    }
+    Object.values(map).forEach(arr => arr.sort((x, y) => x.date.localeCompare(y.date)));
+    return map;
+  }, [filterMonth, cashups]);
+
+
 
   const prevMonthPurchases = useMemo(() => {
     const monthlyCashups = cashups.filter(c => c.month === prevMonth);
@@ -221,6 +241,44 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     }
     return totals;
   }, [filterMonth, cashups]);
+
+  // Per-debtor payment line items combining bank statement matches and ROA receipts
+  const paymentDetails = useMemo(() => {
+    const map: Record<string, { date: string; source: string; description: string; amount: number }[]> = {};
+    DEBTOR_ACCOUNTS.forEach(a => { map[a] = []; });
+    // Bank statement
+    for (const line of bankLines) {
+      if (line.amount <= 0) continue;
+      let target: string | null = null;
+      const allocation = bankAllocations.find(a => a.bank_line_id === line.id && a.recon_type === 'debtor');
+      if (allocation) {
+        target = allocation.target_name;
+      } else {
+        for (const rule of BANK_PAYMENT_RULES) {
+          if (rule.pattern.test(line.description)) { target = rule.account; break; }
+        }
+      }
+      if (target && map[target]) {
+        map[target].push({ date: line.transaction_date, source: 'Bank', description: line.description, amount: line.amount });
+      }
+    }
+    // ROA receipts
+    const monthlyCashups = cashups.filter(c => c.month === filterMonth);
+    for (const c of monthlyCashups) {
+      for (const r of c.shop.receipts ?? []) {
+        if (r.type === 'Debtors Received on Account ROA' && r.amount > 0) {
+          const ref = (r.seqNo || '').trim();
+          const matched = DEBTOR_ACCOUNTS.find(a => a.toLowerCase() === ref.toLowerCase());
+          if (matched) {
+            map[matched].push({ date: c.date, source: 'ROA', description: `ROA ${ref}`, amount: r.amount });
+          }
+        }
+      }
+    }
+    Object.values(map).forEach(arr => arr.sort((x, y) => x.date.localeCompare(y.date)));
+    return map;
+  }, [filterMonth, cashups, bankLines, bankAllocations]);
+
 
   const prevMonthRoaPerDebtor = useMemo(() => {
     const monthlyCashups = cashups.filter(c => c.month === prevMonth);
@@ -354,26 +412,104 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map(r => (
-            <TableRow key={r.name}>
-              <TableCell className="text-sm">{r.name}</TableCell>
-              <TableCell className="text-right">
-                {isFirstMonth ? (
-                  <CurrencyInput
-                    value={editingOB[r.name] ?? r.ob}
-                    onChange={v => setEditingOB(prev => ({ ...prev, [r.name]: v }))}
-                    className="w-28 text-right text-xs"
-                  />
-                ) : (
-                  <CurrencyDisplay value={r.ob} />
+          {rows.map(r => {
+            const isOpen = !!expanded[r.name];
+            const pDetails = purchaseDetails[r.name] ?? [];
+            const payDetails = paymentDetails[r.name] ?? [];
+            const canExpand = pDetails.length > 0 || payDetails.length > 0;
+            return (
+              <React.Fragment key={r.name}>
+                <TableRow>
+                  <TableCell className="text-sm">
+                    <button
+                      type="button"
+                      onClick={() => canExpand && setExpanded(prev => ({ ...prev, [r.name]: !prev[r.name] }))}
+                      className="inline-flex items-center gap-1 hover:underline disabled:opacity-40"
+                      disabled={!canExpand}
+                    >
+                      {canExpand ? (isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />) : <span className="w-3.5" />}
+                      {r.name}
+                    </button>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {isFirstMonth ? (
+                      <CurrencyInput
+                        value={editingOB[r.name] ?? r.ob}
+                        onChange={v => setEditingOB(prev => ({ ...prev, [r.name]: v }))}
+                        className="w-28 text-right text-xs"
+                      />
+                    ) : (
+                      <CurrencyDisplay value={r.ob} />
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right"><CurrencyDisplay value={r.purchase} /></TableCell>
+                  <TableCell className="text-right"><CurrencyDisplay value={r.bankPmt} /></TableCell>
+                  <TableCell className="text-right"><CurrencyDisplay value={r.adjustment} /></TableCell>
+                  <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.closing} /></TableCell>
+                </TableRow>
+                {isOpen && (
+                  <TableRow className="bg-muted/20 hover:bg-muted/20">
+                    <TableCell colSpan={6} className="p-0">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3">
+                        <div>
+                          <div className="text-xs font-semibold mb-1">Purchases ({pDetails.length})</div>
+                          {pDetails.length === 0 ? (
+                            <div className="text-xs text-muted-foreground">No purchase line items</div>
+                          ) : (
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-muted-foreground">
+                                  <th className="text-left font-normal">Date</th>
+                                  <th className="text-left font-normal">Source</th>
+                                  <th className="text-right font-normal">Amount</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {pDetails.map((d, i) => (
+                                  <tr key={i}>
+                                    <td>{d.date}</td>
+                                    <td>{d.source}</td>
+                                    <td className="text-right"><CurrencyDisplay value={d.amount} /></td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-xs font-semibold mb-1">Payments ({payDetails.length})</div>
+                          {payDetails.length === 0 ? (
+                            <div className="text-xs text-muted-foreground">No payment line items</div>
+                          ) : (
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-muted-foreground">
+                                  <th className="text-left font-normal">Date</th>
+                                  <th className="text-left font-normal">Source</th>
+                                  <th className="text-left font-normal">Description</th>
+                                  <th className="text-right font-normal">Amount</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {payDetails.map((d, i) => (
+                                  <tr key={i}>
+                                    <td>{d.date}</td>
+                                    <td>{d.source}</td>
+                                    <td className="truncate max-w-[240px]">{d.description}</td>
+                                    <td className="text-right"><CurrencyDisplay value={d.amount} /></td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </TableCell>
-              <TableCell className="text-right"><CurrencyDisplay value={r.purchase} /></TableCell>
-              <TableCell className="text-right"><CurrencyDisplay value={r.bankPmt} /></TableCell>
-              <TableCell className="text-right"><CurrencyDisplay value={r.adjustment} /></TableCell>
-              <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.closing} /></TableCell>
-            </TableRow>
-          ))}
+              </React.Fragment>
+            );
+          })}
         </TableBody>
         <TableFooter>
           <TableRow>
