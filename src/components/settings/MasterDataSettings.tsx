@@ -120,25 +120,37 @@ function EditableList({ title, color, items, onAdd, onUpdate, onDelete }: Editab
   );
 }
 
+/**
+ * Convert an A/c No to a sort value: first two digits as the integer part,
+ * remaining digits as the fractional part (e.g. "1234" → 12.34, "9" → 9,
+ * "12" → 12, "125" → 12.5). Non-digit characters are stripped. Returns NaN
+ * when no digits are present.
+ */
+export function acctSortValue(raw: string | undefined): number {
+  const digits = (raw ?? '').replace(/\D/g, '');
+  if (!digits) return Number.NaN;
+  if (digits.length <= 2) return Number(digits);
+  return Number(`${digits.slice(0, 2)}.${digits.slice(2)}`);
+}
+
 /** Sort helper: numeric a/c numbers first (ascending), then alphabetic names. */
 export function sortAccountsByNumberThenName(
   items: string[],
   accountNumbers: Record<string, string>,
 ): string[] {
   return [...items].sort((a, b) => {
-    const na = accountNumbers[a]?.trim() ?? '';
-    const nb = accountNumbers[b]?.trim() ?? '';
-    const va = na === '' ? Number.NaN : Number(na);
-    const vb = nb === '' ? Number.NaN : Number(nb);
+    const va = acctSortValue(accountNumbers[a]);
+    const vb = acctSortValue(accountNumbers[b]);
     const aNum = !Number.isNaN(va);
     const bNum = !Number.isNaN(vb);
     if (aNum && bNum) return va - vb || a.localeCompare(b);
     if (aNum) return -1;
     if (bNum) return 1;
-    // Both non-numeric (or blank) — alphabetic
     return a.localeCompare(b);
   });
 }
+
+
 
 interface AccountsListProps {
   title: string;

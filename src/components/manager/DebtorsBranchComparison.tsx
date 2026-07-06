@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
+import { acctSortValue } from '@/components/settings/MasterDataSettings';
 
 interface Props {
   month: string;
@@ -50,10 +51,10 @@ export function DebtorsBranchComparison({ month }: Props) {
       out.push(key);
     });
     return out.sort((a, b) => {
-      const va = Number(accountNumbers[a] ?? '');
-      const vb = Number(accountNumbers[b] ?? '');
-      const aNum = accountNumbers[a] && !Number.isNaN(va);
-      const bNum = accountNumbers[b] && !Number.isNaN(vb);
+      const va = acctSortValue(accountNumbers[a]);
+      const vb = acctSortValue(accountNumbers[b]);
+      const aNum = !Number.isNaN(va);
+      const bNum = !Number.isNaN(vb);
       if (aNum && bNum) return va - vb || a.localeCompare(b);
       if (aNum) return -1;
       if (bNum) return 1;
