@@ -38,7 +38,13 @@ export default function Index() {
   const [afsSubTab, setAfsSubTab] = useState("jes");
   const [fuelSubTab, setFuelSubTab] = useState("fuel-dashboard");
   const [uploadsSubTab, setUploadsSubTab] = useState("bank");
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("selectedDate") : null;
+    return saved || format(new Date(), "yyyy-MM-dd");
+  });
+  useEffect(() => {
+    localStorage.setItem("selectedDate", selectedDate);
+  }, [selectedDate]);
   const cashupLoaded = useCashupStore((s) => s.loaded);
   const loadCashups = useCashupStore((s) => s.loadAll);
   const masterLoaded = useMasterDataStore((s) => s.loaded);
