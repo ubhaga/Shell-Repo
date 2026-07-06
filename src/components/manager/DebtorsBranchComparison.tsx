@@ -5,6 +5,7 @@ import { CurrencyDisplay, CurrencyInput, Section } from '@/components/ui/CashupU
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Props {
   month: string;
