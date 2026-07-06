@@ -5,6 +5,7 @@ import { CurrencyDisplay, CurrencyInput, Section } from '@/components/ui/CashupU
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Props {
   month: string;
@@ -38,6 +39,7 @@ export function DebtorsBranchComparison({ month }: Props) {
   const [prevOpeningBalances, setPrevOpeningBalances] = useState<Record<string, number>>({});
   const [allocations, setAllocations] = useState<{ bank_line_id: string; recon_type: string; target_name: string }[]>([]);
   const [inputs, setInputs] = useState<Record<string, BranchInput>>({});
+  const [totalsExplanation, setTotalsExplanation] = useState('');
   const [saving, setSaving] = useState(false);
 
   const isFirstMonth = month === '2026-03';
@@ -61,7 +63,9 @@ export function DebtorsBranchComparison({ month }: Props) {
       if (r.supplier.startsWith('debtor:')) obMap[r.supplier.replace('debtor:', '')] = Number(r.amount);
     });
     setOpeningBalances(obMap);
-    setInputs(((brRes.data?.data as Record<string, BranchInput>) ?? {}));
+      const savedData = (brRes.data?.data ?? {}) as Record<string, unknown>;
+      setInputs((savedData.inputs as Record<string, BranchInput>) ?? {});
+      setTotalsExplanation((savedData.totals_explanation as string) ?? '');
 
     if (!isFirstMonth) {
       const [prevBank, prevOb] = await Promise.all([
@@ -178,7 +182,7 @@ export function DebtorsBranchComparison({ month }: Props) {
     setSaving(true);
     try {
       await supabase.from('master_data').upsert(
-        { key: `debtors_branch_${month}`, data: inputs as never, updated_at: new Date().toISOString() } as never,
+        { key: `debtors_branch_${month}`, data: { inputs, totals_explanation: totalsExplanation } as never, updated_at: new Date().toISOString() } as never,
         { onConflict: 'key' },
       );
       toast({ title: 'Debtors branch comparison saved' });
@@ -220,6 +224,15 @@ export function DebtorsBranchComparison({ month }: Props) {
         <CurrencyDisplay value={totals.adj} className="text-right" highlight />
         <CurrencyDisplay value={totals.diff} className="text-right" highlight />
         <span />
+      </div>
+      <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr_2fr] gap-2 px-3 py-2 border-b bg-secondary/40 text-sm items-start">
+        <span className="col-span-5 text-muted-foreground text-xs">Totals Explanation</span>
+        <Textarea
+          value={totalsExplanation}
+          onChange={e => setTotalsExplanation(e.target.value)}
+          className="w-full min-h-[60px] text-xs"
+          placeholder="Explain overall variance..."
+        />
       </div>
       <div className="p-3">
         <Button size="sm" onClick={handleSave} disabled={saving}>
