@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCashupStore } from '@/store/cashupStore';
+import { useMasterDataStore } from '@/store/masterDataStore';
 import { supabase } from '@/integrations/supabase/client';
 import { CurrencyDisplay, CurrencyInput, Section } from '@/components/ui/CashupUI';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,9 @@ const BANK_PAYMENT_RULES: { pattern: RegExp; account: string }[] = [
   { pattern: /CR BP ZOO.*LAKE.*DSL|BP ZOO LAKE DSL/i, account: 'Bp Zoolake' },
 ];
 
-const DEBTOR_ACCOUNTS = [
+// Fallback debtors — kept so accounts referenced by BANK_PAYMENT_RULES / JE3
+// always resolve even if removed from Master Data settings.
+const FALLBACK_DEBTOR_ACCOUNTS = [
   'Mahindra', 'Lancaster Pharmacy', 'Hyde Park Toyota', 'Hltc', 'St Theresas',
   'Sayinile', 'Red cross', 'Umesh', 'Isuzu bakkie', 'Bp Zoolake',
   'Bp Zoolake Account Customer', 'Shell Parkhurst', 'House tech', 'Moses bpzl',
@@ -33,6 +36,20 @@ type BranchInput = { branch: number; adjustment: number; explanation: string };
 
 export function DebtorsBranchComparison({ month }: Props) {
   const { cashups } = useCashupStore();
+  const masterAccounts = useMasterDataStore(s => s.accounts);
+  const DEBTOR_ACCOUNTS = useMemo(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    [...masterAccounts, ...FALLBACK_DEBTOR_ACCOUNTS].forEach(name => {
+      const key = name.trim();
+      if (!key) return;
+      const lower = key.toLowerCase();
+      if (seen.has(lower)) return;
+      seen.add(lower);
+      out.push(key);
+    });
+    return out;
+  }, [masterAccounts]);
   const [bankLines, setBankLines] = useState<BankLine[]>([]);
   const [prevBankLines, setPrevBankLines] = useState<BankLine[]>([]);
   const [openingBalances, setOpeningBalances] = useState<Record<string, number>>({});
