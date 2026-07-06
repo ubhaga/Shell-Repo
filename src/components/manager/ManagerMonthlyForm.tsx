@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Save, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { DebtorsBranchComparison } from "./DebtorsBranchComparison";
 
 interface Props {
   selectedDate: string;
@@ -373,7 +374,10 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
         </div>
       </Section>
 
+      <DebtorsBranchComparison month={month} />
+
       <Button onClick={handleSave} className="w-full" size="sm">
+
         <Save className="h-3.5 w-3.5 mr-1" />
         Save Monthly
       </Button>
