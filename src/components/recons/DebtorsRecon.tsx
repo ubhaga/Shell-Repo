@@ -412,26 +412,104 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map(r => (
-            <TableRow key={r.name}>
-              <TableCell className="text-sm">{r.name}</TableCell>
-              <TableCell className="text-right">
-                {isFirstMonth ? (
-                  <CurrencyInput
-                    value={editingOB[r.name] ?? r.ob}
-                    onChange={v => setEditingOB(prev => ({ ...prev, [r.name]: v }))}
-                    className="w-28 text-right text-xs"
-                  />
-                ) : (
-                  <CurrencyDisplay value={r.ob} />
+          {rows.map(r => {
+            const isOpen = !!expanded[r.name];
+            const pDetails = purchaseDetails[r.name] ?? [];
+            const payDetails = paymentDetails[r.name] ?? [];
+            const canExpand = pDetails.length > 0 || payDetails.length > 0;
+            return (
+              <React.Fragment key={r.name}>
+                <TableRow>
+                  <TableCell className="text-sm">
+                    <button
+                      type="button"
+                      onClick={() => canExpand && setExpanded(prev => ({ ...prev, [r.name]: !prev[r.name] }))}
+                      className="inline-flex items-center gap-1 hover:underline disabled:opacity-40"
+                      disabled={!canExpand}
+                    >
+                      {canExpand ? (isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />) : <span className="w-3.5" />}
+                      {r.name}
+                    </button>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {isFirstMonth ? (
+                      <CurrencyInput
+                        value={editingOB[r.name] ?? r.ob}
+                        onChange={v => setEditingOB(prev => ({ ...prev, [r.name]: v }))}
+                        className="w-28 text-right text-xs"
+                      />
+                    ) : (
+                      <CurrencyDisplay value={r.ob} />
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right"><CurrencyDisplay value={r.purchase} /></TableCell>
+                  <TableCell className="text-right"><CurrencyDisplay value={r.bankPmt} /></TableCell>
+                  <TableCell className="text-right"><CurrencyDisplay value={r.adjustment} /></TableCell>
+                  <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.closing} /></TableCell>
+                </TableRow>
+                {isOpen && (
+                  <TableRow className="bg-muted/20 hover:bg-muted/20">
+                    <TableCell colSpan={6} className="p-0">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3">
+                        <div>
+                          <div className="text-xs font-semibold mb-1">Purchases ({pDetails.length})</div>
+                          {pDetails.length === 0 ? (
+                            <div className="text-xs text-muted-foreground">No purchase line items</div>
+                          ) : (
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-muted-foreground">
+                                  <th className="text-left font-normal">Date</th>
+                                  <th className="text-left font-normal">Source</th>
+                                  <th className="text-right font-normal">Amount</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {pDetails.map((d, i) => (
+                                  <tr key={i}>
+                                    <td>{d.date}</td>
+                                    <td>{d.source}</td>
+                                    <td className="text-right"><CurrencyDisplay value={d.amount} /></td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-xs font-semibold mb-1">Payments ({payDetails.length})</div>
+                          {payDetails.length === 0 ? (
+                            <div className="text-xs text-muted-foreground">No payment line items</div>
+                          ) : (
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-muted-foreground">
+                                  <th className="text-left font-normal">Date</th>
+                                  <th className="text-left font-normal">Source</th>
+                                  <th className="text-left font-normal">Description</th>
+                                  <th className="text-right font-normal">Amount</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {payDetails.map((d, i) => (
+                                  <tr key={i}>
+                                    <td>{d.date}</td>
+                                    <td>{d.source}</td>
+                                    <td className="truncate max-w-[240px]">{d.description}</td>
+                                    <td className="text-right"><CurrencyDisplay value={d.amount} /></td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </TableCell>
-              <TableCell className="text-right"><CurrencyDisplay value={r.purchase} /></TableCell>
-              <TableCell className="text-right"><CurrencyDisplay value={r.bankPmt} /></TableCell>
-              <TableCell className="text-right"><CurrencyDisplay value={r.adjustment} /></TableCell>
-              <TableCell className="text-right font-semibold"><CurrencyDisplay value={r.closing} /></TableCell>
-            </TableRow>
-          ))}
+              </React.Fragment>
+            );
+          })}
         </TableBody>
         <TableFooter>
           <TableRow>
