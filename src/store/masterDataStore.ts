@@ -174,14 +174,36 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
     set(s => {
       const list = replace(s.accounts, old, next);
       persistKey('accounts', list);
-      return { accounts: list };
+      // Migrate account number under new name
+      const nums = { ...s.accountNumbers };
+      if (old !== next && nums[old] !== undefined) {
+        nums[next] = nums[old];
+        delete nums[old];
+        persistKey('accountNumbers', nums);
+      }
+      return { accounts: list, accountNumbers: nums };
     });
   },
   deleteAccount: (name) => {
     set(s => {
       const list = s.accounts.filter(i => i !== name);
       persistKey('accounts', list);
-      return { accounts: list };
+      const nums = { ...s.accountNumbers };
+      if (nums[name] !== undefined) {
+        delete nums[name];
+        persistKey('accountNumbers', nums);
+      }
+      return { accounts: list, accountNumbers: nums };
+    });
+  },
+  setAccountNumber: (name, number) => {
+    set(s => {
+      const nums = { ...s.accountNumbers };
+      const trimmed = number.trim();
+      if (trimmed) nums[name] = trimmed;
+      else delete nums[name];
+      persistKey('accountNumbers', nums);
+      return { accountNumbers: nums };
     });
   },
 
