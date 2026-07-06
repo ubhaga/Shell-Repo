@@ -605,6 +605,60 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
           </div>
         </CardContent>
       </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">JE 4 — Coins Banked ({month})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Description</TableHead>
+                <TableHead className="text-xs text-right">Debit</TableHead>
+                <TableHead className="text-xs text-right">Credit</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="text-sm py-1.5">Shift Clearing</TableCell>
+                <TableCell className="text-right py-1.5">
+                  <CurrencyDisplay value={je4.amount} />
+                </TableCell>
+                <TableCell className="text-right py-1.5" />
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-sm py-1.5">Petty Cash</TableCell>
+                <TableCell className="text-right py-1.5" />
+                <TableCell className="text-right py-1.5">
+                  <CurrencyDisplay value={je4.amount} />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell className="font-semibold text-sm">Totals</TableCell>
+                <TableCell className="text-right">
+                  <CurrencyDisplay value={je4.amount} highlight />
+                </TableCell>
+                <TableCell className="text-right">
+                  <CurrencyDisplay value={je4.amount} highlight />
+                </TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+          <div className="mt-3">
+            <label className="text-xs font-medium text-muted-foreground">Adjustment Explanations</label>
+            <Textarea
+              value={je4Explanation}
+              onChange={(e) => setJe4Explanation(e.target.value)}
+              onBlur={() => saveExplanation('je4', je4Explanation)}
+              placeholder="Enter adjustment explanations for JE 4..."
+              className="mt-1 min-h-[60px] text-sm"
+            />
+          </div>
+        </CardContent>
+      </Card>
     </div>
+
   );
 }
