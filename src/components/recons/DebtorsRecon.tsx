@@ -242,6 +242,44 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     return totals;
   }, [filterMonth, cashups]);
 
+  // Per-debtor payment line items combining bank statement matches and ROA receipts
+  const paymentDetails = useMemo(() => {
+    const map: Record<string, { date: string; source: string; description: string; amount: number }[]> = {};
+    DEBTOR_ACCOUNTS.forEach(a => { map[a] = []; });
+    // Bank statement
+    for (const line of bankLines) {
+      if (line.amount <= 0) continue;
+      let target: string | null = null;
+      const allocation = bankAllocations.find(a => a.bank_line_id === line.id && a.recon_type === 'debtor');
+      if (allocation) {
+        target = allocation.target_name;
+      } else {
+        for (const rule of BANK_PAYMENT_RULES) {
+          if (rule.pattern.test(line.description)) { target = rule.account; break; }
+        }
+      }
+      if (target && map[target]) {
+        map[target].push({ date: line.transaction_date, source: 'Bank', description: line.description, amount: line.amount });
+      }
+    }
+    // ROA receipts
+    const monthlyCashups = cashups.filter(c => c.month === filterMonth);
+    for (const c of monthlyCashups) {
+      for (const r of c.shop.receipts ?? []) {
+        if (r.type === 'Debtors Received on Account ROA' && r.amount > 0) {
+          const ref = (r.seqNo || '').trim();
+          const matched = DEBTOR_ACCOUNTS.find(a => a.toLowerCase() === ref.toLowerCase());
+          if (matched) {
+            map[matched].push({ date: c.date, source: 'ROA', description: `ROA ${ref}`, amount: r.amount });
+          }
+        }
+      }
+    }
+    Object.values(map).forEach(arr => arr.sort((x, y) => x.date.localeCompare(y.date)));
+    return map;
+  }, [filterMonth, cashups, bankLines, bankAllocations]);
+
+
   const prevMonthRoaPerDebtor = useMemo(() => {
     const monthlyCashups = cashups.filter(c => c.month === prevMonth);
     const totals: Record<string, number> = {};
