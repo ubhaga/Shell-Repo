@@ -120,6 +120,154 @@ function EditableList({ title, color, items, onAdd, onUpdate, onDelete }: Editab
   );
 }
 
+/** Sort helper: numeric a/c numbers first (ascending), then alphabetic names. */
+export function sortAccountsByNumberThenName(
+  items: string[],
+  accountNumbers: Record<string, string>,
+): string[] {
+  return [...items].sort((a, b) => {
+    const na = accountNumbers[a]?.trim() ?? '';
+    const nb = accountNumbers[b]?.trim() ?? '';
+    const va = na === '' ? Number.NaN : Number(na);
+    const vb = nb === '' ? Number.NaN : Number(nb);
+    const aNum = !Number.isNaN(va);
+    const bNum = !Number.isNaN(vb);
+    if (aNum && bNum) return va - vb || a.localeCompare(b);
+    if (aNum) return -1;
+    if (bNum) return 1;
+    // Both non-numeric (or blank) — alphabetic
+    return a.localeCompare(b);
+  });
+}
+
+interface AccountsListProps {
+  title: string;
+  color: string;
+  items: string[];
+  accountNumbers: Record<string, string>;
+  onAdd: (item: string) => void;
+  onUpdate: (oldItem: string, newItem: string) => void;
+  onDelete: (item: string) => void;
+  onSetNumber: (name: string, number: string) => void;
+}
+
+function AccountsList({
+  title, color, items, accountNumbers,
+  onAdd, onUpdate, onDelete, onSetNumber,
+}: AccountsListProps) {
+  const [newItem, setNewItem] = useState('');
+  const [newNumber, setNewNumber] = useState('');
+  const [editingItem, setEditingItem] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  const handleAdd = () => {
+    const trimmed = newItem.trim();
+    if (!trimmed) return;
+    if (items.map(i => i.toLowerCase()).includes(trimmed.toLowerCase())) {
+      toast({ title: 'Duplicate', description: `"${trimmed}" already exists.`, variant: 'destructive' });
+      return;
+    }
+    onAdd(trimmed);
+    if (newNumber.trim()) onSetNumber(trimmed, newNumber.trim());
+    setNewItem('');
+    setNewNumber('');
+    toast({ title: 'Added', description: `"${trimmed}" added.` });
+  };
+
+  const confirmEdit = () => {
+    const trimmed = editValue.trim();
+    if (!trimmed || !editingItem) return;
+    if (trimmed !== editingItem && items.map(i => i.toLowerCase()).includes(trimmed.toLowerCase())) {
+      toast({ title: 'Duplicate', description: `"${trimmed}" already exists.`, variant: 'destructive' });
+      return;
+    }
+    onUpdate(editingItem, trimmed);
+    setEditingItem(null);
+  };
+
+  const sorted = sortAccountsByNumberThenName(items, accountNumbers);
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <div className={`${color} text-white px-4 py-2.5 font-semibold text-sm flex items-center justify-between`}>
+        <span>{title}</span>
+        <span className="text-xs font-normal opacity-80">{items.length} items</span>
+      </div>
+
+      {/* Add new */}
+      <div className="flex gap-2 p-3 border-b bg-muted/20">
+        <input
+          value={newNumber}
+          onChange={e => setNewNumber(e.target.value)}
+          placeholder="A/c No"
+          className="w-20 text-sm border border-input rounded-md px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        <input
+          value={newItem}
+          onChange={e => setNewItem(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          placeholder="Debtor name..."
+          className="flex-1 text-sm border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        <Button size="sm" onClick={handleAdd} className="shrink-0">
+          <Plus className="h-3.5 w-3.5 mr-1" /> Add
+        </Button>
+      </div>
+
+      {/* List */}
+      <div className="max-h-72 overflow-y-auto divide-y">
+        {sorted.map(item => (
+          <div key={item} className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted/30 group">
+            <input
+              value={accountNumbers[item] ?? ''}
+              onChange={e => onSetNumber(item, e.target.value)}
+              placeholder="A/c"
+              className="w-20 text-sm border border-input rounded px-2 py-0.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            {editingItem === item ? (
+              <>
+                <input
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') confirmEdit(); if (e.key === 'Escape') setEditingItem(null); }}
+                  autoFocus
+                  className="flex-1 text-sm border border-input rounded px-2 py-0.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <button onClick={confirmEdit} className="text-green-600 hover:text-green-700 p-1">
+                  <Check className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={() => setEditingItem(null)} className="text-muted-foreground hover:text-foreground p-1">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="flex-1 text-sm">{item}</span>
+                <button
+                  onClick={() => { setEditingItem(item); setEditValue(item); }}
+                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground p-1 transition-opacity"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => { onDelete(item); toast({ title: 'Removed', description: `"${item}" removed.` }); }}
+                  className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive/70 p-1 transition-opacity"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </>
+            )}
+          </div>
+        ))}
+        {items.length === 0 && (
+          <div className="px-3 py-4 text-sm text-muted-foreground text-center">No items yet</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 export function MasterDataSettings() {
   const store = useMasterDataStore();
 
