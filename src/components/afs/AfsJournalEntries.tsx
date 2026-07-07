@@ -156,28 +156,40 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
   const je2 = useMemo(() => {
     const monthlyManagers = managerEntries.filter((e) => e.date.startsWith(month));
 
-    type Txn = { date: string; supplier: string; source: "Payout" | "EFT"; amount: number; hasVat: boolean };
+    type Txn = { date: string; supplier: string; source: "Payout" | "EFT"; amount: number; inclVatPortion: number; noVatPortion: number };
     const catMap: Record<string, { inclVat: number; noVat: number; transactions: Txn[] }> = {};
 
     const push = (cat: string, txn: Txn) => {
       if (!catMap[cat]) catMap[cat] = { inclVat: 0, noVat: 0, transactions: [] };
-      if (txn.hasVat) catMap[cat].inclVat += txn.amount;
-      else catMap[cat].noVat += txn.amount;
+      catMap[cat].inclVat += txn.inclVatPortion;
+      catMap[cat].noVat += txn.noVatPortion;
       catMap[cat].transactions.push(txn);
+    };
+
+    const splitAmounts = (category: string, inclusive: number, vat: number) => {
+      const isFuel = /fuel/i.test(category);
+      if (isFuel) {
+        // Fuel is VAT-exempt; only the small admin charge is vatable.
+        // Vatable inclusive portion = vat / 0.15 * 1.15; remainder is non-vatable.
+        const vatablePortion = vat > 0 ? (vat / 0.15) * 1.15 : 0;
+        return { inclVatPortion: vatablePortion, noVatPortion: inclusive - vatablePortion };
+      }
+      const hasVat = (vat ?? 0) > 0 || inclusive < 0;
+      return hasVat
+        ? { inclVatPortion: inclusive, noVatPortion: 0 }
+        : { inclVatPortion: 0, noVatPortion: inclusive };
     };
 
     monthlyManagers.forEach((e) => {
       e.payoutInvoices.forEach((inv) => {
-        push(inv.category || "Uncategorised", {
-          date: e.date, supplier: inv.supplier, source: "Payout",
-          amount: inv.inclusive, hasVat: (inv.vat ?? 0) > 0 || inv.inclusive < 0,
-        });
+        const cat = inv.category || "Uncategorised";
+        const { inclVatPortion, noVatPortion } = splitAmounts(cat, inv.inclusive, inv.vat ?? 0);
+        push(cat, { date: e.date, supplier: inv.supplier, source: "Payout", amount: inv.inclusive, inclVatPortion, noVatPortion });
       });
       e.eftInvoices.forEach((inv) => {
-        push(inv.category || "Uncategorised", {
-          date: e.date, supplier: inv.supplier, source: "EFT",
-          amount: inv.inclusive, hasVat: (inv.vat ?? 0) > 0 || inv.inclusive < 0,
-        });
+        const cat = inv.category || "Uncategorised";
+        const { inclVatPortion, noVatPortion } = splitAmounts(cat, inv.inclusive, inv.vat ?? 0);
+        push(cat, { date: e.date, supplier: inv.supplier, source: "EFT", amount: inv.inclusive, inclVatPortion, noVatPortion });
       });
     });
 
