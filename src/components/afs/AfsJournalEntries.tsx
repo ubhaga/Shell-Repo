@@ -167,8 +167,8 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     };
 
     const splitAmounts = (category: string, inclusive: number, vat: number) => {
-      const isFuel = /fuel/i.test(category);
-      if (isFuel) {
+      const isExempt = /fuel|wsl|dsl/i.test(category);
+      if (isExempt) {
         // Fuel is VAT-exempt; only the small admin charge is vatable.
         // Vatable inclusive portion = vat / 0.15 * 1.15; remainder is non-vatable.
         const vatablePortion = vat > 0 ? (vat / 0.15) * 1.15 : 0;
