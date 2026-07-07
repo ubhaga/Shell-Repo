@@ -170,13 +170,13 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       e.payoutInvoices.forEach((inv) => {
         push(inv.category || "Uncategorised", {
           date: e.date, supplier: inv.supplier, source: "Payout",
-          amount: inv.inclusive, hasVat: (inv.vat ?? 0) > 0,
+          amount: inv.inclusive, hasVat: (inv.vat ?? 0) > 0 || inv.inclusive < 0,
         });
       });
       e.eftInvoices.forEach((inv) => {
         push(inv.category || "Uncategorised", {
           date: e.date, supplier: inv.supplier, source: "EFT",
-          amount: inv.inclusive, hasVat: (inv.vat ?? 0) > 0,
+          amount: inv.inclusive, hasVat: (inv.vat ?? 0) > 0 || inv.inclusive < 0,
         });
       });
     });
