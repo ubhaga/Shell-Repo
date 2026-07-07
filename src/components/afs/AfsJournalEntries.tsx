@@ -355,180 +355,68 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">JE 2 — Invoices & Payouts ({month})</CardTitle>
+          <CardTitle className="text-base">JE 2 — Invoices ({month})</CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Combined Payouts + EFTs by category. Amounts are inclusive — enter the Incl. VAT
+            column against a VAT tax rate in Xero, and the No VAT column against a no-VAT rate.
+          </p>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Payouts by Category */}
-          <div>
-            <h4 className="text-sm font-semibold mb-2">Payouts — Summary by Category</h4>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                 <TableHead className="text-xs">Category</TableHead>
-                  <TableHead className="text-xs text-right">Debit (Excl. VAT)</TableHead>
-                  <TableHead className="text-xs text-right">Debit (VAT)</TableHead>
-                  <TableHead className="text-xs text-right">Debit (No VAT)</TableHead>
-                  <TableHead className="text-xs text-right">Credit (Payouts)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {je2.payoutCategories.map((r) => {
-                  const exclVat = r.vat / 0.15;
-                  const noVat = r.incl - exclVat - r.vat;
-                  return (
-                  <React.Fragment key={r.category}>
-                    <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => togglePayoutCat(r.category)}>
-                      <TableCell className="text-sm py-1.5">
-                        <span className="inline-flex items-center gap-1">
-                          {expandedPayoutCats.has(r.category) ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                          {r.category}
-                        </span>
+        <CardContent className="space-y-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Category</TableHead>
+                <TableHead className="text-xs text-right">Incl. VAT</TableHead>
+                <TableHead className="text-xs text-right">No VAT</TableHead>
+                <TableHead className="text-xs text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {je2.categories.map((r) => (
+                <React.Fragment key={r.category}>
+                  <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => togglePayoutCat(r.category)}>
+                    <TableCell className="text-sm py-1.5">
+                      <span className="inline-flex items-center gap-1">
+                        {expandedPayoutCats.has(r.category) ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                        {r.category}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right py-1.5"><CurrencyDisplay value={r.inclVat} /></TableCell>
+                    <TableCell className="text-right py-1.5"><CurrencyDisplay value={r.noVat} /></TableCell>
+                    <TableCell className="text-right py-1.5 font-medium"><CurrencyDisplay value={r.total} /></TableCell>
+                  </TableRow>
+                  {expandedPayoutCats.has(r.category) && r.transactions.map((t, i) => (
+                    <TableRow
+                      key={`${r.category}-${i}`}
+                      className="cursor-pointer hover:bg-accent/50 bg-muted/30"
+                      onClick={() => onNavigateToDate?.(t.date)}
+                    >
+                      <TableCell className="text-xs py-1 pl-10 text-muted-foreground">
+                        {t.date} — {t.supplier} <span className="opacity-70">({t.source})</span>
                       </TableCell>
-                      <TableCell className="text-right py-1.5">
-                        <CurrencyDisplay value={exclVat} />
+                      <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                        {t.hasVat ? <CurrencyDisplay value={t.amount} /> : null}
                       </TableCell>
-                      <TableCell className="text-right py-1.5">
-                        <CurrencyDisplay value={r.vat} />
+                      <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                        {t.hasVat ? null : <CurrencyDisplay value={t.amount} />}
                       </TableCell>
-                      <TableCell className="text-right py-1.5">
-                        <CurrencyDisplay value={noVat} />
+                      <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                        <CurrencyDisplay value={t.amount} />
                       </TableCell>
-                      <TableCell className="text-right py-1.5" />
                     </TableRow>
-                    {expandedPayoutCats.has(r.category) && r.transactions.map((t, i) => {
-                      const tExclVat = t.vat / 0.15;
-                      const tNoVat = t.amount - tExclVat - t.vat;
-                      return (
-                      <TableRow
-                        key={`${r.category}-${i}`}
-                        className="cursor-pointer hover:bg-accent/50 bg-muted/30"
-                        onClick={() => onNavigateToDate?.(t.date)}
-                      >
-                        <TableCell className="text-xs py-1 pl-10 text-muted-foreground">{t.date} — {t.vendor}</TableCell>
-                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                          <CurrencyDisplay value={tExclVat} />
-                        </TableCell>
-                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                          <CurrencyDisplay value={t.vat} />
-                        </TableCell>
-                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                          <CurrencyDisplay value={tNoVat} />
-                        </TableCell>
-                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                          <CurrencyDisplay value={t.amount} />
-                        </TableCell>
-                      </TableRow>
-                      );
-                    })}
-                  </React.Fragment>
-                  );
-                })}
-              </TableBody>
-              <TableFooter>
-                <TableRow>
-                  <TableCell className="font-semibold text-sm">Payouts Total</TableCell>
-                  <TableCell className="text-right">
-                    <CurrencyDisplay value={je2.payoutTotals.vat / 0.15} highlight />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <CurrencyDisplay value={je2.payoutTotals.vat} highlight />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <CurrencyDisplay value={je2.payoutTotals.incl - je2.payoutTotals.vat / 0.15 - je2.payoutTotals.vat} highlight />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <CurrencyDisplay value={je2.payoutTotals.incl} highlight />
-                  </TableCell>
-                </TableRow>
-              </TableFooter>
-            </Table>
-          </div>
-
-          {/* EFTs by Category */}
-          <div>
-            <h4 className="text-sm font-semibold mb-2">EFTs — Summary by Category</h4>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                 <TableHead className="text-xs">Category</TableHead>
-                  <TableHead className="text-xs text-right">Debit (Excl. VAT)</TableHead>
-                  <TableHead className="text-xs text-right">Debit (VAT)</TableHead>
-                  <TableHead className="text-xs text-right">Debit (No VAT)</TableHead>
-                  <TableHead className="text-xs text-right">Credit (Bank)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {je2.eftCategories.map((r) => {
-                  const exclVat = r.vat / 0.15;
-                  const noVat = r.incl - exclVat - r.vat;
-                  return (
-                  <React.Fragment key={r.category}>
-                    <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => toggleEftCat(r.category)}>
-                      <TableCell className="text-sm py-1.5">
-                        <span className="inline-flex items-center gap-1">
-                          {expandedEftCats.has(r.category) ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                          {r.category}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right py-1.5">
-                        <CurrencyDisplay value={exclVat} />
-                      </TableCell>
-                      <TableCell className="text-right py-1.5">
-                        <CurrencyDisplay value={r.vat} />
-                      </TableCell>
-                      <TableCell className="text-right py-1.5">
-                        <CurrencyDisplay value={noVat} />
-                      </TableCell>
-                      <TableCell className="text-right py-1.5" />
-                    </TableRow>
-                    {expandedEftCats.has(r.category) && r.transactions.map((t, i) => {
-                      const tExclVat = t.vat / 0.15;
-                      const tNoVat = t.inclusive - tExclVat - t.vat;
-                      return (
-                      <TableRow
-                        key={`${r.category}-${i}`}
-                        className="cursor-pointer hover:bg-accent/50 bg-muted/30"
-                        onClick={() => onNavigateToDate?.(t.date)}
-                      >
-                        <TableCell className="text-xs py-1 pl-10 text-muted-foreground">{t.date} — {t.supplier}</TableCell>
-                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                          <CurrencyDisplay value={tExclVat} />
-                        </TableCell>
-                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                          <CurrencyDisplay value={t.vat} />
-                        </TableCell>
-                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                          <CurrencyDisplay value={tNoVat} />
-                        </TableCell>
-                        <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                          <CurrencyDisplay value={t.inclusive} />
-                        </TableCell>
-                      </TableRow>
-                      );
-                    })}
-                  </React.Fragment>
-                  );
-                })}
-              </TableBody>
-              <TableFooter>
-                <TableRow>
-                  <TableCell className="font-semibold text-sm">EFTs Total</TableCell>
-                  <TableCell className="text-right">
-                    <CurrencyDisplay value={je2.eftTotals.vat / 0.15} highlight />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <CurrencyDisplay value={je2.eftTotals.vat} highlight />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <CurrencyDisplay value={je2.eftTotals.incl - je2.eftTotals.vat / 0.15 - je2.eftTotals.vat} highlight />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <CurrencyDisplay value={je2.eftTotals.incl} highlight />
-                  </TableCell>
-                </TableRow>
-              </TableFooter>
-            </Table>
-           </div>
+                  ))}
+                </React.Fragment>
+              ))}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell className="font-semibold text-sm">Total</TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je2.totals.inclVat} highlight /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je2.totals.noVat} highlight /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je2.totals.total} highlight /></TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
           <div className="mt-3">
             <label className="text-xs font-medium text-muted-foreground">Adjustment Explanations</label>
             <Textarea
