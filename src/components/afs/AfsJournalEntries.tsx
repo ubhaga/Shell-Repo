@@ -407,10 +407,10 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                         {t.date} — {t.supplier} <span className="opacity-70">({t.source})</span>
                       </TableCell>
                       <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                        {t.hasVat ? <CurrencyDisplay value={t.amount} /> : null}
+                        {t.inclVatPortion !== 0 ? <CurrencyDisplay value={t.inclVatPortion} /> : null}
                       </TableCell>
                       <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                        {t.hasVat ? null : <CurrencyDisplay value={t.amount} />}
+                        {t.noVatPortion !== 0 ? <CurrencyDisplay value={t.noVatPortion} /> : null}
                       </TableCell>
                       <TableCell className="text-right text-xs py-1 text-muted-foreground">
                         <CurrencyDisplay value={t.amount} />
