@@ -150,63 +150,54 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     return { credits, debits, totalCredits, totalDebits };
   }, [month, cashups, managerEntries, monthlyFigures]);
 
-  // ── JE 2 — Invoices & Payouts ──
+  // ── JE 2 — Invoices (Payouts + EFTs combined) ──
+  // Simplified for Xero entry: one row per category, showing total Incl. VAT
+  // and total No VAT amounts. Expand for line-item detail.
   const je2 = useMemo(() => {
     const monthlyManagers = managerEntries.filter((e) => e.date.startsWith(month));
-    const monthlyCashups = cashups.filter((c) => c.month === month);
 
-    // Payouts sourced directly from Manager Daily 1.1 Payout Invoices
-    const payoutCatMap: Record<string, { total: number; totalVat: number; transactions: { date: string; vendor: string; amount: number; vat: number }[] }> = {};
+    type Txn = { date: string; supplier: string; source: "Payout" | "EFT"; amount: number; hasVat: boolean };
+    const catMap: Record<string, { inclVat: number; noVat: number; transactions: Txn[] }> = {};
+
+    const push = (cat: string, txn: Txn) => {
+      if (!catMap[cat]) catMap[cat] = { inclVat: 0, noVat: 0, transactions: [] };
+      if (txn.hasVat) catMap[cat].inclVat += txn.amount;
+      else catMap[cat].noVat += txn.amount;
+      catMap[cat].transactions.push(txn);
+    };
+
     monthlyManagers.forEach((e) => {
       e.payoutInvoices.forEach((inv) => {
-        const cat = inv.category || "Uncategorised";
-        if (!payoutCatMap[cat]) payoutCatMap[cat] = { total: 0, totalVat: 0, transactions: [] };
-        payoutCatMap[cat].total += inv.inclusive;
-        payoutCatMap[cat].totalVat += inv.vat;
-        payoutCatMap[cat].transactions.push({ date: e.date, vendor: inv.supplier, amount: inv.inclusive, vat: inv.vat });
+        push(inv.category || "Uncategorised", {
+          date: e.date, supplier: inv.supplier, source: "Payout",
+          amount: inv.inclusive, hasVat: (inv.vat ?? 0) > 0,
+        });
       });
-    });
-    const payoutCategories = Object.entries(payoutCatMap)
-      .sort((a, b) => b[1].total - a[1].total)
-      .map(([category, data]) => ({
-        category,
-        incl: data.total,
-        vat: data.totalVat,
-        excl: data.total - data.totalVat,
-        transactions: data.transactions.sort((a, b) => a.date.localeCompare(b.date)),
-      }));
-    const payoutTotals = payoutCategories.reduce(
-      (a, r) => ({ incl: a.incl + r.incl, vat: a.vat + r.vat, excl: a.excl + r.excl }),
-      { incl: 0, vat: 0, excl: 0 }
-    );
-
-    // EFTs summary by category with individual transactions
-    const eftCatMap: Record<string, { incl: number; vat: number; transactions: { date: string; supplier: string; inclusive: number; vat: number }[] }> = {};
-    monthlyManagers.forEach((e) => {
       e.eftInvoices.forEach((inv) => {
-        const key = inv.category || "Uncategorised";
-        if (!eftCatMap[key]) eftCatMap[key] = { incl: 0, vat: 0, transactions: [] };
-        eftCatMap[key].incl += inv.inclusive;
-        eftCatMap[key].vat += inv.vat;
-        eftCatMap[key].transactions.push({ date: e.date, supplier: inv.supplier, inclusive: inv.inclusive, vat: inv.vat });
+        push(inv.category || "Uncategorised", {
+          date: e.date, supplier: inv.supplier, source: "EFT",
+          amount: inv.inclusive, hasVat: (inv.vat ?? 0) > 0,
+        });
       });
     });
-    const eftCategories = Object.entries(eftCatMap)
-      .sort((a, b) => a[0].localeCompare(b[0]))
+
+    const categories = Object.entries(catMap)
+      .sort((a, b) => (b[1].inclVat + b[1].noVat) - (a[1].inclVat + a[1].noVat))
       .map(([category, v]) => ({
         category,
-        incl: v.incl,
-        vat: v.vat,
-        excl: v.incl - v.vat,
+        inclVat: v.inclVat,
+        noVat: v.noVat,
+        total: v.inclVat + v.noVat,
         transactions: v.transactions.sort((a, b) => a.date.localeCompare(b.date)),
       }));
-    const eftTotals = eftCategories.reduce(
-      (a, r) => ({ incl: a.incl + r.incl, vat: a.vat + r.vat, excl: a.excl + r.excl }),
-      { incl: 0, vat: 0, excl: 0 }
+
+    const totals = categories.reduce(
+      (a, r) => ({ inclVat: a.inclVat + r.inclVat, noVat: a.noVat + r.noVat, total: a.total + r.total }),
+      { inclVat: 0, noVat: 0, total: 0 }
     );
 
-    return { payoutCategories, payoutTotals, eftCategories, eftTotals };
-  }, [month, cashups, managerEntries]);
+    return { categories, totals };
+  }, [month, managerEntries]);
 
   const [expandedPayoutCats, setExpandedPayoutCats] = useState<Set<string>>(new Set());
   const [expandedEftCats, setExpandedEftCats] = useState<Set<string>>(new Set());
