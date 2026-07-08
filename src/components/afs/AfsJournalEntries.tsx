@@ -219,6 +219,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
   const [je2_2Explanation, setJe2_2Explanation] = useState('');
   const [je3Explanation, setJe3Explanation] = useState('');
   const [je4Explanation, setJe4Explanation] = useState('');
+  const [je5Explanation, setJe5Explanation] = useState('');
 
   useEffect(() => {
     const key = `je_explanations_${month}`;
