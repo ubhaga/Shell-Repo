@@ -87,9 +87,13 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   if (getDay(monthEnd) !== 0) sundays.push(monthEnd);
 
   const FUEL_CREDITORS = ['Shell Downstream', 'F2K'];
+  const DIRECTLY_EXPENSED_CREDITORS = ['Dawn Consultants'];
   const isFuelCreditor = (s: string) => FUEL_CREDITORS.some(fc => fc.toUpperCase() === s.toUpperCase());
+  const isDirectlyExpensed = (s: string) =>
+    DIRECTLY_EXPENSED_CREDITORS.some(dc => dc.toUpperCase() === s.toUpperCase());
   const allSuppliers = [...eftSuppliers].sort();
-  const suppliers = allSuppliers.filter(s => !isFuelCreditor(s));
+  const suppliers = allSuppliers.filter(s => !isFuelCreditor(s) && !isDirectlyExpensed(s));
+  const directlyExpensedSuppliers = allSuppliers.filter(s => isDirectlyExpensed(s));
   const fuelSuppliers = allSuppliers.filter(s => isFuelCreditor(s));
 
   // EFT invoices from manager daily entries for this month
@@ -153,7 +157,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   type WeekData = { invoices: number; payments: number };
   const supplierWeekly: Record<string, WeekData[]> = {};
 
-  [...suppliers, ...fuelSuppliers].forEach(supplier => {
+  [...suppliers, ...directlyExpensedSuppliers, ...fuelSuppliers].forEach(supplier => {
     const weeks: WeekData[] = sundays.map(() => ({ invoices: 0, payments: 0 }));
 
     // Add EFT invoices
@@ -206,7 +210,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     if (!isFirstMonth && prevMonth) {
       const prevMonthManagers = managerEntries.filter(e => e.date.startsWith(prevMonth));
 
-      [...suppliers, ...fuelSuppliers].forEach(supplier => {
+      [...suppliers, ...directlyExpensedSuppliers, ...fuelSuppliers].forEach(supplier => {
         // If there's already a manually-entered OB for this month, keep it
         if (openingBalances[supplier] !== undefined) return;
 
@@ -237,7 +241,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     }
 
     return result;
-  }, [openingBalances, isFirstMonth, prevMonth, prevMonthOB, prevMonthBankLines, managerEntries, suppliers, fuelSuppliers]);
+  }, [openingBalances, isFirstMonth, prevMonth, prevMonthOB, prevMonthBankLines, managerEntries, suppliers, directlyExpensedSuppliers, fuelSuppliers]);
 
   // Save opening balances
   const handleSaveOB = async () => {
@@ -295,7 +299,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-end gap-2">
         <Button size="sm" variant="outline" onClick={() => {
-          const allSup = [...suppliers, ...fuelSuppliers];
+          const allSup = [...suppliers, ...directlyExpensedSuppliers, ...fuelSuppliers];
           const headers = ['Supplier', 'Opening Balance', ...weekLabels.flatMap(l => [`Invoices (${l})`, `Payments (${l})`, `Balance (${l})`])];
           const csvRows = allSup.map(s => {
             const ob = effectiveOB[s] ?? 0;
@@ -318,6 +322,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
         )}
       </div>
       {renderTable(`Creditors Reconciliation — ${format(monthStart, 'MMMM yyyy')}`, suppliers)}
+      {directlyExpensedSuppliers.length > 0 && renderTable(`Directly Expensed Creditors — ${format(monthStart, 'MMMM yyyy')}`, directlyExpensedSuppliers)}
       {fuelSuppliers.length > 0 && renderTable(`Fuel Creditors — ${format(monthStart, 'MMMM yyyy')}`, fuelSuppliers)}
     </div>
   );
