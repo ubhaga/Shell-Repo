@@ -126,6 +126,20 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   const [eftDiffClearances, setEftDiffClearances] = useState<
     { month: string; terminal: string; date_1: string; date_2: string }[]
   >([]);
+  const [creditorsExplanation, setCreditorsExplanation] = useState('');
+
+  useEffect(() => {
+    const key = `creditors_explanation_${month}`;
+    supabase.from('master_data').select('data').eq('key', key).maybeSingle().then(({ data }) => {
+      const d = (data?.data as { text?: string } | null) ?? null;
+      setCreditorsExplanation(d?.text ?? '');
+    });
+  }, [month]);
+
+  const saveCreditorsExplanation = (value: string) => {
+    const key = `creditors_explanation_${month}`;
+    supabase.from('master_data').upsert({ key, data: { text: value } as never, updated_at: new Date().toISOString() } as never, { onConflict: 'key' }).then();
+  };
 
   useEffect(() => {
     if (existing) setForm({ ...existing });
