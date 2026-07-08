@@ -592,47 +592,6 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
       </Section>
       <DebtorsBranchComparison month={month} />
 
-      {/* Airtime / Lotto Balance */}
-      <Section title="5. Creditors excl Trade Creditors" color="green">
-        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
-          <span>Description</span>
-          <span className="text-center">Blue Label</span>
-          <span className="text-center">Easy Pay</span>
-          <span className="text-center">Lotto (Unpaid days combined)</span>
-        </div>
-        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
-          <span className="text-muted-foreground font-medium">Month End Bal</span>
-          <div className="flex justify-center">
-            <CurrencyInput
-              value={form.airtimeBldBalance}
-              onChange={(v) => setForm((f) => ({ ...f, airtimeBldBalance: v }))}
-              className="text-right w-full max-w-[120px]"
-              allowNegative
-            />
-          </div>
-          <div className="flex justify-center">
-            <CurrencyInput
-              value={form.airtimeEasypayBalance}
-              onChange={(v) => setForm((f) => ({ ...f, airtimeEasypayBalance: v }))}
-              className="text-right w-full max-w-[120px]"
-              allowNegative
-            />
-          </div>
-          <div className="flex justify-center">
-            <CurrencyInput
-              value={form.airtimeLottoBalance}
-              onChange={(v) => setForm((f) => ({ ...f, airtimeLottoBalance: v }))}
-              className="text-right w-full max-w-[120px]"
-              allowNegative
-            />
-          </div>
-        </div>
-        <div className="px-3 py-2 border-t flex justify-end">
-          <Button onClick={handleSave} size="sm" variant="outline">
-            <Save className="h-3.5 w-3.5 mr-1" /> Save
-          </Button>
-        </div>
-      </Section>
 
       {/* 3. EFT Recon */}
       <Section title="3. EFT Recon" color="purple">
