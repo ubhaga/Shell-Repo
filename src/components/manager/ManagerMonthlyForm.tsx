@@ -926,6 +926,34 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
             />
           </div>
         </div>
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center bg-secondary/40 font-semibold">
+          <span>Diff (Month End − Xero)</span>
+          {(() => {
+            const diffs = [
+              form.airtimeBldBalance - form.airtimeBldXero,
+              form.airtimeEasypayBalance - form.airtimeEasypayXero,
+              form.airtimeLottoBalance - form.airtimeLottoXero,
+            ];
+            return diffs.map((d, i) => (
+              <div key={i} className="flex justify-center">
+                <CurrencyDisplay
+                  value={d}
+                  className={`text-right w-full max-w-[120px] ${Math.abs(d) < 0.01 ? 'text-green-600' : 'text-destructive'}`}
+                />
+              </div>
+            ));
+          })()}
+        </div>
+        <div className="px-3 py-2 border-t">
+          <label className="text-xs font-medium text-muted-foreground">Explanation</label>
+          <textarea
+            value={creditorsExplanation}
+            onChange={(e) => setCreditorsExplanation(e.target.value)}
+            onBlur={(e) => saveCreditorsExplanation(e.target.value)}
+            className="input-cell w-full text-left text-xs mt-1 min-h-[60px]"
+            placeholder="Explain variances between Month End Bal and Xero..."
+          />
+        </div>
         <div className="px-3 py-2 border-t flex justify-end">
           <Button onClick={handleSave} size="sm" variant="outline">
             <Save className="h-3.5 w-3.5 mr-1" /> Save
