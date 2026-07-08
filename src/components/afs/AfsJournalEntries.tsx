@@ -722,14 +722,14 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                 <TableCell className="text-right py-1.5" />
               </TableRow>
               <TableRow>
-                <TableCell className="text-sm py-1.5">Lotto Commission (Net Sales + Payout + Adj)</TableCell>
+                <TableCell className="text-sm py-1.5">Lotto Commission (Weekly Total)</TableCell>
                 <TableCell className="text-right py-1.5"><CurrencyDisplay value={je5.lotto} /></TableCell>
                 <TableCell className="text-right py-1.5" />
               </TableRow>
               <TableRow>
                 <TableCell className="text-sm py-1.5">Easy Pay Commission</TableCell>
-                <TableCell className="text-right py-1.5" />
                 <TableCell className="text-right py-1.5"><CurrencyDisplay value={je5.easyPay} /></TableCell>
+                <TableCell className="text-right py-1.5" />
               </TableRow>
               <TableRow>
                 <TableCell className="text-sm py-1.5">Loan UB</TableCell>
