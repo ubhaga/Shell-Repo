@@ -371,66 +371,83 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
         <CardHeader>
           <CardTitle className="text-base">JE 2.1 — EFT Invoices ({month})</CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            EFT invoices by category. Amounts are inclusive — enter the Incl. VAT
-            column against a VAT tax rate in Xero, and the No VAT column against a no-VAT rate.
+            EFT invoices as a journal entry. Each category is debited to its Cost of Sales
+            account (split by VAT treatment) and credited to Fuel Clearing (Fuel / WSL DSL)
+            or Trade Creditors (all other categories).
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-xs">Category</TableHead>
-                <TableHead className="text-xs text-right">Incl. VAT</TableHead>
-                <TableHead className="text-xs text-right">No VAT</TableHead>
-                <TableHead className="text-xs text-right">Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {je2Eft.categories.map((r) => (
-                <React.Fragment key={r.category}>
-                  <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => toggleEftCat(r.category)}>
-                    <TableCell className="text-sm py-1.5">
-                      <span className="inline-flex items-center gap-1">
-                        {expandedEftCats.has(r.category) ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                        {r.category}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right py-1.5"><CurrencyDisplay value={r.inclVat} /></TableCell>
-                    <TableCell className="text-right py-1.5"><CurrencyDisplay value={r.noVat} /></TableCell>
-                    <TableCell className="text-right py-1.5 font-medium"><CurrencyDisplay value={r.total} /></TableCell>
+          {(() => {
+            const isFuelClearing = (cat: string) => /fuel|wsl|dsl/i.test(cat);
+            type DebitRow = { label: string; amount: number };
+            const debits: DebitRow[] = [];
+            let fuelClearingTotal = 0;
+            let tradeCreditorsTotal = 0;
+
+            je2Eft.categories.forEach((r) => {
+              const fuel = isFuelClearing(r.category);
+              if (fuel) {
+                if (r.inclVat !== 0) debits.push({ label: `COS ${r.category} (Incl Vat)`, amount: r.inclVat });
+                if (r.noVat !== 0) debits.push({ label: `COS ${r.category} (Exempt)`, amount: r.noVat });
+                fuelClearingTotal += r.inclVat + r.noVat;
+              } else {
+                if (r.inclVat !== 0) debits.push({ label: `COS ${r.category} (Incl Vat)`, amount: r.inclVat });
+                if (r.noVat !== 0) debits.push({ label: `COS ${r.category} (No Vat)`, amount: r.noVat });
+                tradeCreditorsTotal += r.inclVat + r.noVat;
+              }
+            });
+
+            const totalDebits = debits.reduce((s, d) => s + d.amount, 0);
+            const totalCredits = fuelClearingTotal + tradeCreditorsTotal;
+
+            return (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Description</TableHead>
+                    <TableHead className="text-xs text-right">Debit</TableHead>
+                    <TableHead className="text-xs text-right">Credit</TableHead>
                   </TableRow>
-                  {expandedEftCats.has(r.category) && r.transactions.map((t, i) => (
-                    <TableRow
-                      key={`${r.category}-${i}`}
-                      className="cursor-pointer hover:bg-accent/50 bg-muted/30"
-                      onClick={() => onNavigateToDate?.(t.date)}
-                    >
-                      <TableCell className="text-xs py-1 pl-10 text-muted-foreground">
-                        {t.date} — {t.supplier}
-                      </TableCell>
-                      <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                        {t.inclVatPortion !== 0 ? <CurrencyDisplay value={t.inclVatPortion} /> : null}
-                      </TableCell>
-                      <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                        {t.noVatPortion !== 0 ? <CurrencyDisplay value={t.noVatPortion} /> : null}
-                      </TableCell>
-                      <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                        <CurrencyDisplay value={t.amount} />
-                      </TableCell>
+                </TableHeader>
+                <TableBody>
+                  {debits.map((d, i) => (
+                    <TableRow key={`d-${i}`}>
+                      <TableCell className="text-sm py-1.5">{d.label}</TableCell>
+                      <TableCell className="text-right py-1.5"><CurrencyDisplay value={d.amount} /></TableCell>
+                      <TableCell className="text-right py-1.5" />
                     </TableRow>
                   ))}
-                </React.Fragment>
-              ))}
-            </TableBody>
-            <TableFooter>
-              <TableRow>
-                <TableCell className="font-semibold text-sm">Total</TableCell>
-                <TableCell className="text-right"><CurrencyDisplay value={je2Eft.totals.inclVat} highlight /></TableCell>
-                <TableCell className="text-right"><CurrencyDisplay value={je2Eft.totals.noVat} highlight /></TableCell>
-                <TableCell className="text-right"><CurrencyDisplay value={je2Eft.totals.total} highlight /></TableCell>
-              </TableRow>
-            </TableFooter>
-          </Table>
+                  {fuelClearingTotal !== 0 && (
+                    <TableRow>
+                      <TableCell className="text-sm py-1.5">Fuel Clearing</TableCell>
+                      <TableCell className="text-right py-1.5" />
+                      <TableCell className="text-right py-1.5"><CurrencyDisplay value={fuelClearingTotal} /></TableCell>
+                    </TableRow>
+                  )}
+                  {tradeCreditorsTotal !== 0 && (
+                    <TableRow>
+                      <TableCell className="text-sm py-1.5">Trade Creditors</TableCell>
+                      <TableCell className="text-right py-1.5" />
+                      <TableCell className="text-right py-1.5"><CurrencyDisplay value={tradeCreditorsTotal} /></TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+                <TableFooter>
+                  <TableRow>
+                    <TableCell className="font-semibold text-sm">Totals</TableCell>
+                    <TableCell className="text-right"><CurrencyDisplay value={totalDebits} highlight /></TableCell>
+                    <TableCell className="text-right"><CurrencyDisplay value={totalCredits} highlight /></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-semibold text-sm">Difference</TableCell>
+                    <TableCell className="text-right" colSpan={2}>
+                      <CurrencyDisplay value={totalDebits - totalCredits} highlight />
+                    </TableCell>
+                  </TableRow>
+                </TableFooter>
+              </Table>
+            );
+          })()}
           <div className="mt-3">
             <label className="text-xs font-medium text-muted-foreground">Adjustment Explanations</label>
             <Textarea
