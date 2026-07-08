@@ -882,7 +882,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
               onChange={(v) => setForm((f) => ({ ...f, airtimeLottoBalance: v }))}
               className="text-right w-full max-w-[120px]"
               allowNegative
-            />
+          </div>
         </div>
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
           <span className="text-muted-foreground font-medium">Xero</span>
