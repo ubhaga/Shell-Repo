@@ -35,7 +35,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       const cStoreNonVatable = totalCStore - cStoreVatable;
 
       credits.push({ description: "C Store Vatable", amount: cStoreVatable });
-      credits.push({ description: "C Store Non Vatable", amount: cStoreNonVatable });
+      credits.push({ description: "Sales: C Store Non Vatable", amount: cStoreNonVatable });
       credits.push({ description: "WSL DSL", amount: mf.salesWslDsl + mf.adjWslDsl });
       credits.push({ description: "Fuel", amount: mf.salesFuel + mf.adjFuel });
       credits.push({ description: "Gas", amount: totalGas });
