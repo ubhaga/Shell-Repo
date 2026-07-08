@@ -142,6 +142,33 @@ export function CreditorsTable({
                 );
               })}
             </TableRow>
+            {(() => {
+              const grandInv = totalSuppliers.reduce(
+                (s, sup) => s + supplierWeekly[sup].reduce((a, w) => a + w.invoices, 0),
+                0,
+              );
+              const grandPay = totalSuppliers.reduce(
+                (s, sup) => s + supplierWeekly[sup].reduce((a, w) => a + w.payments, 0),
+                0,
+              );
+              const spanCols = 1 + sundays.length * 3; // OB + (inv/paid/bal per week)
+              return (
+                <>
+                  <TableRow className="bg-secondary/60 font-semibold">
+                    <TableCell className="sticky left-0 bg-secondary/60 z-10 text-xs">Total Inv</TableCell>
+                    <TableCell colSpan={spanCols} className="text-right text-xs text-green-700">
+                      <CurrencyDisplay value={grandInv} highlight />
+                    </TableCell>
+                  </TableRow>
+                  <TableRow className="bg-secondary/60 font-semibold">
+                    <TableCell className="sticky left-0 bg-secondary/60 z-10 text-xs">Total Payment</TableCell>
+                    <TableCell colSpan={spanCols} className="text-right text-xs text-red-600">
+                      <CurrencyDisplay value={grandPay} highlight />
+                    </TableCell>
+                  </TableRow>
+                </>
+              );
+            })()}
           </TableBody>
         </Table>
       </div>
