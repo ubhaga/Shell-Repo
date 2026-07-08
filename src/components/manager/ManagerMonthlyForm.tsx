@@ -590,6 +590,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           </Button>
         </div>
       </Section>
+      <DebtorsBranchComparison month={month} />
 
       {/* Airtime / Lotto Balance */}
       <Section title="4. Airtime / Lotto Balance" color="green">
