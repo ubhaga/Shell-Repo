@@ -215,18 +215,44 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   })();
   const pettyCashTotalCol1 = coinsReconClosing + form.pettyCashUnbankedDeposit;
 
-  // 3. EFT Recon — per-terminal cumulative diff through end of selected month
+  // 3. EFT Recon — per-terminal diff using per-batch matching (matches Speedpoint Recon report)
   const monthEndStr = `${yearStr}-${monthStr}-${String(lastDayCurr.getDate()).padStart(2, "0")}`;
+  const TERMINAL_NUM: Record<string, string> = {};
+  SP_TERMINALS.forEach((t) => {
+    const m = t.match(/(\d{6})/);
+    if (m) TERMINAL_NUM[t] = m[1];
+  });
+  // Build bankLookup: `${terminal}|${batch}` -> summed bank amount (cumulative through month end)
+  const bankLookup: Record<string, number> = {};
+  eftBankLines.forEach((l) => {
+    if (!l.matched_terminal || !SP_TERMINALS.includes(l.matched_terminal)) return;
+    const termNum = TERMINAL_NUM[l.matched_terminal] || "";
+    if (!termNum) return;
+    const bm = l.description?.match(new RegExp(`${termNum}\\s+(\\d+)`));
+    const batch = bm ? bm[1] : "";
+    if (!batch) return;
+    const key = `${l.matched_terminal}|${batch}`;
+    bankLookup[key] = (bankLookup[key] || 0) + Number(l.amount ?? 0);
+  });
   const eftPerTerminal = SP_TERMINALS.map((term) => {
-    const cashupTotal = cashups
+    // Aggregate cashup speedpoints by batchNo (cumulative through month end)
+    const cashupByBatch: Record<string, number> = {};
+    cashups
       .filter((c) => c.date <= monthEndStr)
-      .reduce((s, c) => {
-        const shop = c.shop.speedpoints.filter((sp) => sp.terminal === term).reduce((a, sp) => a + sp.shopAmount, 0);
-        const opt = c.opt.speedpoints.filter((sp) => sp.terminal === term).reduce((a, sp) => a + sp.optAmount, 0);
-        return s + shop + opt;
-      }, 0);
-    const bankTotal = eftBankByTerminal[term] ?? 0;
-    return { terminal: term, diff: cashupTotal - bankTotal };
+      .forEach((c) => {
+        [...c.shop.speedpoints, ...c.opt.speedpoints].forEach((sp) => {
+          if (sp.terminal !== term) return;
+          const amt = (sp as { shopAmount?: number; optAmount?: number }).shopAmount ?? (sp as { shopAmount?: number; optAmount?: number }).optAmount ?? 0;
+          const batch = sp.batchNo || "";
+          cashupByBatch[batch] = (cashupByBatch[batch] || 0) + amt;
+        });
+      });
+    let diff = 0;
+    Object.entries(cashupByBatch).forEach(([batch, cashupAmt]) => {
+      const bankAmt = batch ? (bankLookup[`${term}|${batch}`] ?? 0) : 0;
+      diff += cashupAmt - bankAmt;
+    });
+    return { terminal: term, diff };
   });
   const eftReconClosing = eftPerTerminal.reduce((s, r) => s + r.diff, 0);
   const eftTotalCol1 = eftReconClosing + form.eftUnbankedDeposit;
