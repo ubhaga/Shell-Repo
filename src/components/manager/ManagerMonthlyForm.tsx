@@ -115,10 +115,12 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
 
   useEffect(() => {
     (async () => {
+      const [y, m] = month.split("-").map(Number);
+      const endStr = `${y}-${String(m).padStart(2, "0")}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
       const { data } = await supabase
         .from("bank_statement_lines")
-        .select("amount, matched_terminal")
-        .eq("month", month);
+        .select("amount, matched_terminal, transaction_date")
+        .lte("transaction_date", endStr);
       const total = (data ?? [])
         .filter((l) => l.matched_terminal && SP_TERMINALS.includes(l.matched_terminal))
         .reduce((s, l) => s + Number(l.amount ?? 0), 0);
@@ -216,12 +218,15 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   })();
   const pettyCashTotalCol1 = coinsReconClosing + form.pettyCashUnbankedDeposit;
 
-  // 3. EFT Recon — total unbanked speedpoints for the month
-  const speedpointCashupTotal = monthCashups.reduce((s, c) => {
-    const shop = c.shop.speedpoints.filter((sp) => SP_TERMINALS.includes(sp.terminal)).reduce((a, sp) => a + sp.shopAmount, 0);
-    const opt = c.opt.speedpoints.filter((sp) => SP_TERMINALS.includes(sp.terminal)).reduce((a, sp) => a + sp.optAmount, 0);
-    return s + shop + opt;
-  }, 0);
+  // 3. EFT Recon — cumulative unbanked speedpoints through end of selected month
+  const monthEndStr = `${yearStr}-${monthStr}-${String(lastDayCurr.getDate()).padStart(2, "0")}`;
+  const speedpointCashupTotal = cashups
+    .filter((c) => c.date <= monthEndStr)
+    .reduce((s, c) => {
+      const shop = c.shop.speedpoints.filter((sp) => SP_TERMINALS.includes(sp.terminal)).reduce((a, sp) => a + sp.shopAmount, 0);
+      const opt = c.opt.speedpoints.filter((sp) => SP_TERMINALS.includes(sp.terminal)).reduce((a, sp) => a + sp.optAmount, 0);
+      return s + shop + opt;
+    }, 0);
   const eftReconClosing = speedpointCashupTotal - eftBankTotal;
   const eftTotalCol1 = eftReconClosing + form.eftUnbankedDeposit;
 
