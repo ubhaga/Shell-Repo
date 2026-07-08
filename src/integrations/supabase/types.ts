@@ -364,6 +364,8 @@ export type Database = {
           cc_unbanked_deposit: number
           cc_xero: number
           created_at: string
+          eft_unbanked_deposit: number
+          eft_xero: number
           entered_by: string
           explanation_bank_charges: string
           explanation_invoices: string
@@ -405,6 +407,8 @@ export type Database = {
           cc_unbanked_deposit?: number
           cc_xero?: number
           created_at?: string
+          eft_unbanked_deposit?: number
+          eft_xero?: number
           entered_by?: string
           explanation_bank_charges?: string
           explanation_invoices?: string
@@ -446,6 +450,8 @@ export type Database = {
           cc_unbanked_deposit?: number
           cc_xero?: number
           created_at?: string
+          eft_unbanked_deposit?: number
+          eft_xero?: number
           entered_by?: string
           explanation_bank_charges?: string
           explanation_invoices?: string

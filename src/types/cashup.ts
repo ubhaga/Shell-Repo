@@ -181,6 +181,9 @@ export interface MonthlyBranchFigures {
   pettyCashRecon: number;
   pettyCashXero: number;
   pettyCashUnbankedDeposit: number;
+  // 3. EFT Recon
+  eftXero: number;
+  eftUnbankedDeposit: number;
   // Airtime / Lotto month-end balances
   airtimeBldBalance: number;
   airtimeEasypayBalance: number;

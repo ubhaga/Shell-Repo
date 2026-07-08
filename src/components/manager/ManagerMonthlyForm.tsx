@@ -8,6 +8,9 @@ import { Save, CheckCircle, AlertCircle, ChevronDown, ChevronRight } from "lucid
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { DebtorsBranchComparison } from "./DebtorsBranchComparison";
+import { supabase } from "@/integrations/supabase/client";
+
+const SP_TERMINALS = ["Term 247608", "Forecourt 929661", "Retail 200660", "Scan to pay"];
 
 interface Props {
   selectedDate: string;
@@ -94,6 +97,8 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     pettyCashRecon: 0,
     pettyCashXero: 0,
     pettyCashUnbankedDeposit: 0,
+    eftXero: 0,
+    eftUnbankedDeposit: 0,
     notes: "",
     airtimeBldBalance: 0,
     airtimeEasypayBalance: 0,
@@ -101,11 +106,25 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   });
 
   const [bankChargesExpanded, setBankChargesExpanded] = useState(false);
+  const [eftBankTotal, setEftBankTotal] = useState(0);
 
   useEffect(() => {
     if (existing) setForm({ ...existing });
     else setForm((f) => ({ ...f, month }));
   }, [month, existing?.id]);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("bank_statement_lines")
+        .select("amount, matched_terminal")
+        .eq("month", month);
+      const total = (data ?? [])
+        .filter((l) => l.matched_terminal && SP_TERMINALS.includes(l.matched_terminal))
+        .reduce((s, l) => s + Number(l.amount ?? 0), 0);
+      setEftBankTotal(total);
+    })();
+  }, [month]);
 
   // Compute from store
   const monthCashups = cashups.filter((c) => c.month === month);
@@ -196,6 +215,15 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     return coins;
   })();
   const pettyCashTotalCol1 = coinsReconClosing + form.pettyCashUnbankedDeposit;
+
+  // 3. EFT Recon — total unbanked speedpoints for the month
+  const speedpointCashupTotal = monthCashups.reduce((s, c) => {
+    const shop = c.shop.speedpoints.filter((sp) => SP_TERMINALS.includes(sp.terminal)).reduce((a, sp) => a + sp.shopAmount, 0);
+    const opt = c.opt.speedpoints.filter((sp) => SP_TERMINALS.includes(sp.terminal)).reduce((a, sp) => a + sp.optAmount, 0);
+    return s + shop + opt;
+  }, 0);
+  const eftReconClosing = speedpointCashupTotal - eftBankTotal;
+  const eftTotalCol1 = eftReconClosing + form.eftUnbankedDeposit;
 
   const handleSave = async () => {
     try {
@@ -444,6 +472,57 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
               allowNegative
             />
           </div>
+        </div>
+      </Section>
+
+      {/* 3. EFT Recon */}
+      <Section title="3. EFT Recon" color="purple">
+        <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+          <span>Description</span>
+          <span className="text-right">EFT Recon</span>
+          <span className="text-right">Xero</span>
+        </div>
+        <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
+          <span className="text-muted-foreground">EFT Recon Closing Balance</span>
+          <CurrencyDisplay value={eftReconClosing} className="text-right" />
+          <div className="flex justify-end">
+            <CurrencyInput
+              value={form.eftXero}
+              onChange={(v) => setForm((f) => ({ ...f, eftXero: v }))}
+              className="text-right w-full max-w-[140px]"
+              allowNegative
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
+          <span className="text-muted-foreground">Un Banked Deposit</span>
+          <div className="flex justify-end">
+            <CurrencyInput
+              value={form.eftUnbankedDeposit}
+              onChange={(v) => setForm((f) => ({ ...f, eftUnbankedDeposit: v }))}
+              className="text-right w-full max-w-[140px]"
+              allowNegative
+            />
+          </div>
+          <span></span>
+        </div>
+        <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-2 text-sm items-center bg-secondary font-semibold">
+          <div className="flex items-center gap-2">
+            <span>Total</span>
+            {(() => {
+              const match = Math.abs(eftTotalCol1 - form.eftXero) < 0.01;
+              return (
+                <span
+                  className={`flex items-center gap-1 rounded px-2 py-0.5 font-semibold text-xs ${match ? "status-green" : "status-red"}`}
+                >
+                  {match ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                  {match ? "MATCH" : <CurrencyDisplay value={eftTotalCol1 - form.eftXero} />}
+                </span>
+              );
+            })()}
+          </div>
+          <CurrencyDisplay value={eftTotalCol1} className="text-right" highlight />
+          <CurrencyDisplay value={form.eftXero} className="text-right" highlight />
         </div>
       </Section>
 
