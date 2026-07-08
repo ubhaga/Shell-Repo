@@ -106,7 +106,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   });
 
   const [bankChargesExpanded, setBankChargesExpanded] = useState(false);
-  const [eftBankTotal, setEftBankTotal] = useState(0);
+  const [eftBankByTerminal, setEftBankByTerminal] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (existing) setForm({ ...existing });
@@ -121,10 +121,14 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
         .from("bank_statement_lines")
         .select("amount, matched_terminal, transaction_date")
         .lte("transaction_date", endStr);
-      const total = (data ?? [])
-        .filter((l) => l.matched_terminal && SP_TERMINALS.includes(l.matched_terminal))
-        .reduce((s, l) => s + Number(l.amount ?? 0), 0);
-      setEftBankTotal(total);
+      const byTerm: Record<string, number> = {};
+      SP_TERMINALS.forEach((t) => (byTerm[t] = 0));
+      (data ?? []).forEach((l) => {
+        if (l.matched_terminal && SP_TERMINALS.includes(l.matched_terminal)) {
+          byTerm[l.matched_terminal] += Number(l.amount ?? 0);
+        }
+      });
+      setEftBankByTerminal(byTerm);
     })();
   }, [month]);
 
@@ -218,16 +222,20 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   })();
   const pettyCashTotalCol1 = coinsReconClosing + form.pettyCashUnbankedDeposit;
 
-  // 3. EFT Recon — cumulative unbanked speedpoints through end of selected month
+  // 3. EFT Recon — per-terminal cumulative diff through end of selected month
   const monthEndStr = `${yearStr}-${monthStr}-${String(lastDayCurr.getDate()).padStart(2, "0")}`;
-  const speedpointCashupTotal = cashups
-    .filter((c) => c.date <= monthEndStr)
-    .reduce((s, c) => {
-      const shop = c.shop.speedpoints.filter((sp) => SP_TERMINALS.includes(sp.terminal)).reduce((a, sp) => a + sp.shopAmount, 0);
-      const opt = c.opt.speedpoints.filter((sp) => SP_TERMINALS.includes(sp.terminal)).reduce((a, sp) => a + sp.optAmount, 0);
-      return s + shop + opt;
-    }, 0);
-  const eftReconClosing = speedpointCashupTotal - eftBankTotal;
+  const eftPerTerminal = SP_TERMINALS.map((term) => {
+    const cashupTotal = cashups
+      .filter((c) => c.date <= monthEndStr)
+      .reduce((s, c) => {
+        const shop = c.shop.speedpoints.filter((sp) => sp.terminal === term).reduce((a, sp) => a + sp.shopAmount, 0);
+        const opt = c.opt.speedpoints.filter((sp) => sp.terminal === term).reduce((a, sp) => a + sp.optAmount, 0);
+        return s + shop + opt;
+      }, 0);
+    const bankTotal = eftBankByTerminal[term] ?? 0;
+    return { terminal: term, diff: cashupTotal - bankTotal };
+  });
+  const eftReconClosing = eftPerTerminal.reduce((s, r) => s + r.diff, 0);
   const eftTotalCol1 = eftReconClosing + form.eftUnbankedDeposit;
 
   const handleSave = async () => {
@@ -487,9 +495,16 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           <span className="text-right">EFT Recon</span>
           <span className="text-right">Xero</span>
         </div>
-        <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
-          <span className="text-muted-foreground">EFT Recon Closing Balance</span>
-          <CurrencyDisplay value={eftReconClosing} className="text-right" />
+        {eftPerTerminal.map((r) => (
+          <div key={r.terminal} className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-sm items-center">
+            <span className="text-muted-foreground pl-3">{r.terminal}</span>
+            <CurrencyDisplay value={r.diff} className="text-right" />
+            <span></span>
+          </div>
+        ))}
+        <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center bg-muted/20 font-semibold">
+          <span>EFT Recon Closing Balance</span>
+          <CurrencyDisplay value={eftReconClosing} className="text-right" highlight />
           <div className="flex justify-end">
             <CurrencyInput
               value={form.eftXero}
