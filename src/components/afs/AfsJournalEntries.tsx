@@ -318,7 +318,8 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     }
     const totalDebits = blueLabel + lotto;
     const totalCredits = easyPay;
-    return { blueLabel, easyPay, lotto, totalDebits, totalCredits };
+    const loanUb = totalDebits - totalCredits; // positive = credit Loan UB to balance
+    return { blueLabel, easyPay, lotto, totalDebits, totalCredits, loanUb };
   }, [month, managerEntries]);
 
 
