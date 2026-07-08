@@ -593,7 +593,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
       <DebtorsBranchComparison month={month} />
 
       {/* Airtime / Lotto Balance */}
-      <Section title="4. Airtime / Lotto Balance" color="green">
+      <Section title="5. Creditors excl Trade Creditors" color="green">
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Description</span>
           <span className="text-center">Blue Label</span>
