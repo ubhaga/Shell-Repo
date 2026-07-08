@@ -221,7 +221,7 @@ export function DebtorsBranchComparison({ month }: Props) {
   };
 
   return (
-    <Section title="5. Debtors Branch Comparison" color="purple">
+    <Section title="4. Debtors Branch Comparison" color="purple">
       <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr_2fr] gap-2 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
         <span>Debtor</span>
         <span className="text-right">Recon Closing</span>
