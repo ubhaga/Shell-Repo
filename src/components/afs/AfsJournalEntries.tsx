@@ -314,10 +314,10 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     for (const e of monthlyManagers) {
       blueLabel += e.blueLabelComm ?? 0;
       easyPay += e.easypayComm ?? 0;
-      lotto += (e.lottoComm ?? 0) + (e.lottoNetSalesComm ?? 0) + (e.lottoPayoutComm ?? 0);
+      lotto += e.lottoComm ?? 0;
     }
-    const totalDebits = blueLabel + lotto;
-    const totalCredits = easyPay;
+    const totalDebits = blueLabel + lotto + easyPay;
+    const totalCredits = 0;
     const loanUb = totalDebits - totalCredits; // positive = credit Loan UB to balance
     return { blueLabel, easyPay, lotto, totalDebits, totalCredits, loanUb };
   }, [month, managerEntries]);
@@ -722,14 +722,14 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                 <TableCell className="text-right py-1.5" />
               </TableRow>
               <TableRow>
-                <TableCell className="text-sm py-1.5">Lotto Commission (Net Sales + Payout + Adj)</TableCell>
+                <TableCell className="text-sm py-1.5">Lotto Commission (Weekly Total)</TableCell>
                 <TableCell className="text-right py-1.5"><CurrencyDisplay value={je5.lotto} /></TableCell>
                 <TableCell className="text-right py-1.5" />
               </TableRow>
               <TableRow>
                 <TableCell className="text-sm py-1.5">Easy Pay Commission</TableCell>
-                <TableCell className="text-right py-1.5" />
                 <TableCell className="text-right py-1.5"><CurrencyDisplay value={je5.easyPay} /></TableCell>
+                <TableCell className="text-right py-1.5" />
               </TableRow>
               <TableRow>
                 <TableCell className="text-sm py-1.5">Loan UB</TableCell>
