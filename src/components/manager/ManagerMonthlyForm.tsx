@@ -416,7 +416,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
       </div>
 
       {/* Month End Report */}
-      <Section title="1.1 Branch Month End Report" color="blue">
+      <Section title="1. Branch Month End Report" color="blue">
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr_2fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Metric</span>
           <span className="text-right">Spreadsheet Total</span>
@@ -459,7 +459,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
       </Section>
 
       {/* Creditors Transactions Report */}
-      <Section title="1.2 Branch Creditors Transactions Report" color="purple">
+      <Section title="2. Branch Creditors Transactions Report" color="purple">
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr_2fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Metric</span>
           <span className="text-right">Spreadsheet Total</span>
@@ -493,7 +493,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
       </Section>
 
       {/* Month End Report (Other) */}
-      <Section title="1.3 Branch Month End Report (Other)" color="orange">
+      <Section title="3. Branch Month End Report (Other)" color="orange">
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Description</span>
           <span className="text-center">Sales Value</span>
@@ -592,7 +592,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
       </Section>
 
       {/* Airtime / Lotto Balance */}
-      <Section title="8. Airtime / Lotto Balance" color="green">
+      <Section title="4. Airtime / Lotto Balance" color="green">
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Description</span>
           <span className="text-center">Blue Label</span>
@@ -634,7 +634,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
       </Section>
 
       {/* 3. EFT Recon */}
-      <Section title="3. EFT Recon" color="purple">
+      <Section title="5. EFT Recon" color="purple">
         <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Description</span>
           <span className="text-right">EFT Recon</span>
@@ -697,7 +697,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
       </Section>
 
       {/* Bank Charges */}
-      <Section title="4. CASH CONNECT (Shift Clearing and Petty Cash)" color="blue">
+      <Section title="6. CASH CONNECT (Shift Clearing and Petty Cash)" color="blue">
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Description</span>
           <span className="text-right">Bank Charges (Manager Daily 2.1)</span>
