@@ -297,8 +297,10 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       (s, e) => s + Math.abs(e.transferFromCoins ?? 0),
       0
     );
-    return { amount: totalTransferFromCoins };
-  }, [month, managerEntries]);
+    const mf = monthlyFigures.find((f) => f.month === month);
+    const ccBankCharges = mf?.cashConnectInvoiceInclVat ?? 0;
+    return { amount: totalTransferFromCoins, ccBankCharges };
+  }, [month, managerEntries, monthlyFigures]);
 
 
   return (
@@ -624,15 +626,29 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                   <CurrencyDisplay value={je4.amount} />
                 </TableCell>
               </TableRow>
+              <TableRow>
+                <TableCell className="text-sm py-1.5">Bank Charges (CDF) Incl</TableCell>
+                <TableCell className="text-right py-1.5">
+                  <CurrencyDisplay value={je4.ccBankCharges} />
+                </TableCell>
+                <TableCell className="text-right py-1.5" />
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-sm py-1.5">Shift Clearing</TableCell>
+                <TableCell className="text-right py-1.5" />
+                <TableCell className="text-right py-1.5">
+                  <CurrencyDisplay value={je4.ccBankCharges} />
+                </TableCell>
+              </TableRow>
             </TableBody>
             <TableFooter>
               <TableRow>
                 <TableCell className="font-semibold text-sm">Totals</TableCell>
                 <TableCell className="text-right">
-                  <CurrencyDisplay value={je4.amount} highlight />
+                  <CurrencyDisplay value={je4.amount + je4.ccBankCharges} highlight />
                 </TableCell>
                 <TableCell className="text-right">
-                  <CurrencyDisplay value={je4.amount} highlight />
+                  <CurrencyDisplay value={je4.amount + je4.ccBankCharges} highlight />
                 </TableCell>
               </TableRow>
             </TableFooter>
