@@ -8,6 +8,9 @@ import { Save, CheckCircle, AlertCircle, ChevronDown, ChevronRight } from "lucid
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { DebtorsBranchComparison } from "./DebtorsBranchComparison";
+import { supabase } from "@/integrations/supabase/client";
+
+const SP_TERMINALS = ["Term 247608", "Forecourt 929661", "Retail 200660", "Scan to pay"];
 
 interface Props {
   selectedDate: string;
