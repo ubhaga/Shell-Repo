@@ -36,10 +36,10 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
 
       credits.push({ description: "C Store Vatable", amount: cStoreVatable });
       credits.push({ description: "Sales: C Store Non Vatable", amount: cStoreNonVatable });
-      credits.push({ description: "WSL DSL", amount: mf.salesWslDsl + mf.adjWslDsl });
-      credits.push({ description: "Fuel", amount: mf.salesFuel + mf.adjFuel });
-      credits.push({ description: "Gas", amount: totalGas });
-      credits.push({ description: "Oil", amount: totalOil });
+      credits.push({ description: "Sales: WSL DSL", amount: mf.salesWslDsl + mf.adjWslDsl });
+      credits.push({ description: "Sales: Fuel", amount: mf.salesFuel + mf.adjFuel });
+      credits.push({ description: "Sales: Gas", amount: totalGas });
+      credits.push({ description: "Sales: Oil", amount: totalOil });
       credits.push({ description: "VAT", amount: totalVat });
     }
 
