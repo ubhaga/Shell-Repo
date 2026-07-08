@@ -155,6 +155,22 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   const totalBankCharges = bankChargesEntries.reduce((s, e) => s + (e.bankCharges ?? 0), 0);
   const bankChargesDiff = form.cashConnectInvoiceInclVat - totalBankCharges;
 
+  // 6.2 CC Recon closing on last day of the month
+  const monthManagersSorted = [...monthManagers].sort((a, b) => a.date.localeCompare(b.date));
+  const lastMgr = monthManagersSorted[monthManagersSorted.length - 1];
+  const ccReconClosing = (() => {
+    if (!lastMgr) return 0;
+    const cu = cashups.find((c) => c.date === lastMgr.date);
+    const dailyCC = cu?.shop.cashDepositedBanking ?? 0;
+    return (
+      (lastMgr.cashConnectOpeningBalance ?? 0) +
+      dailyCC -
+      Math.abs(lastMgr.ccBagClosureCashConnect ?? 0) +
+      Math.abs(lastMgr.transferFromCoins ?? 0)
+    );
+  })();
+  const ccTotalCol1 = ccReconClosing + form.ccUnbankedDeposit;
+
   const handleSave = () => {
     if (existing) updateMonthlyFigures(existing.id, form);
     else addMonthlyFigures(form);
