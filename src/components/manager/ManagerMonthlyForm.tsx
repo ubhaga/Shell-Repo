@@ -883,6 +883,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
               className="text-right w-full max-w-[120px]"
               allowNegative
             />
+          </div>
         </div>
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
           <span className="text-muted-foreground font-medium">Xero</span>
@@ -910,7 +911,6 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
               allowNegative
             />
           </div>
-        </div>
         </div>
         <div className="px-3 py-2 border-t flex justify-end">
           <Button onClick={handleSave} size="sm" variant="outline">
