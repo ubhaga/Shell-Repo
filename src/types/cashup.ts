@@ -174,6 +174,9 @@ export interface MonthlyBranchFigures {
   // Bank charges (section 6)
   cashConnectInvoiceInclVat: number;
   bankChargesAdj: number;
+  // 6.2 Cash Connect Balance (Excl EP)
+  ccXero: number;
+  ccUnbankedDeposit: number;
   // Airtime / Lotto month-end balances
   airtimeBldBalance: number;
   airtimeEasypayBalance: number;

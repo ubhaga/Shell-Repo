@@ -361,6 +361,8 @@ export type Database = {
           branch_total_payouts: number
           branch_total_receipts: number
           cash_connect_invoice_incl_vat: number
+          cc_unbanked_deposit: number
+          cc_xero: number
           created_at: string
           entered_by: string
           explanation_bank_charges: string
@@ -397,6 +399,8 @@ export type Database = {
           branch_total_payouts?: number
           branch_total_receipts?: number
           cash_connect_invoice_incl_vat?: number
+          cc_unbanked_deposit?: number
+          cc_xero?: number
           created_at?: string
           entered_by?: string
           explanation_bank_charges?: string
@@ -433,6 +437,8 @@ export type Database = {
           branch_total_payouts?: number
           branch_total_receipts?: number
           cash_connect_invoice_incl_vat?: number
+          cc_unbanked_deposit?: number
+          cc_xero?: number
           created_at?: string
           entered_by?: string
           explanation_bank_charges?: string
