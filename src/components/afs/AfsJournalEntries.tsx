@@ -598,7 +598,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">JE 4 — Coins Banked ({month})</CardTitle>
+          <CardTitle className="text-base">JE 4 — Coins Banked ({month})+ CC Bank Charges</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
