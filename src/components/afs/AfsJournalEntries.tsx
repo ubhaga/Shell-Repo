@@ -305,6 +305,22 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     return { amount: totalTransferFromCoins, ccBankCharges };
   }, [month, managerEntries, monthlyFigures]);
 
+  // ── JE 5 — Airtime / Lotto Commissions ──
+  const je5 = useMemo(() => {
+    const monthlyManagers = managerEntries.filter((e) => e.date.startsWith(month));
+    let blueLabel = 0;
+    let easyPay = 0;
+    let lotto = 0;
+    for (const e of monthlyManagers) {
+      blueLabel += e.blueLabelComm ?? 0;
+      easyPay += e.easypayComm ?? 0;
+      lotto += (e.lottoComm ?? 0) + (e.lottoNetSalesComm ?? 0) + (e.lottoPayoutComm ?? 0);
+    }
+    const totalDebits = blueLabel + lotto;
+    const totalCredits = easyPay;
+    return { blueLabel, easyPay, lotto, totalDebits, totalCredits };
+  }, [month, managerEntries]);
+
 
   return (
     <div className="space-y-6">
