@@ -94,6 +94,8 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     pettyCashRecon: 0,
     pettyCashXero: 0,
     pettyCashUnbankedDeposit: 0,
+    eftXero: 0,
+    eftUnbankedDeposit: 0,
     notes: "",
     airtimeBldBalance: 0,
     airtimeEasypayBalance: 0,
