@@ -297,8 +297,10 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       (s, e) => s + Math.abs(e.transferFromCoins ?? 0),
       0
     );
-    return { amount: totalTransferFromCoins };
-  }, [month, managerEntries]);
+    const mf = monthlyFigures.find((f) => f.month === month);
+    const ccBankCharges = mf?.cashConnectInvoiceInclVat ?? 0;
+    return { amount: totalTransferFromCoins, ccBankCharges };
+  }, [month, managerEntries, monthlyFigures]);
 
 
   return (
