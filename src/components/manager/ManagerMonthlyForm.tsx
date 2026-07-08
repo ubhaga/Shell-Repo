@@ -106,11 +106,25 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   });
 
   const [bankChargesExpanded, setBankChargesExpanded] = useState(false);
+  const [eftBankTotal, setEftBankTotal] = useState(0);
 
   useEffect(() => {
     if (existing) setForm({ ...existing });
     else setForm((f) => ({ ...f, month }));
   }, [month, existing?.id]);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("bank_statement_lines")
+        .select("amount, matched_terminal")
+        .eq("month", month);
+      const total = (data ?? [])
+        .filter((l) => l.matched_terminal && SP_TERMINALS.includes(l.matched_terminal))
+        .reduce((s, l) => s + Number(l.amount ?? 0), 0);
+      setEftBankTotal(total);
+    })();
+  }, [month]);
 
   // Compute from store
   const monthCashups = cashups.filter((c) => c.month === month);
