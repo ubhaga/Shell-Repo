@@ -635,7 +635,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
       </Section>
 
       {/* 3. EFT Recon */}
-      <Section title="5. EFT Recon" color="purple">
+      <Section title="3. EFT Recon" color="purple">
         <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Description</span>
           <span className="text-right">EFT Recon</span>
