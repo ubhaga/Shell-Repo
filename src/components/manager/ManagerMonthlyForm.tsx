@@ -493,7 +493,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
       </Section>
 
       {/* Month End Report (Other) */}
-      <Section title="3. Branch Month End Report (Other)" color="orange">
+      <Section title="1.3 Branch Month End Report (Other)" color="orange">
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Description</span>
           <span className="text-center">Sales Value</span>
