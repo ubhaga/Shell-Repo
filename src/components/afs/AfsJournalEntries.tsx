@@ -219,6 +219,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
   const [je2_2Explanation, setJe2_2Explanation] = useState('');
   const [je3Explanation, setJe3Explanation] = useState('');
   const [je4Explanation, setJe4Explanation] = useState('');
+  const [je5Explanation, setJe5Explanation] = useState('');
 
   useEffect(() => {
     const key = `je_explanations_${month}`;
@@ -230,12 +231,14 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
         setJe2_2Explanation(d.je2_2 ?? '');
         setJe3Explanation(d.je3 ?? '');
         setJe4Explanation(d.je4 ?? '');
+        setJe5Explanation(d.je5 ?? '');
       } else {
         setJe1Explanation('');
         setJe2_1Explanation('');
         setJe2_2Explanation('');
         setJe3Explanation('');
         setJe4Explanation('');
+        setJe5Explanation('');
       }
     });
   }, [month]);
@@ -256,9 +259,9 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     });
   };
 
-  const saveExplanation = (field: 'je1' | 'je2_1' | 'je2_2' | 'je3' | 'je4', value: string) => {
+  const saveExplanation = (field: 'je1' | 'je2_1' | 'je2_2' | 'je3' | 'je4' | 'je5', value: string) => {
     const key = `je_explanations_${month}`;
-    const current = { je1: je1Explanation, je2_1: je2_1Explanation, je2_2: je2_2Explanation, je3: je3Explanation, je4: je4Explanation, [field]: value };
+    const current = { je1: je1Explanation, je2_1: je2_1Explanation, je2_2: je2_2Explanation, je3: je3Explanation, je4: je4Explanation, je5: je5Explanation, [field]: value };
     supabase.from('master_data').upsert({ key, data: current as any }, { onConflict: 'key' }).then();
   };
 
@@ -301,6 +304,22 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     const ccBankCharges = mf?.cashConnectInvoiceInclVat ?? 0;
     return { amount: totalTransferFromCoins, ccBankCharges };
   }, [month, managerEntries, monthlyFigures]);
+
+  // ── JE 5 — Airtime / Lotto Commissions ──
+  const je5 = useMemo(() => {
+    const monthlyManagers = managerEntries.filter((e) => e.date.startsWith(month));
+    let blueLabel = 0;
+    let easyPay = 0;
+    let lotto = 0;
+    for (const e of monthlyManagers) {
+      blueLabel += e.blueLabelComm ?? 0;
+      easyPay += e.easypayComm ?? 0;
+      lotto += (e.lottoComm ?? 0) + (e.lottoNetSalesComm ?? 0) + (e.lottoPayoutComm ?? 0);
+    }
+    const totalDebits = blueLabel + lotto;
+    const totalCredits = easyPay;
+    return { blueLabel, easyPay, lotto, totalDebits, totalCredits };
+  }, [month, managerEntries]);
 
 
   return (
@@ -673,6 +692,66 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
               onChange={(e) => setJe4Explanation(e.target.value)}
               onBlur={() => saveExplanation('je4', je4Explanation)}
               placeholder="Enter adjustment explanations for JE 4..."
+              className="mt-1 min-h-[60px] text-sm"
+            />
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">JE 5 — Airtime / Lotto Commissions ({month})</CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Monthly commissions from the Airtime / Lotto Reconciliation. Blue Label and Lotto
+            commissions are debited; Easy Pay commission is credited.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Description</TableHead>
+                <TableHead className="text-xs text-right">Debit</TableHead>
+                <TableHead className="text-xs text-right">Credit</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="text-sm py-1.5">Blue Label Commission</TableCell>
+                <TableCell className="text-right py-1.5"><CurrencyDisplay value={je5.blueLabel} /></TableCell>
+                <TableCell className="text-right py-1.5" />
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-sm py-1.5">Lotto Commission (Net Sales + Payout + Adj)</TableCell>
+                <TableCell className="text-right py-1.5"><CurrencyDisplay value={je5.lotto} /></TableCell>
+                <TableCell className="text-right py-1.5" />
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-sm py-1.5">Easy Pay Commission</TableCell>
+                <TableCell className="text-right py-1.5" />
+                <TableCell className="text-right py-1.5"><CurrencyDisplay value={je5.easyPay} /></TableCell>
+              </TableRow>
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell className="font-semibold text-sm">Totals</TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je5.totalDebits} highlight /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je5.totalCredits} highlight /></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-semibold text-sm">Difference</TableCell>
+                <TableCell className="text-right" colSpan={2}>
+                  <CurrencyDisplay value={je5.totalDebits - je5.totalCredits} highlight />
+                </TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+          <div className="mt-3">
+            <label className="text-xs font-medium text-muted-foreground">Adjustment Explanations</label>
+            <Textarea
+              value={je5Explanation}
+              onChange={(e) => setJe5Explanation(e.target.value)}
+              onBlur={() => saveExplanation('je5', je5Explanation)}
+              placeholder="Enter adjustment explanations for JE 5..."
               className="mt-1 min-h-[60px] text-sm"
             />
           </div>
