@@ -39,7 +39,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       credits.push({ description: "Sales: WSL DSL (Exempt)", amount: mf.salesWslDsl + mf.adjWslDsl });
       credits.push({ description: "Sales Fuel", amount: mf.salesFuel + mf.adjFuel });
       credits.push({ description: "Sales Gas (excl Vat)", amount: totalGas });
-      credits.push({ description: "Sales: Oil", amount: totalOil });
+      credits.push({ description: "Sales: Oil (excl Vat)", amount: totalOil });
       credits.push({ description: "VAT", amount: totalVat });
     }
 
