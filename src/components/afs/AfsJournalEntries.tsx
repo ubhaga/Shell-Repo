@@ -231,12 +231,14 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
         setJe2_2Explanation(d.je2_2 ?? '');
         setJe3Explanation(d.je3 ?? '');
         setJe4Explanation(d.je4 ?? '');
+        setJe5Explanation(d.je5 ?? '');
       } else {
         setJe1Explanation('');
         setJe2_1Explanation('');
         setJe2_2Explanation('');
         setJe3Explanation('');
         setJe4Explanation('');
+        setJe5Explanation('');
       }
     });
   }, [month]);
