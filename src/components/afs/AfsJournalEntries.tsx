@@ -215,7 +215,8 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
 
   // Adjustment explanations state (persisted via master_data)
   const [je1Explanation, setJe1Explanation] = useState('');
-  const [je2Explanation, setJe2Explanation] = useState('');
+  const [je2_1Explanation, setJe2_1Explanation] = useState('');
+  const [je2_2Explanation, setJe2_2Explanation] = useState('');
   const [je3Explanation, setJe3Explanation] = useState('');
   const [je4Explanation, setJe4Explanation] = useState('');
 
@@ -225,12 +226,14 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       if (data?.data) {
         const d = data.data as Record<string, string>;
         setJe1Explanation(d.je1 ?? '');
-        setJe2Explanation(d.je2 ?? '');
+        setJe2_1Explanation(d.je2_1 ?? '');
+        setJe2_2Explanation(d.je2_2 ?? '');
         setJe3Explanation(d.je3 ?? '');
         setJe4Explanation(d.je4 ?? '');
       } else {
         setJe1Explanation('');
-        setJe2Explanation('');
+        setJe2_1Explanation('');
+        setJe2_2Explanation('');
         setJe3Explanation('');
         setJe4Explanation('');
       }
@@ -253,9 +256,9 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     });
   };
 
-  const saveExplanation = (field: 'je1' | 'je2' | 'je3' | 'je4', value: string) => {
+  const saveExplanation = (field: 'je1' | 'je2_1' | 'je2_2' | 'je3' | 'je4', value: string) => {
     const key = `je_explanations_${month}`;
-    const current = { je1: je1Explanation, je2: je2Explanation, je3: je3Explanation, je4: je4Explanation, [field]: value };
+    const current = { je1: je1Explanation, je2_1: je2_1Explanation, je2_2: je2_2Explanation, je3: je3Explanation, je4: je4Explanation, [field]: value };
     supabase.from('master_data').upsert({ key, data: current as any }, { onConflict: 'key' }).then();
   };
 
