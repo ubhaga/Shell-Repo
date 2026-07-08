@@ -37,7 +37,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       credits.push({ description: "Sales C Store Vatable", amount: cStoreVatable });
       credits.push({ description: "Sales: C Store Exempt", amount: cStoreNonVatable });
       credits.push({ description: "Sales: WSL DSL", amount: mf.salesWslDsl + mf.adjWslDsl });
-      credits.push({ description: "Sales: Fuel (Exempt)", amount: mf.salesFuel + mf.adjFuel });
+      credits.push({ description: "Sales Fuel", amount: mf.salesFuel + mf.adjFuel });
       credits.push({ description: "Sales Gas (excl Vat)", amount: totalGas });
       credits.push({ description: "Sales: Oil", amount: totalOil });
       credits.push({ description: "VAT", amount: totalVat });
