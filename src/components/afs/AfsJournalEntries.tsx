@@ -121,7 +121,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
 
     // --- Debits ---
     const debits: { description: string; amount: number }[] = [
-      { description: "Payouts", amount: totalPayouts },
+      { description: "Provision for Payouts", amount: totalPayouts },
       { description: "Shift Clearing", amount: totalCashDepositedBanking },
       { description: "Petty Cash", amount: totalCoins },
       { description: "EFT Clearing", amount: totalSpeedpointsExclVPlus },
