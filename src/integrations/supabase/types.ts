@@ -354,13 +354,16 @@ export type Database = {
           airtime_bld_balance: number
           airtime_easypay_balance: number
           airtime_lotto_balance: number
+          bank_charges_adj: number
           branch_net_sales: number
           branch_total_invoices_capital: number
           branch_total_invoices_vat: number
           branch_total_payouts: number
           branch_total_receipts: number
+          cash_connect_invoice_incl_vat: number
           created_at: string
           entered_by: string
+          explanation_bank_charges: string
           explanation_invoices: string
           explanation_net_sales: string
           explanation_payouts: string
@@ -387,13 +390,16 @@ export type Database = {
           airtime_bld_balance?: number
           airtime_easypay_balance?: number
           airtime_lotto_balance?: number
+          bank_charges_adj?: number
           branch_net_sales?: number
           branch_total_invoices_capital?: number
           branch_total_invoices_vat?: number
           branch_total_payouts?: number
           branch_total_receipts?: number
+          cash_connect_invoice_incl_vat?: number
           created_at?: string
           entered_by?: string
+          explanation_bank_charges?: string
           explanation_invoices?: string
           explanation_net_sales?: string
           explanation_payouts?: string
@@ -420,13 +426,16 @@ export type Database = {
           airtime_bld_balance?: number
           airtime_easypay_balance?: number
           airtime_lotto_balance?: number
+          bank_charges_adj?: number
           branch_net_sales?: number
           branch_total_invoices_capital?: number
           branch_total_invoices_vat?: number
           branch_total_payouts?: number
           branch_total_receipts?: number
+          cash_connect_invoice_incl_vat?: number
           created_at?: string
           entered_by?: string
+          explanation_bank_charges?: string
           explanation_invoices?: string
           explanation_net_sales?: string
           explanation_payouts?: string

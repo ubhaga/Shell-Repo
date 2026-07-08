@@ -4,7 +4,7 @@ import { useMasterDataStore } from "@/store/masterDataStore";
 import type { MonthlyBranchFigures } from "@/types/cashup";
 import { Section, DataRow, CurrencyInput, CurrencyDisplay } from "@/components/ui/CashupUI";
 import { Button } from "@/components/ui/button";
-import { Save, CheckCircle, AlertCircle } from "lucide-react";
+import { Save, CheckCircle, AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { DebtorsBranchComparison } from "./DebtorsBranchComparison";
@@ -86,11 +86,16 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     explanationReceipts: "",
     explanationInvoices: "",
     explanationVat: "",
+    explanationBankCharges: "",
+    cashConnectInvoiceInclVat: 0,
+    bankChargesAdj: 0,
     notes: "",
     airtimeBldBalance: 0,
     airtimeEasypayBalance: 0,
     airtimeLottoBalance: 0,
   });
+
+  const [bankChargesExpanded, setBankChargesExpanded] = useState(false);
 
   useEffect(() => {
     if (existing) setForm({ ...existing });
@@ -131,6 +136,22 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   const receiptsMatch = Math.abs(spreadsheetReceipts - form.branchTotalReceipts) < 1;
   const invoicesMatch = Math.abs(spreadsheetInvoicesTotal - form.branchTotalInvoicesCapital) < 1;
   const vatMatch = Math.abs(spreadsheetInvoicesVat - form.branchTotalInvoicesVat) < 1;
+
+  // Bank charges range: last day of previous month through second-to-last day of current month
+  const [yearStr, monthStr] = month.split("-");
+  const yearN = parseInt(yearStr, 10);
+  const monthN = parseInt(monthStr, 10);
+  const lastDayPrev = new Date(yearN, monthN - 1, 0); // last day of prev month
+  const lastDayCurr = new Date(yearN, monthN, 0); // last day of current month
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const fmtDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const rangeStart = fmtDate(lastDayPrev);
+  const rangeEndExclusive = fmtDate(lastDayCurr); // exclude this day
+  const bankChargesEntries = managerEntries
+    .filter((e) => e.date >= rangeStart && e.date < rangeEndExclusive)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const totalBankCharges = bankChargesEntries.reduce((s, e) => s + (e.bankCharges ?? 0), 0);
+  const bankChargesDiff = form.cashConnectInvoiceInclVat - totalBankCharges;
 
   const handleSave = () => {
     if (existing) updateMonthlyFigures(existing.id, form);
@@ -371,6 +392,84 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
               allowNegative
             />
           </div>
+        </div>
+      </Section>
+
+      {/* Bank Charges */}
+      <Section title="6. Bank Charges" color="blue">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+          <span>Description</span>
+          <span className="text-right">Bank Charges (Manager Daily 2.1)</span>
+          <span className="text-right">Cash Connect Invoice (Incl. VAT)</span>
+          <span className="text-right">Difference</span>
+          <span className="text-right">Adjustment</span>
+        </div>
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
+          <button
+            type="button"
+            onClick={() => setBankChargesExpanded((v) => !v)}
+            className="flex items-center gap-1 text-left text-muted-foreground hover:text-foreground"
+          >
+            {bankChargesExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            <span>
+              Bank Charges ({rangeStart} → {fmtDate(new Date(yearN, monthN, -1))})
+            </span>
+          </button>
+          <CurrencyDisplay value={totalBankCharges} className="text-right" />
+          <div className="flex justify-end">
+            <CurrencyInput
+              value={form.cashConnectInvoiceInclVat}
+              onChange={(v) => setForm((f) => ({ ...f, cashConnectInvoiceInclVat: v }))}
+              className="text-right w-full max-w-[140px]"
+            />
+          </div>
+          <CurrencyDisplay
+            value={bankChargesDiff}
+            className={`text-right ${Math.abs(bankChargesDiff) < 0.01 ? "" : "text-destructive"}`}
+          />
+          <div className="flex justify-end">
+            <CurrencyInput
+              value={form.bankChargesAdj}
+              onChange={(v) => setForm((f) => ({ ...f, bankChargesAdj: v }))}
+              className="text-right w-full max-w-[140px]"
+              allowNegative
+            />
+          </div>
+        </div>
+        {bankChargesExpanded && (
+          <div className="bg-muted/20">
+            <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground">
+              <span className="pl-6">Date</span>
+              <span className="text-right">Bank Charges</span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            {bankChargesEntries.length === 0 ? (
+              <div className="px-3 py-2 pl-9 text-xs text-muted-foreground">No entries in range</div>
+            ) : (
+              bankChargesEntries.map((e) => (
+                <div
+                  key={e.id}
+                  className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs items-center"
+                >
+                  <span className="pl-6 text-muted-foreground">{e.date}</span>
+                  <CurrencyDisplay value={e.bankCharges ?? 0} className="text-right" />
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+        <div className="px-3 py-2 border-t">
+          <input
+            value={form.explanationBankCharges}
+            onChange={(e) => setForm((f) => ({ ...f, explanationBankCharges: e.target.value }))}
+            className="input-cell w-full text-left text-xs"
+            placeholder="Explanation / notes for bank charges adjustment..."
+          />
         </div>
       </Section>
 
