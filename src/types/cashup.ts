@@ -170,6 +170,10 @@ export interface MonthlyBranchFigures {
   explanationReceipts: string;
   explanationInvoices: string;
   explanationVat: string;
+  explanationBankCharges: string;
+  // Bank charges (section 6)
+  cashConnectInvoiceInclVat: number;
+  bankChargesAdj: number;
   // Airtime / Lotto month-end balances
   airtimeBldBalance: number;
   airtimeEasypayBalance: number;
