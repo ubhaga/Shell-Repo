@@ -495,9 +495,16 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           <span className="text-right">EFT Recon</span>
           <span className="text-right">Xero</span>
         </div>
-        <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
-          <span className="text-muted-foreground">EFT Recon Closing Balance</span>
-          <CurrencyDisplay value={eftReconClosing} className="text-right" />
+        {eftPerTerminal.map((r) => (
+          <div key={r.terminal} className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-sm items-center">
+            <span className="text-muted-foreground pl-3">{r.terminal}</span>
+            <CurrencyDisplay value={r.diff} className="text-right" />
+            <span></span>
+          </div>
+        ))}
+        <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center bg-muted/20 font-semibold">
+          <span>EFT Recon Closing Balance</span>
+          <CurrencyDisplay value={eftReconClosing} className="text-right" highlight />
           <div className="flex justify-end">
             <CurrencyInput
               value={form.eftXero}
