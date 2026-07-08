@@ -525,9 +525,22 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
             <span></span>
           </div>
           <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-2 text-sm items-center bg-secondary font-semibold">
-            <span>Total</span>
+            <div className="flex items-center gap-2">
+              <span>Total</span>
+              {(() => {
+                const match = Math.abs(ccTotalCol1 - form.ccXero) < 0.01;
+                return (
+                  <span
+                    className={`flex items-center gap-1 rounded px-2 py-0.5 font-semibold text-xs ${match ? "status-green" : "status-red"}`}
+                  >
+                    {match ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                    {match ? "MATCH" : <CurrencyDisplay value={ccTotalCol1 - form.ccXero} />}
+                  </span>
+                );
+              })()}
+            </div>
             <CurrencyDisplay value={ccTotalCol1} className="text-right" highlight />
-            <span></span>
+            <CurrencyDisplay value={form.ccXero} className="text-right" highlight />
           </div>
         </div>
       </Section>
