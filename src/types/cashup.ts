@@ -177,6 +177,10 @@ export interface MonthlyBranchFigures {
   // 6.2 Cash Connect Balance (Excl EP)
   ccXero: number;
   ccUnbankedDeposit: number;
+  // 6.3 Petty Cash
+  pettyCashRecon: number;
+  pettyCashXero: number;
+  pettyCashUnbankedDeposit: number;
   // Airtime / Lotto month-end balances
   airtimeBldBalance: number;
   airtimeEasypayBalance: number;
