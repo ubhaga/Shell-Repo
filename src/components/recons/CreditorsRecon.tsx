@@ -299,7 +299,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-end gap-2">
         <Button size="sm" variant="outline" onClick={() => {
-          const allSup = [...suppliers, ...fuelSuppliers];
+          const allSup = [...suppliers, ...directlyExpensedSuppliers, ...fuelSuppliers];
           const headers = ['Supplier', 'Opening Balance', ...weekLabels.flatMap(l => [`Invoices (${l})`, `Payments (${l})`, `Balance (${l})`])];
           const csvRows = allSup.map(s => {
             const ob = effectiveOB[s] ?? 0;
