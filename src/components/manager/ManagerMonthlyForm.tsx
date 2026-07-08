@@ -894,7 +894,8 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
         Save Monthly
       </Button>
 
-      <DebtorsBranchComparison month={month} />
+
+
 
       {/* Month End Status */}
       <div
