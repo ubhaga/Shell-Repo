@@ -241,7 +241,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     }
 
     return result;
-  }, [openingBalances, isFirstMonth, prevMonth, prevMonthOB, prevMonthBankLines, managerEntries, suppliers, fuelSuppliers]);
+  }, [openingBalances, isFirstMonth, prevMonth, prevMonthOB, prevMonthBankLines, managerEntries, suppliers, directlyExpensedSuppliers, fuelSuppliers]);
 
   // Save opening balances
   const handleSaveOB = async () => {
