@@ -171,10 +171,18 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   })();
   const ccTotalCol1 = ccReconClosing + form.ccUnbankedDeposit;
 
-  const handleSave = () => {
-    if (existing) updateMonthlyFigures(existing.id, form);
-    else addMonthlyFigures(form);
-    toast({ title: "Monthly figures saved", description: `Saved for ${format(new Date(month + "-01"), "MMM yyyy")}` });
+  const handleSave = async () => {
+    try {
+      if (existing) await updateMonthlyFigures(existing.id, form);
+      else await addMonthlyFigures(form);
+      toast({ title: "Monthly figures saved", description: `Saved for ${format(new Date(month + "-01"), "MMM yyyy")}` });
+    } catch (error) {
+      toast({
+        title: "Monthly figures not saved",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
