@@ -63,6 +63,11 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     useCashupStore();
   const { managerNames: MANAGER_NAMES } = useMasterDataStore();
   const existing = getMonthlyFiguresByMonth(month);
+  const prevMonth = (() => {
+    const d = new Date(`${month}-01T00:00:00`);
+    d.setMonth(d.getMonth() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  })();
 
   const [form, setForm] = useState<Omit<MonthlyBranchFigures, "id">>({
     month,
@@ -106,7 +111,18 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   });
 
   const [bankChargesExpanded, setBankChargesExpanded] = useState(false);
-  const [eftBankLines, setEftBankLines] = useState<{ amount: number; matched_terminal: string | null; description: string }[]>([]);
+  const [eftBankLines, setEftBankLines] = useState<
+    { id: string; amount: number; matched_terminal: string | null; description: string; transaction_date: string }[]
+  >([]);
+  const [eftPrevBankLines, setEftPrevBankLines] = useState<
+    { id: string; amount: number; matched_terminal: string | null; description: string; transaction_date: string }[]
+  >([]);
+  const [eftManualMatches, setEftManualMatches] = useState<
+    { month: string; cashup_date: string; terminal: string; bank_amount: number; bank_line_id: string | null }[]
+  >([]);
+  const [eftDiffClearances, setEftDiffClearances] = useState<
+    { month: string; terminal: string; date_1: string; date_2: string }[]
+  >([]);
 
   useEffect(() => {
     if (existing) setForm({ ...existing });
@@ -115,15 +131,18 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
 
   useEffect(() => {
     (async () => {
-      const [y, m] = month.split("-").map(Number);
-      const endStr = `${y}-${String(m).padStart(2, "0")}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
-      const { data } = await supabase
-        .from("bank_statement_lines")
-        .select("amount, matched_terminal, description")
-        .lte("transaction_date", endStr);
-      setEftBankLines((data ?? []) as { amount: number; matched_terminal: string | null; description: string }[]);
+      const [bankRes, prevBankRes, matchRes, clearanceRes] = await Promise.all([
+        supabase.from("bank_statement_lines").select("id, amount, matched_terminal, description, transaction_date").eq("month", month),
+        supabase.from("bank_statement_lines").select("id, amount, matched_terminal, description, transaction_date").eq("month", prevMonth),
+        supabase.from("speedpoint_manual_matches").select("month, cashup_date, terminal, bank_amount, bank_line_id").in("month", [month, prevMonth]),
+        supabase.from("speedpoint_diff_clearances").select("month, terminal, date_1, date_2").in("month", [month, prevMonth]),
+      ]);
+      setEftBankLines((bankRes.data ?? []) as { id: string; amount: number; matched_terminal: string | null; description: string; transaction_date: string }[]);
+      setEftPrevBankLines((prevBankRes.data ?? []) as { id: string; amount: number; matched_terminal: string | null; description: string; transaction_date: string }[]);
+      setEftManualMatches((matchRes.data ?? []) as { month: string; cashup_date: string; terminal: string; bank_amount: number; bank_line_id: string | null }[]);
+      setEftDiffClearances((clearanceRes.data ?? []) as { month: string; terminal: string; date_1: string; date_2: string }[]);
     })();
-  }, [month]);
+  }, [month, prevMonth]);
 
   // Compute from store
   const monthCashups = cashups.filter((c) => c.month === month);
@@ -215,46 +234,130 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   })();
   const pettyCashTotalCol1 = coinsReconClosing + form.pettyCashUnbankedDeposit;
 
-  // 3. EFT Recon — per-terminal diff using per-batch matching (matches Speedpoint Recon report)
-  const monthEndStr = `${yearStr}-${monthStr}-${String(lastDayCurr.getDate()).padStart(2, "0")}`;
+  // 3. EFT Recon — same per-terminal TOTAL diff as Speedpoint Recon, including OB/manual matches
   const TERMINAL_NUM: Record<string, string> = {};
   SP_TERMINALS.forEach((t) => {
     const m = t.match(/(\d{6})/);
     if (m) TERMINAL_NUM[t] = m[1];
   });
-  // Build bankLookup: `${terminal}|${batch}` -> summed bank amount (cumulative through month end)
+
+  type SpTermData = { batchNo: string; total: number };
+  const buildSpeedpointRows = (rows: typeof cashups) =>
+    rows.map((c) => {
+      const termMap: Record<string, SpTermData> = {};
+      SP_TERMINALS.forEach((t) => {
+        termMap[t] = { batchNo: "", total: 0 };
+      });
+      c.shop.speedpoints.forEach((sp) => {
+        if (!termMap[sp.terminal]) termMap[sp.terminal] = { batchNo: "", total: 0 };
+        termMap[sp.terminal].batchNo = sp.batchNo || termMap[sp.terminal].batchNo;
+        termMap[sp.terminal].total += sp.shopAmount || 0;
+      });
+      c.opt.speedpoints.forEach((sp) => {
+        if (!termMap[sp.terminal]) termMap[sp.terminal] = { batchNo: "", total: 0 };
+        termMap[sp.terminal].batchNo = sp.batchNo || termMap[sp.terminal].batchNo;
+        termMap[sp.terminal].total += sp.optAmount || 0;
+      });
+      return { date: c.date, terminals: termMap };
+    });
+
+  const speedpointByDate = buildSpeedpointRows(monthCashups);
+  const prevSpeedpointByDate = buildSpeedpointRows(cashups.filter((c) => c.month === prevMonth));
+  const spColumnTotals: Record<string, number> = {};
+  SP_TERMINALS.forEach((t) => {
+    spColumnTotals[t] = speedpointByDate.reduce((s, r) => s + (r.terminals[t]?.total ?? 0), 0);
+  });
+
   const bankLookup: Record<string, number> = {};
   eftBankLines.forEach((l) => {
     if (!l.matched_terminal || !SP_TERMINALS.includes(l.matched_terminal)) return;
     const termNum = TERMINAL_NUM[l.matched_terminal] || "";
-    if (!termNum) return;
     const bm = l.description?.match(new RegExp(`${termNum}\\s+(\\d+)`));
     const batch = bm ? bm[1] : "";
     if (!batch) return;
     const key = `${l.matched_terminal}|${batch}`;
     bankLookup[key] = (bankLookup[key] || 0) + Number(l.amount ?? 0);
   });
-  const eftPerTerminal = SP_TERMINALS.map((term) => {
-    const cashupByBatch: Record<string, number> = {};
-    cashups
-      .filter((c) => c.date <= monthEndStr)
-      .forEach((c) => {
-        c.shop.speedpoints.forEach((sp) => {
-          if (sp.terminal !== term) return;
-          const batch = sp.batchNo || "";
-          cashupByBatch[batch] = (cashupByBatch[batch] || 0) + (sp.shopAmount || 0);
-        });
-        c.opt.speedpoints.forEach((sp) => {
-          if (sp.terminal !== term) return;
-          const batch = sp.batchNo || "";
-          cashupByBatch[batch] = (cashupByBatch[batch] || 0) + (sp.optAmount || 0);
-        });
-      });
-    let diff = 0;
-    Object.entries(cashupByBatch).forEach(([batch, cashupAmt]) => {
-      const bankAmt = batch ? (bankLookup[`${term}|${batch}`] ?? 0) : 0;
-      diff += cashupAmt - bankAmt;
+
+  const manualByKey: Record<string, number> = {};
+  eftManualMatches
+    .filter((m) => m.month === month)
+    .forEach((m) => {
+      const key = `${m.cashup_date}|${m.terminal}`;
+      manualByKey[key] = (manualByKey[key] || 0) + Number(m.bank_amount ?? 0);
     });
+
+  const consumedBankKeys = new Set<string>();
+  const speedpointMatches = speedpointByDate.map((r) => {
+    const rowMatch: Record<string, { bankAmount: number }> = {};
+    SP_TERMINALS.forEach((t) => {
+      const td = r.terminals[t];
+      if (!td || td.total === 0) {
+        rowMatch[t] = { bankAmount: 0 };
+        return;
+      }
+      const key = `${t}|${td.batchNo}`;
+      let bankAmt = 0;
+      if (!consumedBankKeys.has(key)) {
+        bankAmt = bankLookup[key] ?? 0;
+        if (bankAmt > 0) consumedBankKeys.add(key);
+      }
+      bankAmt += manualByKey[`${r.date}|${t}`] || 0;
+      rowMatch[t] = { bankAmount: bankAmt };
+    });
+    return rowMatch;
+  });
+
+  const prevBankLookup: Record<string, number> = {};
+  eftPrevBankLines.forEach((l) => {
+    if (!l.matched_terminal || !SP_TERMINALS.includes(l.matched_terminal)) return;
+    const termNum = TERMINAL_NUM[l.matched_terminal] || "";
+    const bm = l.description?.match(new RegExp(`${termNum}\\s+(\\d+)`));
+    const batch = bm ? bm[1] : "";
+    if (!batch) return;
+    const key = `${l.matched_terminal}|${batch}`;
+    prevBankLookup[key] = (prevBankLookup[key] || 0) + Number(l.amount ?? 0);
+  });
+
+  const prevManualByKey: Record<string, number> = {};
+  eftManualMatches
+    .filter((m) => m.month === prevMonth)
+    .forEach((m) => {
+      const key = `${m.cashup_date}|${m.terminal}`;
+      prevManualByKey[key] = (prevManualByKey[key] || 0) + Number(m.bank_amount ?? 0);
+    });
+
+  const isPrevDiffCleared = (date: string, terminal: string) =>
+    eftDiffClearances.some((c) => c.month === prevMonth && c.terminal === terminal && (c.date_1 === date || c.date_2 === date));
+
+  const prevConsumedBatchKeys = new Set<string>();
+  const obByTerminal: Record<string, { cashup: number; bank: number }> = {};
+  SP_TERMINALS.forEach((t) => {
+    obByTerminal[t] = { cashup: 0, bank: 0 };
+  });
+
+  prevSpeedpointByDate.forEach((r) => {
+    SP_TERMINALS.forEach((t) => {
+      const td = r.terminals[t];
+      if (!td || td.total === 0) return;
+      if (isPrevDiffCleared(r.date, t)) return;
+      const batchKey = `${t}|${td.batchNo}`;
+      const hasMeaningfulBatch = td.batchNo && td.batchNo !== "X" && td.batchNo !== "";
+      if (hasMeaningfulBatch && prevConsumedBatchKeys.has(batchKey)) return;
+      if (hasMeaningfulBatch) prevConsumedBatchKeys.add(batchKey);
+      const totalBank = (prevBankLookup[batchKey] ?? 0) + (prevManualByKey[`${r.date}|${t}`] || 0);
+      const diff = td.total - totalBank;
+      if (Math.abs(diff) > 0.01) {
+        obByTerminal[t].cashup += diff;
+        obByTerminal[t].bank += manualByKey[`OB-${r.date}|${t}`] || 0;
+      }
+    });
+  });
+
+  const eftPerTerminal = SP_TERMINALS.map((term) => {
+    const cashupTotal = (spColumnTotals[term] ?? 0) + obByTerminal[term].cashup;
+    const bankTotal = speedpointMatches.reduce((s, rm) => s + (rm[term]?.bankAmount ?? 0), 0) + obByTerminal[term].bank;
+    const diff = cashupTotal - bankTotal;
     return { terminal: term, diff };
   });
   const eftReconClosing = eftPerTerminal.reduce((s, r) => s + r.diff, 0);
