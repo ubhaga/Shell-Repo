@@ -273,14 +273,29 @@ export const useCashupStore = create<CashupStore>()((set, get) => ({
   addMonthlyFigures: async (figures) => {
     const id = uuidv4();
     const full = { ...figures, id } as MonthlyBranchFigures;
-    set((s) => ({ monthlyFigures: [...s.monthlyFigures, full] }));
-    await supabase.from('monthly_branch_figures').insert(monthlyToRow(full) as never);
+    const { data, error } = await supabase
+      .from('monthly_branch_figures')
+      .insert(monthlyToRow(full) as never)
+      .select('*')
+      .single();
+    if (error) throw error;
+    const saved = rowToMonthly(data as Record<string, unknown>);
+    set((s) => ({ monthlyFigures: [...s.monthlyFigures.filter((f) => f.id !== id), saved] }));
     return id;
   },
   updateMonthlyFigures: async (id, figures) => {
-    set((s) => ({ monthlyFigures: s.monthlyFigures.map((f) => (f.id === id ? { ...f, ...figures } : f)) }));
-    const updated = get().monthlyFigures.find(f => f.id === id);
-    if (updated) await supabase.from('monthly_branch_figures').update(monthlyToRow(updated) as never).eq('id', id);
+    const current = get().monthlyFigures.find(f => f.id === id);
+    if (!current) throw new Error('Monthly figures not found');
+    const updated = { ...current, ...figures, id } as MonthlyBranchFigures;
+    const { data, error } = await supabase
+      .from('monthly_branch_figures')
+      .update(monthlyToRow(updated) as never)
+      .eq('id', id)
+      .select('*')
+      .single();
+    if (error) throw error;
+    const saved = rowToMonthly(data as Record<string, unknown>);
+    set((s) => ({ monthlyFigures: s.monthlyFigures.map((f) => (f.id === id ? saved : f)) }));
   },
   getMonthlyFiguresByMonth: (month) => get().monthlyFigures.find((f) => f.month === month),
 }));
