@@ -469,61 +469,66 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-xs">Category</TableHead>
-                <TableHead className="text-xs text-right">Incl. VAT</TableHead>
-                <TableHead className="text-xs text-right">No VAT</TableHead>
-                <TableHead className="text-xs text-right">Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {je2Payouts.categories.map((r) => (
-                <React.Fragment key={r.category}>
-                  <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => togglePayoutCat(r.category)}>
-                    <TableCell className="text-sm py-1.5">
-                      <span className="inline-flex items-center gap-1">
-                        {expandedPayoutCats.has(r.category) ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                        {r.category}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right py-1.5"><CurrencyDisplay value={r.inclVat} /></TableCell>
-                    <TableCell className="text-right py-1.5"><CurrencyDisplay value={r.noVat} /></TableCell>
-                    <TableCell className="text-right py-1.5 font-medium"><CurrencyDisplay value={r.total} /></TableCell>
-                  </TableRow>
-                  {expandedPayoutCats.has(r.category) && r.transactions.map((t, i) => (
-                    <TableRow
-                      key={`${r.category}-${i}`}
-                      className="cursor-pointer hover:bg-accent/50 bg-muted/30"
-                      onClick={() => onNavigateToDate?.(t.date)}
-                    >
-                      <TableCell className="text-xs py-1 pl-10 text-muted-foreground">
-                        {t.date} — {t.supplier}
-                      </TableCell>
-                      <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                        {t.inclVatPortion !== 0 ? <CurrencyDisplay value={t.inclVatPortion} /> : null}
-                      </TableCell>
-                      <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                        {t.noVatPortion !== 0 ? <CurrencyDisplay value={t.noVatPortion} /> : null}
-                      </TableCell>
-                      <TableCell className="text-right text-xs py-1 text-muted-foreground">
-                        <CurrencyDisplay value={t.amount} />
-                      </TableCell>
+          {(() => {
+            type DebitRow = { label: string; amount: number };
+            const debits: DebitRow[] = [];
+
+            je2Payouts.categories.forEach((r) => {
+              const isExempt = /fuel|wsl|dsl/i.test(r.category);
+              if (r.inclVat !== 0) debits.push({ label: `COS ${r.category} (Incl Vat)`, amount: r.inclVat });
+              if (r.noVat !== 0) debits.push({ label: `COS ${r.category} ${isExempt ? "(Exempt)" : "(No Vat)"}`, amount: r.noVat });
+            });
+
+            const totalDebits = debits.reduce((s, d) => s + d.amount, 0);
+            const provPayoutsJe1 = je1.debits.find((d) => d.description === "Provision for Payouts")?.amount ?? 0;
+            const variance = totalDebits - provPayoutsJe1;
+            const hasException = Math.abs(variance) > 0.01;
+
+            return (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Description</TableHead>
+                      <TableHead className="text-xs text-right">Debit</TableHead>
+                      <TableHead className="text-xs text-right">Credit</TableHead>
                     </TableRow>
-                  ))}
-                </React.Fragment>
-              ))}
-            </TableBody>
-            <TableFooter>
-              <TableRow>
-                <TableCell className="font-semibold text-sm">Total</TableCell>
-                <TableCell className="text-right"><CurrencyDisplay value={je2Payouts.totals.inclVat} highlight /></TableCell>
-                <TableCell className="text-right"><CurrencyDisplay value={je2Payouts.totals.noVat} highlight /></TableCell>
-                <TableCell className="text-right"><CurrencyDisplay value={je2Payouts.totals.total} highlight /></TableCell>
-              </TableRow>
-            </TableFooter>
-          </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {debits.map((d, i) => (
+                      <TableRow key={`d-${i}`}>
+                        <TableCell className="text-sm py-1.5">{d.label}</TableCell>
+                        <TableCell className="text-right py-1.5"><CurrencyDisplay value={d.amount} /></TableCell>
+                        <TableCell className="text-right py-1.5" />
+                      </TableRow>
+                    ))}
+                    <TableRow>
+                      <TableCell className="text-sm py-1.5">Prov for Payouts</TableCell>
+                      <TableCell className="text-right py-1.5" />
+                      <TableCell className="text-right py-1.5"><CurrencyDisplay value={totalDebits} /></TableCell>
+                    </TableRow>
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell className="font-semibold text-sm">Totals</TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={totalDebits} highlight /></TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={totalDebits} highlight /></TableCell>
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+                {hasException && (
+                  <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs">
+                    <div className="font-semibold text-destructive mb-1">Exception: Prov for Payouts mismatch</div>
+                    <div className="text-muted-foreground">
+                      JE 2.2 Prov for Payouts (<CurrencyDisplay value={totalDebits} />) does not equal
+                      JE 1 Provision for Payouts (<CurrencyDisplay value={provPayoutsJe1} />).
+                      Variance: <CurrencyDisplay value={variance} />
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
           <div className="mt-3">
             <label className="text-xs font-medium text-muted-foreground">Adjustment Explanations</label>
             <Textarea
