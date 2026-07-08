@@ -95,6 +95,8 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     airtimeLottoBalance: 0,
   });
 
+  const [bankChargesExpanded, setBankChargesExpanded] = useState(false);
+
   useEffect(() => {
     if (existing) setForm({ ...existing });
     else setForm((f) => ({ ...f, month }));
