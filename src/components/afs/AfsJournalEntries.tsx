@@ -730,18 +730,21 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                 <TableCell className="text-right py-1.5" />
                 <TableCell className="text-right py-1.5"><CurrencyDisplay value={je5.easyPay} /></TableCell>
               </TableRow>
+              <TableRow>
+                <TableCell className="text-sm py-1.5">Loan UB</TableCell>
+                <TableCell className="text-right py-1.5">
+                  {je5.loanUb < 0 ? <CurrencyDisplay value={-je5.loanUb} /> : null}
+                </TableCell>
+                <TableCell className="text-right py-1.5">
+                  {je5.loanUb >= 0 ? <CurrencyDisplay value={je5.loanUb} /> : null}
+                </TableCell>
+              </TableRow>
             </TableBody>
             <TableFooter>
               <TableRow>
                 <TableCell className="font-semibold text-sm">Totals</TableCell>
-                <TableCell className="text-right"><CurrencyDisplay value={je5.totalDebits} highlight /></TableCell>
-                <TableCell className="text-right"><CurrencyDisplay value={je5.totalCredits} highlight /></TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-semibold text-sm">Difference</TableCell>
-                <TableCell className="text-right" colSpan={2}>
-                  <CurrencyDisplay value={je5.totalDebits - je5.totalCredits} highlight />
-                </TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je5.totalDebits + (je5.loanUb < 0 ? -je5.loanUb : 0)} highlight /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je5.totalCredits + (je5.loanUb >= 0 ? je5.loanUb : 0)} highlight /></TableCell>
               </TableRow>
             </TableFooter>
           </Table>
