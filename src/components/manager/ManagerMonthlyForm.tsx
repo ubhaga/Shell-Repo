@@ -106,7 +106,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   });
 
   const [bankChargesExpanded, setBankChargesExpanded] = useState(false);
-  const [eftBankTotal, setEftBankTotal] = useState(0);
+  const [eftBankByTerminal, setEftBankByTerminal] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (existing) setForm({ ...existing });
@@ -121,10 +121,14 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
         .from("bank_statement_lines")
         .select("amount, matched_terminal, transaction_date")
         .lte("transaction_date", endStr);
-      const total = (data ?? [])
-        .filter((l) => l.matched_terminal && SP_TERMINALS.includes(l.matched_terminal))
-        .reduce((s, l) => s + Number(l.amount ?? 0), 0);
-      setEftBankTotal(total);
+      const byTerm: Record<string, number> = {};
+      SP_TERMINALS.forEach((t) => (byTerm[t] = 0));
+      (data ?? []).forEach((l) => {
+        if (l.matched_terminal && SP_TERMINALS.includes(l.matched_terminal)) {
+          byTerm[l.matched_terminal] += Number(l.amount ?? 0);
+        }
+      });
+      setEftBankByTerminal(byTerm);
     })();
   }, [month]);
 
