@@ -697,6 +697,66 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
           </div>
         </CardContent>
       </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">JE 5 — Airtime / Lotto Commissions ({month})</CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Monthly commissions from the Airtime / Lotto Reconciliation. Blue Label and Lotto
+            commissions are debited; Easy Pay commission is credited.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Description</TableHead>
+                <TableHead className="text-xs text-right">Debit</TableHead>
+                <TableHead className="text-xs text-right">Credit</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="text-sm py-1.5">Blue Label Commission</TableCell>
+                <TableCell className="text-right py-1.5"><CurrencyDisplay value={je5.blueLabel} /></TableCell>
+                <TableCell className="text-right py-1.5" />
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-sm py-1.5">Lotto Commission (Net Sales + Payout + Adj)</TableCell>
+                <TableCell className="text-right py-1.5"><CurrencyDisplay value={je5.lotto} /></TableCell>
+                <TableCell className="text-right py-1.5" />
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-sm py-1.5">Easy Pay Commission</TableCell>
+                <TableCell className="text-right py-1.5" />
+                <TableCell className="text-right py-1.5"><CurrencyDisplay value={je5.easyPay} /></TableCell>
+              </TableRow>
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell className="font-semibold text-sm">Totals</TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je5.totalDebits} highlight /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je5.totalCredits} highlight /></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-semibold text-sm">Difference</TableCell>
+                <TableCell className="text-right" colSpan={2}>
+                  <CurrencyDisplay value={je5.totalDebits - je5.totalCredits} highlight />
+                </TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+          <div className="mt-3">
+            <label className="text-xs font-medium text-muted-foreground">Adjustment Explanations</label>
+            <Textarea
+              value={je5Explanation}
+              onChange={(e) => setJe5Explanation(e.target.value)}
+              onBlur={() => saveExplanation('je5', je5Explanation)}
+              placeholder="Enter adjustment explanations for JE 5..."
+              className="mt-1 min-h-[60px] text-sm"
+            />
+          </div>
+        </CardContent>
+      </Card>
     </div>
 
   );
