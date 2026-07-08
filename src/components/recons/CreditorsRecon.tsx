@@ -157,7 +157,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   type WeekData = { invoices: number; payments: number };
   const supplierWeekly: Record<string, WeekData[]> = {};
 
-  [...suppliers, ...fuelSuppliers].forEach(supplier => {
+  [...suppliers, ...directlyExpensedSuppliers, ...fuelSuppliers].forEach(supplier => {
     const weeks: WeekData[] = sundays.map(() => ({ invoices: 0, payments: 0 }));
 
     // Add EFT invoices
