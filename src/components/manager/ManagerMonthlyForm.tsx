@@ -115,10 +115,12 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
 
   useEffect(() => {
     (async () => {
+      const [y, m] = month.split("-").map(Number);
+      const endStr = `${y}-${String(m).padStart(2, "0")}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
       const { data } = await supabase
         .from("bank_statement_lines")
-        .select("amount, matched_terminal")
-        .eq("month", month);
+        .select("amount, matched_terminal, transaction_date")
+        .lte("transaction_date", endStr);
       const total = (data ?? [])
         .filter((l) => l.matched_terminal && SP_TERMINALS.includes(l.matched_terminal))
         .reduce((s, l) => s + Number(l.amount ?? 0), 0);
