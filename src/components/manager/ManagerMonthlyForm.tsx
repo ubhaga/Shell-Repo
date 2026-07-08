@@ -395,6 +395,84 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
         </div>
       </Section>
 
+      {/* Bank Charges */}
+      <Section title="6. Bank Charges" color="blue">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+          <span>Description</span>
+          <span className="text-right">Bank Charges (Manager Daily 2.1)</span>
+          <span className="text-right">Cash Connect Invoice (Incl. VAT)</span>
+          <span className="text-right">Difference</span>
+          <span className="text-right">Adjustment</span>
+        </div>
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
+          <button
+            type="button"
+            onClick={() => setBankChargesExpanded((v) => !v)}
+            className="flex items-center gap-1 text-left text-muted-foreground hover:text-foreground"
+          >
+            {bankChargesExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            <span>
+              Bank Charges ({rangeStart} → {fmtDate(new Date(yearN, monthN, -1))})
+            </span>
+          </button>
+          <CurrencyDisplay value={totalBankCharges} className="text-right" />
+          <div className="flex justify-end">
+            <CurrencyInput
+              value={form.cashConnectInvoiceInclVat}
+              onChange={(v) => setForm((f) => ({ ...f, cashConnectInvoiceInclVat: v }))}
+              className="text-right w-full max-w-[140px]"
+            />
+          </div>
+          <CurrencyDisplay
+            value={bankChargesDiff}
+            className={`text-right ${Math.abs(bankChargesDiff) < 0.01 ? "" : "text-destructive"}`}
+          />
+          <div className="flex justify-end">
+            <CurrencyInput
+              value={form.bankChargesAdj}
+              onChange={(v) => setForm((f) => ({ ...f, bankChargesAdj: v }))}
+              className="text-right w-full max-w-[140px]"
+              allowNegative
+            />
+          </div>
+        </div>
+        {bankChargesExpanded && (
+          <div className="bg-muted/20">
+            <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground">
+              <span className="pl-6">Date</span>
+              <span className="text-right">Bank Charges</span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            {bankChargesEntries.length === 0 ? (
+              <div className="px-3 py-2 pl-9 text-xs text-muted-foreground">No entries in range</div>
+            ) : (
+              bankChargesEntries.map((e) => (
+                <div
+                  key={e.id}
+                  className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs items-center"
+                >
+                  <span className="pl-6 text-muted-foreground">{e.date}</span>
+                  <CurrencyDisplay value={e.bankCharges ?? 0} className="text-right" />
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+        <div className="px-3 py-2 border-t">
+          <input
+            value={form.explanationBankCharges}
+            onChange={(e) => setForm((f) => ({ ...f, explanationBankCharges: e.target.value }))}
+            className="input-cell w-full text-left text-xs"
+            placeholder="Explanation / notes for bank charges adjustment..."
+          />
+        </div>
+      </Section>
+
       <DebtorsBranchComparison month={month} />
 
       <Button onClick={handleSave} className="w-full" size="sm">
