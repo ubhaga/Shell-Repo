@@ -173,6 +173,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     );
   })();
   const ccTotalCol1 = ccReconClosing + form.ccUnbankedDeposit;
+  const pettyCashTotalCol1 = form.pettyCashRecon + form.pettyCashUnbankedDeposit;
 
   const handleSave = async () => {
     try {
