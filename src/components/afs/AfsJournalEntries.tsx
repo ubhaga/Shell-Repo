@@ -383,7 +383,8 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
             const isFuelClearing = (cat: string) => /fuel|wsl|dsl/i.test(cat);
             type DebitRow = { label: string; amount: number };
             const debits: DebitRow[] = [];
-            let fuelClearingTotal = 0;
+            let fuelClearingF2K = 0;
+            let fuelClearingShell = 0;
             let tradeCreditorsTotal = 0;
 
             je2Eft.categories.forEach((r) => {
@@ -391,7 +392,11 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
               if (fuel) {
                 if (r.inclVat !== 0) debits.push({ label: `COS ${r.category} (Incl Vat)`, amount: r.inclVat });
                 if (r.noVat !== 0) debits.push({ label: `COS ${r.category} (Exempt)`, amount: r.noVat });
-                fuelClearingTotal += r.inclVat + r.noVat;
+                r.transactions.forEach((t) => {
+                  const amt = t.inclVatPortion + t.noVatPortion;
+                  if (/f2k/i.test(t.supplier)) fuelClearingF2K += amt;
+                  else fuelClearingShell += amt;
+                });
               } else {
                 if (r.inclVat !== 0) debits.push({ label: `COS ${r.category} (Incl Vat)`, amount: r.inclVat });
                 if (r.noVat !== 0) debits.push({ label: `COS ${r.category} (No Vat)`, amount: r.noVat });
@@ -400,7 +405,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
             });
 
             const totalDebits = debits.reduce((s, d) => s + d.amount, 0);
-            const totalCredits = fuelClearingTotal + tradeCreditorsTotal;
+            const totalCredits = fuelClearingF2K + fuelClearingShell + tradeCreditorsTotal;
 
             return (
               <Table>
@@ -419,11 +424,18 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                       <TableCell className="text-right py-1.5" />
                     </TableRow>
                   ))}
-                  {fuelClearingTotal !== 0 && (
+                  {fuelClearingF2K !== 0 && (
                     <TableRow>
-                      <TableCell className="text-sm py-1.5">Fuel Clearing</TableCell>
+                      <TableCell className="text-sm py-1.5">Fuel Clearing F2K</TableCell>
                       <TableCell className="text-right py-1.5" />
-                      <TableCell className="text-right py-1.5"><CurrencyDisplay value={fuelClearingTotal} /></TableCell>
+                      <TableCell className="text-right py-1.5"><CurrencyDisplay value={fuelClearingF2K} /></TableCell>
+                    </TableRow>
+                  )}
+                  {fuelClearingShell !== 0 && (
+                    <TableRow>
+                      <TableCell className="text-sm py-1.5">Fuel Clearing Shell</TableCell>
+                      <TableCell className="text-right py-1.5" />
+                      <TableCell className="text-right py-1.5"><CurrencyDisplay value={fuelClearingShell} /></TableCell>
                     </TableRow>
                   )}
                   {tradeCreditorsTotal !== 0 && (
@@ -434,6 +446,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                     </TableRow>
                   )}
                 </TableBody>
+
                 <TableFooter>
                   <TableRow>
                     <TableCell className="font-semibold text-sm">Totals</TableCell>
