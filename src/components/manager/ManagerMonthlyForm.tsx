@@ -883,7 +883,34 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
               className="text-right w-full max-w-[120px]"
               allowNegative
             />
+        </div>
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
+          <span className="text-muted-foreground font-medium">Xero</span>
+          <div className="flex justify-center">
+            <CurrencyInput
+              value={form.airtimeBldXero}
+              onChange={(v) => setForm((f) => ({ ...f, airtimeBldXero: v }))}
+              className="text-right w-full max-w-[120px]"
+              allowNegative
+            />
           </div>
+          <div className="flex justify-center">
+            <CurrencyInput
+              value={form.airtimeEasypayXero}
+              onChange={(v) => setForm((f) => ({ ...f, airtimeEasypayXero: v }))}
+              className="text-right w-full max-w-[120px]"
+              allowNegative
+            />
+          </div>
+          <div className="flex justify-center">
+            <CurrencyInput
+              value={form.airtimeLottoXero}
+              onChange={(v) => setForm((f) => ({ ...f, airtimeLottoXero: v }))}
+              className="text-right w-full max-w-[120px]"
+              allowNegative
+            />
+          </div>
+        </div>
         </div>
         <div className="px-3 py-2 border-t flex justify-end">
           <Button onClick={handleSave} size="sm" variant="outline">
