@@ -4,7 +4,7 @@ import { useMasterDataStore } from "@/store/masterDataStore";
 import type { MonthlyBranchFigures } from "@/types/cashup";
 import { Section, DataRow, CurrencyInput, CurrencyDisplay } from "@/components/ui/CashupUI";
 import { Button } from "@/components/ui/button";
-import { Save, CheckCircle, AlertCircle } from "lucide-react";
+import { Save, CheckCircle, AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { DebtorsBranchComparison } from "./DebtorsBranchComparison";
