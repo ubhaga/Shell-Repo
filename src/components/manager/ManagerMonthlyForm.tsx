@@ -218,12 +218,15 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   })();
   const pettyCashTotalCol1 = coinsReconClosing + form.pettyCashUnbankedDeposit;
 
-  // 3. EFT Recon — total unbanked speedpoints for the month
-  const speedpointCashupTotal = monthCashups.reduce((s, c) => {
-    const shop = c.shop.speedpoints.filter((sp) => SP_TERMINALS.includes(sp.terminal)).reduce((a, sp) => a + sp.shopAmount, 0);
-    const opt = c.opt.speedpoints.filter((sp) => SP_TERMINALS.includes(sp.terminal)).reduce((a, sp) => a + sp.optAmount, 0);
-    return s + shop + opt;
-  }, 0);
+  // 3. EFT Recon — cumulative unbanked speedpoints through end of selected month
+  const monthEndStr = `${yearStr}-${monthStr}-${String(lastDayCurr.getDate()).padStart(2, "0")}`;
+  const speedpointCashupTotal = cashups
+    .filter((c) => c.date <= monthEndStr)
+    .reduce((s, c) => {
+      const shop = c.shop.speedpoints.filter((sp) => SP_TERMINALS.includes(sp.terminal)).reduce((a, sp) => a + sp.shopAmount, 0);
+      const opt = c.opt.speedpoints.filter((sp) => SP_TERMINALS.includes(sp.terminal)).reduce((a, sp) => a + sp.optAmount, 0);
+      return s + shop + opt;
+    }, 0);
   const eftReconClosing = speedpointCashupTotal - eftBankTotal;
   const eftTotalCol1 = eftReconClosing + form.eftUnbankedDeposit;
 
