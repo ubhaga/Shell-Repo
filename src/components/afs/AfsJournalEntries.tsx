@@ -150,27 +150,17 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     return { credits, debits, totalCredits, totalDebits };
   }, [month, cashups, managerEntries, monthlyFigures]);
 
-  // ── JE 2 — Invoices (Payouts + EFTs combined) ──
+  // ── JE 2.1 (EFT) & JE 2.2 (Payouts) — Invoices split by source ──
   // Simplified for Xero entry: one row per category, showing total Incl. VAT
   // and total No VAT amounts. Expand for line-item detail.
-  const je2 = useMemo(() => {
+  const { je2Eft, je2Payouts } = useMemo(() => {
     const monthlyManagers = managerEntries.filter((e) => e.date.startsWith(month));
 
     type Txn = { date: string; supplier: string; source: "Payout" | "EFT"; amount: number; inclVatPortion: number; noVatPortion: number };
-    const catMap: Record<string, { inclVat: number; noVat: number; transactions: Txn[] }> = {};
-
-    const push = (cat: string, txn: Txn) => {
-      if (!catMap[cat]) catMap[cat] = { inclVat: 0, noVat: 0, transactions: [] };
-      catMap[cat].inclVat += txn.inclVatPortion;
-      catMap[cat].noVat += txn.noVatPortion;
-      catMap[cat].transactions.push(txn);
-    };
 
     const splitAmounts = (category: string, inclusive: number, vat: number) => {
       const isExempt = /fuel|wsl|dsl/i.test(category);
       if (isExempt) {
-        // Fuel is VAT-exempt; only the small admin charge is vatable.
-        // Vatable inclusive portion = vat / 0.15 * 1.15; remainder is non-vatable.
         const vatablePortion = vat > 0 ? (vat / 0.15) * 1.15 : 0;
         return { inclVatPortion: vatablePortion, noVatPortion: inclusive - vatablePortion };
       }
@@ -180,36 +170,45 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
         : { inclVatPortion: 0, noVatPortion: inclusive };
     };
 
-    monthlyManagers.forEach((e) => {
-      e.payoutInvoices.forEach((inv) => {
-        const cat = inv.category || "Uncategorised";
-        const { inclVatPortion, noVatPortion } = splitAmounts(cat, inv.inclusive, inv.vat ?? 0);
-        push(cat, { date: e.date, supplier: inv.supplier, source: "Payout", amount: inv.inclusive, inclVatPortion, noVatPortion });
+    const build = (source: "Payout" | "EFT") => {
+      const catMap: Record<string, { inclVat: number; noVat: number; transactions: Txn[] }> = {};
+      const push = (cat: string, txn: Txn) => {
+        if (!catMap[cat]) catMap[cat] = { inclVat: 0, noVat: 0, transactions: [] };
+        catMap[cat].inclVat += txn.inclVatPortion;
+        catMap[cat].noVat += txn.noVatPortion;
+        catMap[cat].transactions.push(txn);
+      };
+
+      monthlyManagers.forEach((e) => {
+        const invoices = source === "Payout" ? e.payoutInvoices : e.eftInvoices;
+        invoices.forEach((inv) => {
+          const cat = inv.category || "Uncategorised";
+          const { inclVatPortion, noVatPortion } = splitAmounts(cat, inv.inclusive, inv.vat ?? 0);
+          push(cat, { date: e.date, supplier: inv.supplier, source, amount: inv.inclusive, inclVatPortion, noVatPortion });
+        });
       });
-      e.eftInvoices.forEach((inv) => {
-        const cat = inv.category || "Uncategorised";
-        const { inclVatPortion, noVatPortion } = splitAmounts(cat, inv.inclusive, inv.vat ?? 0);
-        push(cat, { date: e.date, supplier: inv.supplier, source: "EFT", amount: inv.inclusive, inclVatPortion, noVatPortion });
-      });
-    });
 
-    const categories = Object.entries(catMap)
-      .sort((a, b) => (b[1].inclVat + b[1].noVat) - (a[1].inclVat + a[1].noVat))
-      .map(([category, v]) => ({
-        category,
-        inclVat: v.inclVat,
-        noVat: v.noVat,
-        total: v.inclVat + v.noVat,
-        transactions: v.transactions.sort((a, b) => a.date.localeCompare(b.date)),
-      }));
+      const categories = Object.entries(catMap)
+        .sort((a, b) => (b[1].inclVat + b[1].noVat) - (a[1].inclVat + a[1].noVat))
+        .map(([category, v]) => ({
+          category,
+          inclVat: v.inclVat,
+          noVat: v.noVat,
+          total: v.inclVat + v.noVat,
+          transactions: v.transactions.sort((a, b) => a.date.localeCompare(b.date)),
+        }));
 
-    const totals = categories.reduce(
-      (a, r) => ({ inclVat: a.inclVat + r.inclVat, noVat: a.noVat + r.noVat, total: a.total + r.total }),
-      { inclVat: 0, noVat: 0, total: 0 }
-    );
+      const totals = categories.reduce(
+        (a, r) => ({ inclVat: a.inclVat + r.inclVat, noVat: a.noVat + r.noVat, total: a.total + r.total }),
+        { inclVat: 0, noVat: 0, total: 0 }
+      );
 
-    return { categories, totals };
+      return { categories, totals };
+    };
+
+    return { je2Eft: build("EFT"), je2Payouts: build("Payout") };
   }, [month, managerEntries]);
+
 
   const [expandedPayoutCats, setExpandedPayoutCats] = useState<Set<string>>(new Set());
   const [expandedEftCats, setExpandedEftCats] = useState<Set<string>>(new Set());
