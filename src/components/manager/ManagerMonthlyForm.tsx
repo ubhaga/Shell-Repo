@@ -137,6 +137,22 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   const invoicesMatch = Math.abs(spreadsheetInvoicesTotal - form.branchTotalInvoicesCapital) < 1;
   const vatMatch = Math.abs(spreadsheetInvoicesVat - form.branchTotalInvoicesVat) < 1;
 
+  // Bank charges range: last day of previous month through second-to-last day of current month
+  const [yearStr, monthStr] = month.split("-");
+  const yearN = parseInt(yearStr, 10);
+  const monthN = parseInt(monthStr, 10);
+  const lastDayPrev = new Date(yearN, monthN - 1, 0); // last day of prev month
+  const lastDayCurr = new Date(yearN, monthN, 0); // last day of current month
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const fmtDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const rangeStart = fmtDate(lastDayPrev);
+  const rangeEndExclusive = fmtDate(lastDayCurr); // exclude this day
+  const bankChargesEntries = managerEntries
+    .filter((e) => e.date >= rangeStart && e.date < rangeEndExclusive)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const totalBankCharges = bankChargesEntries.reduce((s, e) => s + (e.bankCharges ?? 0), 0);
+  const bankChargesDiff = form.cashConnectInvoiceInclVat - totalBankCharges;
+
   const handleSave = () => {
     if (existing) updateMonthlyFigures(existing.id, form);
     else addMonthlyFigures(form);
