@@ -810,7 +810,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
             </div>
           </div>
           <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
-            <span className="text-muted-foreground">Un Banked Deposit</span>
+            <span className="text-muted-foreground">Adj&nbsp;</span>
             <div className="flex justify-end">
               <CurrencyInput
                 value={form.pettyCashUnbankedDeposit}
