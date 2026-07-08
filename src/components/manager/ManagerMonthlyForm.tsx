@@ -412,7 +412,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           >
             {bankChargesExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
             <span>
-              Bank Charges ({rangeStart} → {fmtDate(new Date(yearN, monthN, -1))})
+              6.1 CC Bank Charges ({rangeStart} → {fmtDate(new Date(yearN, monthN, -1))})
             </span>
           </button>
           <CurrencyDisplay value={totalBankCharges} className="text-right" />
