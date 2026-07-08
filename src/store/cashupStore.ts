@@ -153,6 +153,9 @@ function monthlyToRow(f: MonthlyBranchFigures) {
     airtime_bld_balance: f.airtimeBldBalance,
     airtime_easypay_balance: f.airtimeEasypayBalance,
     airtime_lotto_balance: f.airtimeLottoBalance,
+    airtime_bld_xero: f.airtimeBldXero,
+    airtime_easypay_xero: f.airtimeEasypayXero,
+    airtime_lotto_xero: f.airtimeLottoXero,
   };
 }
 
@@ -197,6 +200,9 @@ function rowToMonthly(r: Record<string, unknown>): MonthlyBranchFigures {
     airtimeBldBalance: Number(r.airtime_bld_balance ?? 0),
     airtimeEasypayBalance: Number(r.airtime_easypay_balance ?? 0),
     airtimeLottoBalance: Number(r.airtime_lotto_balance ?? 0),
+    airtimeBldXero: Number(r.airtime_bld_xero ?? 0),
+    airtimeEasypayXero: Number(r.airtime_easypay_xero ?? 0),
+    airtimeLottoXero: Number(r.airtime_lotto_xero ?? 0),
   };
 }
 

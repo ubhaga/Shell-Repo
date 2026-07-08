@@ -188,6 +188,9 @@ export interface MonthlyBranchFigures {
   airtimeBldBalance: number;
   airtimeEasypayBalance: number;
   airtimeLottoBalance: number;
+  airtimeBldXero: number;
+  airtimeEasypayXero: number;
+  airtimeLottoXero: number;
   // Misc
   notes: string;
 }

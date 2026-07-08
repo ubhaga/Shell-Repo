@@ -352,8 +352,11 @@ export type Database = {
           adj_vat: number
           adj_wsl_dsl: number
           airtime_bld_balance: number
+          airtime_bld_xero: number
           airtime_easypay_balance: number
+          airtime_easypay_xero: number
           airtime_lotto_balance: number
+          airtime_lotto_xero: number
           bank_charges_adj: number
           branch_net_sales: number
           branch_total_invoices_capital: number
@@ -395,8 +398,11 @@ export type Database = {
           adj_vat?: number
           adj_wsl_dsl?: number
           airtime_bld_balance?: number
+          airtime_bld_xero?: number
           airtime_easypay_balance?: number
+          airtime_easypay_xero?: number
           airtime_lotto_balance?: number
+          airtime_lotto_xero?: number
           bank_charges_adj?: number
           branch_net_sales?: number
           branch_total_invoices_capital?: number
@@ -438,8 +444,11 @@ export type Database = {
           adj_vat?: number
           adj_wsl_dsl?: number
           airtime_bld_balance?: number
+          airtime_bld_xero?: number
           airtime_easypay_balance?: number
+          airtime_easypay_xero?: number
           airtime_lotto_balance?: number
+          airtime_lotto_xero?: number
           bank_charges_adj?: number
           branch_net_sales?: number
           branch_total_invoices_capital?: number
