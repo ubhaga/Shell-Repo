@@ -553,13 +553,13 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
         </div>
       </Section>
 
-      <DebtorsBranchComparison month={month} />
-
       <Button onClick={handleSave} className="w-full" size="sm">
 
         <Save className="h-3.5 w-3.5 mr-1" />
         Save Monthly
       </Button>
+
+      <DebtorsBranchComparison month={month} />
 
       {/* Month End Status */}
       <div
