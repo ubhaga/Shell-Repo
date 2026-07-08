@@ -106,7 +106,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   });
 
   const [bankChargesExpanded, setBankChargesExpanded] = useState(false);
-  const [eftBankByTerminal, setEftBankByTerminal] = useState<Record<string, number>>({});
+  const [eftBankLines, setEftBankLines] = useState<{ amount: number; matched_terminal: string | null; description: string }[]>([]);
 
   useEffect(() => {
     if (existing) setForm({ ...existing });
@@ -119,16 +119,9 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
       const endStr = `${y}-${String(m).padStart(2, "0")}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
       const { data } = await supabase
         .from("bank_statement_lines")
-        .select("amount, matched_terminal, transaction_date")
+        .select("amount, matched_terminal, description")
         .lte("transaction_date", endStr);
-      const byTerm: Record<string, number> = {};
-      SP_TERMINALS.forEach((t) => (byTerm[t] = 0));
-      (data ?? []).forEach((l) => {
-        if (l.matched_terminal && SP_TERMINALS.includes(l.matched_terminal)) {
-          byTerm[l.matched_terminal] += Number(l.amount ?? 0);
-        }
-      });
-      setEftBankByTerminal(byTerm);
+      setEftBankLines((data ?? []) as { amount: number; matched_terminal: string | null; description: string }[]);
     })();
   }, [month]);
 
