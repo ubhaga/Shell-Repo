@@ -106,7 +106,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   });
 
   const [bankChargesExpanded, setBankChargesExpanded] = useState(false);
-  const [eftBankByTerminal, setEftBankByTerminal] = useState<Record<string, number>>({});
+  const [eftBankLines, setEftBankLines] = useState<{ amount: number; matched_terminal: string | null; description: string }[]>([]);
 
   useEffect(() => {
     if (existing) setForm({ ...existing });
@@ -119,16 +119,9 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
       const endStr = `${y}-${String(m).padStart(2, "0")}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
       const { data } = await supabase
         .from("bank_statement_lines")
-        .select("amount, matched_terminal, transaction_date")
+        .select("amount, matched_terminal, description")
         .lte("transaction_date", endStr);
-      const byTerm: Record<string, number> = {};
-      SP_TERMINALS.forEach((t) => (byTerm[t] = 0));
-      (data ?? []).forEach((l) => {
-        if (l.matched_terminal && SP_TERMINALS.includes(l.matched_terminal)) {
-          byTerm[l.matched_terminal] += Number(l.amount ?? 0);
-        }
-      });
-      setEftBankByTerminal(byTerm);
+      setEftBankLines((data ?? []) as { amount: number; matched_terminal: string | null; description: string }[]);
     })();
   }, [month]);
 
@@ -222,18 +215,47 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   })();
   const pettyCashTotalCol1 = coinsReconClosing + form.pettyCashUnbankedDeposit;
 
-  // 3. EFT Recon — per-terminal cumulative diff through end of selected month
+  // 3. EFT Recon — per-terminal diff using per-batch matching (matches Speedpoint Recon report)
   const monthEndStr = `${yearStr}-${monthStr}-${String(lastDayCurr.getDate()).padStart(2, "0")}`;
+  const TERMINAL_NUM: Record<string, string> = {};
+  SP_TERMINALS.forEach((t) => {
+    const m = t.match(/(\d{6})/);
+    if (m) TERMINAL_NUM[t] = m[1];
+  });
+  // Build bankLookup: `${terminal}|${batch}` -> summed bank amount (cumulative through month end)
+  const bankLookup: Record<string, number> = {};
+  eftBankLines.forEach((l) => {
+    if (!l.matched_terminal || !SP_TERMINALS.includes(l.matched_terminal)) return;
+    const termNum = TERMINAL_NUM[l.matched_terminal] || "";
+    if (!termNum) return;
+    const bm = l.description?.match(new RegExp(`${termNum}\\s+(\\d+)`));
+    const batch = bm ? bm[1] : "";
+    if (!batch) return;
+    const key = `${l.matched_terminal}|${batch}`;
+    bankLookup[key] = (bankLookup[key] || 0) + Number(l.amount ?? 0);
+  });
   const eftPerTerminal = SP_TERMINALS.map((term) => {
-    const cashupTotal = cashups
+    const cashupByBatch: Record<string, number> = {};
+    cashups
       .filter((c) => c.date <= monthEndStr)
-      .reduce((s, c) => {
-        const shop = c.shop.speedpoints.filter((sp) => sp.terminal === term).reduce((a, sp) => a + sp.shopAmount, 0);
-        const opt = c.opt.speedpoints.filter((sp) => sp.terminal === term).reduce((a, sp) => a + sp.optAmount, 0);
-        return s + shop + opt;
-      }, 0);
-    const bankTotal = eftBankByTerminal[term] ?? 0;
-    return { terminal: term, diff: cashupTotal - bankTotal };
+      .forEach((c) => {
+        c.shop.speedpoints.forEach((sp) => {
+          if (sp.terminal !== term) return;
+          const batch = sp.batchNo || "";
+          cashupByBatch[batch] = (cashupByBatch[batch] || 0) + (sp.shopAmount || 0);
+        });
+        c.opt.speedpoints.forEach((sp) => {
+          if (sp.terminal !== term) return;
+          const batch = sp.batchNo || "";
+          cashupByBatch[batch] = (cashupByBatch[batch] || 0) + (sp.optAmount || 0);
+        });
+      });
+    let diff = 0;
+    Object.entries(cashupByBatch).forEach(([batch, cashupAmt]) => {
+      const bankAmt = batch ? (bankLookup[`${term}|${batch}`] ?? 0) : 0;
+      diff += cashupAmt - bankAmt;
+    });
+    return { terminal: term, diff };
   });
   const eftReconClosing = eftPerTerminal.reduce((s, r) => s + r.diff, 0);
   const eftTotalCol1 = eftReconClosing + form.eftUnbankedDeposit;
