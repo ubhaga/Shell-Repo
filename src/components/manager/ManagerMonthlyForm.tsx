@@ -173,7 +173,29 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     );
   })();
   const ccTotalCol1 = ccReconClosing + form.ccUnbankedDeposit;
-  const pettyCashTotalCol1 = form.pettyCashRecon + form.pettyCashUnbankedDeposit;
+
+  // 6.3 Petty Cash / Coins closing balance — walk from seed date to end of month
+  const coinsReconClosing = (() => {
+    const SEED_DATE = "2026-01-01";
+    const SEED_COINS = 4483.15;
+    const endStr = fmtDate(lastDayCurr);
+    let coins = SEED_COINS;
+    const start = new Date(SEED_DATE + "T00:00:00");
+    const end = new Date(endStr + "T00:00:00");
+    const d = new Date(start);
+    while (d <= end) {
+      const ds = fmtDate(d);
+      const cu = cashups.find((c) => c.date === ds);
+      const en = managerEntries.find((e) => e.date === ds);
+      const dailyCoins = cu?.shop.coins ?? 0;
+      const closureCoins = Math.abs(en?.ccBagClosureCoins ?? 0);
+      const transferFromCoins = Math.abs(en?.transferFromCoins ?? 0);
+      coins = coins + dailyCoins - closureCoins - transferFromCoins;
+      d.setDate(d.getDate() + 1);
+    }
+    return coins;
+  })();
+  const pettyCashTotalCol1 = coinsReconClosing + form.pettyCashUnbankedDeposit;
 
   const handleSave = async () => {
     try {
@@ -568,14 +590,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
             <span className="text-muted-foreground">
               PC Closing Balance ({lastMgr ? lastMgr.date : "—"})
             </span>
-            <div className="flex justify-end">
-              <CurrencyInput
-                value={form.pettyCashRecon}
-                onChange={(v) => setForm((f) => ({ ...f, pettyCashRecon: v }))}
-                className="text-right w-full max-w-[140px]"
-                allowNegative
-              />
-            </div>
+            <CurrencyDisplay value={coinsReconClosing} className="text-right" />
             <div className="flex justify-end">
               <CurrencyInput
                 value={form.pettyCashXero}
