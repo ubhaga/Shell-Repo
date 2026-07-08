@@ -590,14 +590,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
             <span className="text-muted-foreground">
               PC Closing Balance ({lastMgr ? lastMgr.date : "—"})
             </span>
-            <div className="flex justify-end">
-              <CurrencyInput
-                value={form.pettyCashRecon}
-                onChange={(v) => setForm((f) => ({ ...f, pettyCashRecon: v }))}
-                className="text-right w-full max-w-[140px]"
-                allowNegative
-              />
-            </div>
+            <CurrencyDisplay value={coinsReconClosing} className="text-right" />
             <div className="flex justify-end">
               <CurrencyInput
                 value={form.pettyCashXero}
