@@ -672,7 +672,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
       </Section>
 
       {/* Bank Charges */}
-      <Section title="6. CASH CONNECT" color="blue">
+      <Section title="4. CASH CONNECT (Shift Clearing and Petty Cash)" color="blue">
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Description</span>
           <span className="text-right">Bank Charges (Manager Daily 2.1)</span>
