@@ -153,6 +153,9 @@ function monthlyToRow(f: MonthlyBranchFigures) {
     airtime_bld_balance: f.airtimeBldBalance,
     airtime_easypay_balance: f.airtimeEasypayBalance,
     airtime_lotto_balance: f.airtimeLottoBalance,
+    airtime_bld_xero: f.airtimeBldXero,
+    airtime_easypay_xero: f.airtimeEasypayXero,
+    airtime_lotto_xero: f.airtimeLottoXero,
   };
 }
 
