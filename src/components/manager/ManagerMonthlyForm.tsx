@@ -451,6 +451,11 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           explanation={form.explanationReceipts}
           onExplanationChange={(v) => setForm((f) => ({ ...f, explanationReceipts: v }))}
         />
+        <div className="px-3 py-2 border-t flex justify-end">
+          <Button onClick={handleSave} size="sm" variant="outline">
+            <Save className="h-3.5 w-3.5 mr-1" /> Save
+          </Button>
+        </div>
       </Section>
 
       {/* Creditors Transactions Report */}
@@ -480,6 +485,11 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           explanation={form.explanationVat}
           onExplanationChange={(v) => setForm((f) => ({ ...f, explanationVat: v }))}
         />
+        <div className="px-3 py-2 border-t flex justify-end">
+          <Button onClick={handleSave} size="sm" variant="outline">
+            <Save className="h-3.5 w-3.5 mr-1" /> Save
+          </Button>
+        </div>
       </Section>
 
       {/* Month End Report (Other) */}
@@ -574,10 +584,15 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
             className="text-right"
           />
         </div>
+        <div className="px-3 py-2 border-t flex justify-end">
+          <Button onClick={handleSave} size="sm" variant="outline">
+            <Save className="h-3.5 w-3.5 mr-1" /> Save
+          </Button>
+        </div>
       </Section>
 
       {/* Airtime / Lotto Balance */}
-      <Section title="8. Airtime / Lotto Balance" color="green">
+      <Section title="2. Airtime / Lotto Balance" color="green">
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
           <span>Description</span>
           <span className="text-center">Blue Label</span>
@@ -610,6 +625,11 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
               allowNegative
             />
           </div>
+        </div>
+        <div className="px-3 py-2 border-t flex justify-end">
+          <Button onClick={handleSave} size="sm" variant="outline">
+            <Save className="h-3.5 w-3.5 mr-1" /> Save
+          </Button>
         </div>
       </Section>
 
@@ -668,6 +688,11 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           </div>
           <CurrencyDisplay value={eftTotalCol1} className="text-right" highlight />
           <CurrencyDisplay value={form.eftXero} className="text-right" highlight />
+        </div>
+        <div className="px-3 py-2 border-t flex justify-end">
+          <Button onClick={handleSave} size="sm" variant="outline">
+            <Save className="h-3.5 w-3.5 mr-1" /> Save
+          </Button>
         </div>
       </Section>
 
@@ -854,6 +879,11 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
             <CurrencyDisplay value={pettyCashTotalCol1} className="text-right" highlight />
             <CurrencyDisplay value={form.pettyCashXero} className="text-right" highlight />
           </div>
+        </div>
+        <div className="px-3 py-2 border-t flex justify-end">
+          <Button onClick={handleSave} size="sm" variant="outline">
+            <Save className="h-3.5 w-3.5 mr-1" /> Save
+          </Button>
         </div>
       </Section>
 
