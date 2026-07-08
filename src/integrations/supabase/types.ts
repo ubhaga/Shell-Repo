@@ -374,6 +374,9 @@ export type Database = {
           id: string
           month: string
           notes: string
+          petty_cash_recon: number
+          petty_cash_unbanked_deposit: number
+          petty_cash_xero: number
           sales_c_store: number
           sales_fuel: number
           sales_gas: number
@@ -412,6 +415,9 @@ export type Database = {
           id?: string
           month: string
           notes?: string
+          petty_cash_recon?: number
+          petty_cash_unbanked_deposit?: number
+          petty_cash_xero?: number
           sales_c_store?: number
           sales_fuel?: number
           sales_gas?: number
@@ -450,6 +456,9 @@ export type Database = {
           id?: string
           month?: string
           notes?: string
+          petty_cash_recon?: number
+          petty_cash_unbanked_deposit?: number
+          petty_cash_xero?: number
           sales_c_store?: number
           sales_fuel?: number
           sales_gas?: number
