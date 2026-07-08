@@ -210,7 +210,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     if (!isFirstMonth && prevMonth) {
       const prevMonthManagers = managerEntries.filter(e => e.date.startsWith(prevMonth));
 
-      [...suppliers, ...fuelSuppliers].forEach(supplier => {
+      [...suppliers, ...directlyExpensedSuppliers, ...fuelSuppliers].forEach(supplier => {
         // If there's already a manually-entered OB for this month, keep it
         if (openingBalances[supplier] !== undefined) return;
 
