@@ -489,6 +489,47 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
             placeholder="Explanation / notes for bank charges adjustment..."
           />
         </div>
+
+        {/* 6.2 Cash Connect Balance (Excl EP) */}
+        <div className="border-t bg-muted/10">
+          <div className="px-3 py-2 text-sm font-semibold">6.2 Cash Connect Balance (Excl EP)</div>
+          <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+            <span>Description</span>
+            <span className="text-right">CC Recon</span>
+            <span className="text-right">Xero</span>
+          </div>
+          <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
+            <span className="text-muted-foreground">
+              CC Closing Balance ({lastMgr ? lastMgr.date : "—"})
+            </span>
+            <CurrencyDisplay value={ccReconClosing} className="text-right" />
+            <div className="flex justify-end">
+              <CurrencyInput
+                value={form.ccXero}
+                onChange={(v) => setForm((f) => ({ ...f, ccXero: v }))}
+                className="text-right w-full max-w-[140px]"
+                allowNegative
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
+            <span className="text-muted-foreground">Un Banked Deposit</span>
+            <div className="flex justify-end">
+              <CurrencyInput
+                value={form.ccUnbankedDeposit}
+                onChange={(v) => setForm((f) => ({ ...f, ccUnbankedDeposit: v }))}
+                className="text-right w-full max-w-[140px]"
+                allowNegative
+              />
+            </div>
+            <span></span>
+          </div>
+          <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-2 text-sm items-center bg-secondary font-semibold">
+            <span>Total</span>
+            <CurrencyDisplay value={ccTotalCol1} className="text-right" highlight />
+            <span></span>
+          </div>
+        </div>
       </Section>
 
       <DebtorsBranchComparison month={month} />
