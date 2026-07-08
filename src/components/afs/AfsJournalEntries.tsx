@@ -150,27 +150,17 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     return { credits, debits, totalCredits, totalDebits };
   }, [month, cashups, managerEntries, monthlyFigures]);
 
-  // ── JE 2 — Invoices (Payouts + EFTs combined) ──
+  // ── JE 2.1 (EFT) & JE 2.2 (Payouts) — Invoices split by source ──
   // Simplified for Xero entry: one row per category, showing total Incl. VAT
   // and total No VAT amounts. Expand for line-item detail.
-  const je2 = useMemo(() => {
+  const { je2Eft, je2Payouts } = useMemo(() => {
     const monthlyManagers = managerEntries.filter((e) => e.date.startsWith(month));
 
     type Txn = { date: string; supplier: string; source: "Payout" | "EFT"; amount: number; inclVatPortion: number; noVatPortion: number };
-    const catMap: Record<string, { inclVat: number; noVat: number; transactions: Txn[] }> = {};
-
-    const push = (cat: string, txn: Txn) => {
-      if (!catMap[cat]) catMap[cat] = { inclVat: 0, noVat: 0, transactions: [] };
-      catMap[cat].inclVat += txn.inclVatPortion;
-      catMap[cat].noVat += txn.noVatPortion;
-      catMap[cat].transactions.push(txn);
-    };
 
     const splitAmounts = (category: string, inclusive: number, vat: number) => {
       const isExempt = /fuel|wsl|dsl/i.test(category);
       if (isExempt) {
-        // Fuel is VAT-exempt; only the small admin charge is vatable.
-        // Vatable inclusive portion = vat / 0.15 * 1.15; remainder is non-vatable.
         const vatablePortion = vat > 0 ? (vat / 0.15) * 1.15 : 0;
         return { inclVatPortion: vatablePortion, noVatPortion: inclusive - vatablePortion };
       }
@@ -180,43 +170,53 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
         : { inclVatPortion: 0, noVatPortion: inclusive };
     };
 
-    monthlyManagers.forEach((e) => {
-      e.payoutInvoices.forEach((inv) => {
-        const cat = inv.category || "Uncategorised";
-        const { inclVatPortion, noVatPortion } = splitAmounts(cat, inv.inclusive, inv.vat ?? 0);
-        push(cat, { date: e.date, supplier: inv.supplier, source: "Payout", amount: inv.inclusive, inclVatPortion, noVatPortion });
+    const build = (source: "Payout" | "EFT") => {
+      const catMap: Record<string, { inclVat: number; noVat: number; transactions: Txn[] }> = {};
+      const push = (cat: string, txn: Txn) => {
+        if (!catMap[cat]) catMap[cat] = { inclVat: 0, noVat: 0, transactions: [] };
+        catMap[cat].inclVat += txn.inclVatPortion;
+        catMap[cat].noVat += txn.noVatPortion;
+        catMap[cat].transactions.push(txn);
+      };
+
+      monthlyManagers.forEach((e) => {
+        const invoices = source === "Payout" ? e.payoutInvoices : e.eftInvoices;
+        invoices.forEach((inv) => {
+          const cat = inv.category || "Uncategorised";
+          const { inclVatPortion, noVatPortion } = splitAmounts(cat, inv.inclusive, inv.vat ?? 0);
+          push(cat, { date: e.date, supplier: inv.supplier, source, amount: inv.inclusive, inclVatPortion, noVatPortion });
+        });
       });
-      e.eftInvoices.forEach((inv) => {
-        const cat = inv.category || "Uncategorised";
-        const { inclVatPortion, noVatPortion } = splitAmounts(cat, inv.inclusive, inv.vat ?? 0);
-        push(cat, { date: e.date, supplier: inv.supplier, source: "EFT", amount: inv.inclusive, inclVatPortion, noVatPortion });
-      });
-    });
 
-    const categories = Object.entries(catMap)
-      .sort((a, b) => (b[1].inclVat + b[1].noVat) - (a[1].inclVat + a[1].noVat))
-      .map(([category, v]) => ({
-        category,
-        inclVat: v.inclVat,
-        noVat: v.noVat,
-        total: v.inclVat + v.noVat,
-        transactions: v.transactions.sort((a, b) => a.date.localeCompare(b.date)),
-      }));
+      const categories = Object.entries(catMap)
+        .sort((a, b) => (b[1].inclVat + b[1].noVat) - (a[1].inclVat + a[1].noVat))
+        .map(([category, v]) => ({
+          category,
+          inclVat: v.inclVat,
+          noVat: v.noVat,
+          total: v.inclVat + v.noVat,
+          transactions: v.transactions.sort((a, b) => a.date.localeCompare(b.date)),
+        }));
 
-    const totals = categories.reduce(
-      (a, r) => ({ inclVat: a.inclVat + r.inclVat, noVat: a.noVat + r.noVat, total: a.total + r.total }),
-      { inclVat: 0, noVat: 0, total: 0 }
-    );
+      const totals = categories.reduce(
+        (a, r) => ({ inclVat: a.inclVat + r.inclVat, noVat: a.noVat + r.noVat, total: a.total + r.total }),
+        { inclVat: 0, noVat: 0, total: 0 }
+      );
 
-    return { categories, totals };
+      return { categories, totals };
+    };
+
+    return { je2Eft: build("EFT"), je2Payouts: build("Payout") };
   }, [month, managerEntries]);
+
 
   const [expandedPayoutCats, setExpandedPayoutCats] = useState<Set<string>>(new Set());
   const [expandedEftCats, setExpandedEftCats] = useState<Set<string>>(new Set());
 
   // Adjustment explanations state (persisted via master_data)
   const [je1Explanation, setJe1Explanation] = useState('');
-  const [je2Explanation, setJe2Explanation] = useState('');
+  const [je2_1Explanation, setJe2_1Explanation] = useState('');
+  const [je2_2Explanation, setJe2_2Explanation] = useState('');
   const [je3Explanation, setJe3Explanation] = useState('');
   const [je4Explanation, setJe4Explanation] = useState('');
 
@@ -226,12 +226,14 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       if (data?.data) {
         const d = data.data as Record<string, string>;
         setJe1Explanation(d.je1 ?? '');
-        setJe2Explanation(d.je2 ?? '');
+        setJe2_1Explanation(d.je2_1 ?? '');
+        setJe2_2Explanation(d.je2_2 ?? '');
         setJe3Explanation(d.je3 ?? '');
         setJe4Explanation(d.je4 ?? '');
       } else {
         setJe1Explanation('');
-        setJe2Explanation('');
+        setJe2_1Explanation('');
+        setJe2_2Explanation('');
         setJe3Explanation('');
         setJe4Explanation('');
       }
@@ -254,9 +256,9 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     });
   };
 
-  const saveExplanation = (field: 'je1' | 'je2' | 'je3' | 'je4', value: string) => {
+  const saveExplanation = (field: 'je1' | 'je2_1' | 'je2_2' | 'je3' | 'je4', value: string) => {
     const key = `je_explanations_${month}`;
-    const current = { je1: je1Explanation, je2: je2Explanation, je3: je3Explanation, je4: je4Explanation, [field]: value };
+    const current = { je1: je1Explanation, je2_1: je2_1Explanation, je2_2: je2_2Explanation, je3: je3Explanation, je4: je4Explanation, [field]: value };
     supabase.from('master_data').upsert({ key, data: current as any }, { onConflict: 'key' }).then();
   };
 
@@ -367,9 +369,9 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">JE 2 — Invoices ({month})</CardTitle>
+          <CardTitle className="text-base">JE 2.1 — EFT Invoices ({month})</CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Combined Payouts + EFTs by category. Amounts are inclusive — enter the Incl. VAT
+            EFT invoices by category. Amounts are inclusive — enter the Incl. VAT
             column against a VAT tax rate in Xero, and the No VAT column against a no-VAT rate.
           </p>
         </CardHeader>
@@ -384,7 +386,83 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
               </TableRow>
             </TableHeader>
             <TableBody>
-              {je2.categories.map((r) => (
+              {je2Eft.categories.map((r) => (
+                <React.Fragment key={r.category}>
+                  <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => toggleEftCat(r.category)}>
+                    <TableCell className="text-sm py-1.5">
+                      <span className="inline-flex items-center gap-1">
+                        {expandedEftCats.has(r.category) ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                        {r.category}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right py-1.5"><CurrencyDisplay value={r.inclVat} /></TableCell>
+                    <TableCell className="text-right py-1.5"><CurrencyDisplay value={r.noVat} /></TableCell>
+                    <TableCell className="text-right py-1.5 font-medium"><CurrencyDisplay value={r.total} /></TableCell>
+                  </TableRow>
+                  {expandedEftCats.has(r.category) && r.transactions.map((t, i) => (
+                    <TableRow
+                      key={`${r.category}-${i}`}
+                      className="cursor-pointer hover:bg-accent/50 bg-muted/30"
+                      onClick={() => onNavigateToDate?.(t.date)}
+                    >
+                      <TableCell className="text-xs py-1 pl-10 text-muted-foreground">
+                        {t.date} — {t.supplier}
+                      </TableCell>
+                      <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                        {t.inclVatPortion !== 0 ? <CurrencyDisplay value={t.inclVatPortion} /> : null}
+                      </TableCell>
+                      <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                        {t.noVatPortion !== 0 ? <CurrencyDisplay value={t.noVatPortion} /> : null}
+                      </TableCell>
+                      <TableCell className="text-right text-xs py-1 text-muted-foreground">
+                        <CurrencyDisplay value={t.amount} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </React.Fragment>
+              ))}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell className="font-semibold text-sm">Total</TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je2Eft.totals.inclVat} highlight /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je2Eft.totals.noVat} highlight /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je2Eft.totals.total} highlight /></TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+          <div className="mt-3">
+            <label className="text-xs font-medium text-muted-foreground">Adjustment Explanations</label>
+            <Textarea
+              value={je2_1Explanation}
+              onChange={(e) => setJe2_1Explanation(e.target.value)}
+              onBlur={() => saveExplanation('je2_1', je2_1Explanation)}
+              placeholder="Enter adjustment explanations for JE 2.1..."
+              className="mt-1 min-h-[60px] text-sm"
+            />
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">JE 2.2 — Payout Invoices ({month})</CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Payout invoices by category. Amounts are inclusive — enter the Incl. VAT
+            column against a VAT tax rate in Xero, and the No VAT column against a no-VAT rate.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Category</TableHead>
+                <TableHead className="text-xs text-right">Incl. VAT</TableHead>
+                <TableHead className="text-xs text-right">No VAT</TableHead>
+                <TableHead className="text-xs text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {je2Payouts.categories.map((r) => (
                 <React.Fragment key={r.category}>
                   <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => togglePayoutCat(r.category)}>
                     <TableCell className="text-sm py-1.5">
@@ -404,7 +482,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                       onClick={() => onNavigateToDate?.(t.date)}
                     >
                       <TableCell className="text-xs py-1 pl-10 text-muted-foreground">
-                        {t.date} — {t.supplier} <span className="opacity-70">({t.source})</span>
+                        {t.date} — {t.supplier}
                       </TableCell>
                       <TableCell className="text-right text-xs py-1 text-muted-foreground">
                         {t.inclVatPortion !== 0 ? <CurrencyDisplay value={t.inclVatPortion} /> : null}
@@ -423,19 +501,19 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
             <TableFooter>
               <TableRow>
                 <TableCell className="font-semibold text-sm">Total</TableCell>
-                <TableCell className="text-right"><CurrencyDisplay value={je2.totals.inclVat} highlight /></TableCell>
-                <TableCell className="text-right"><CurrencyDisplay value={je2.totals.noVat} highlight /></TableCell>
-                <TableCell className="text-right"><CurrencyDisplay value={je2.totals.total} highlight /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je2Payouts.totals.inclVat} highlight /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je2Payouts.totals.noVat} highlight /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je2Payouts.totals.total} highlight /></TableCell>
               </TableRow>
             </TableFooter>
           </Table>
           <div className="mt-3">
             <label className="text-xs font-medium text-muted-foreground">Adjustment Explanations</label>
             <Textarea
-              value={je2Explanation}
-              onChange={(e) => setJe2Explanation(e.target.value)}
-              onBlur={() => saveExplanation('je2', je2Explanation)}
-              placeholder="Enter adjustment explanations for JE 2..."
+              value={je2_2Explanation}
+              onChange={(e) => setJe2_2Explanation(e.target.value)}
+              onBlur={() => saveExplanation('je2_2', je2_2Explanation)}
+              placeholder="Enter adjustment explanations for JE 2.2..."
               className="mt-1 min-h-[60px] text-sm"
             />
           </div>
