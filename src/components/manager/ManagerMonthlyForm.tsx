@@ -222,16 +222,20 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   })();
   const pettyCashTotalCol1 = coinsReconClosing + form.pettyCashUnbankedDeposit;
 
-  // 3. EFT Recon — cumulative unbanked speedpoints through end of selected month
+  // 3. EFT Recon — per-terminal cumulative diff through end of selected month
   const monthEndStr = `${yearStr}-${monthStr}-${String(lastDayCurr.getDate()).padStart(2, "0")}`;
-  const speedpointCashupTotal = cashups
-    .filter((c) => c.date <= monthEndStr)
-    .reduce((s, c) => {
-      const shop = c.shop.speedpoints.filter((sp) => SP_TERMINALS.includes(sp.terminal)).reduce((a, sp) => a + sp.shopAmount, 0);
-      const opt = c.opt.speedpoints.filter((sp) => SP_TERMINALS.includes(sp.terminal)).reduce((a, sp) => a + sp.optAmount, 0);
-      return s + shop + opt;
-    }, 0);
-  const eftReconClosing = speedpointCashupTotal - eftBankTotal;
+  const eftPerTerminal = SP_TERMINALS.map((term) => {
+    const cashupTotal = cashups
+      .filter((c) => c.date <= monthEndStr)
+      .reduce((s, c) => {
+        const shop = c.shop.speedpoints.filter((sp) => sp.terminal === term).reduce((a, sp) => a + sp.shopAmount, 0);
+        const opt = c.opt.speedpoints.filter((sp) => sp.terminal === term).reduce((a, sp) => a + sp.optAmount, 0);
+        return s + shop + opt;
+      }, 0);
+    const bankTotal = eftBankByTerminal[term] ?? 0;
+    return { terminal: term, diff: cashupTotal - bankTotal };
+  });
+  const eftReconClosing = eftPerTerminal.reduce((s, r) => s + r.diff, 0);
   const eftTotalCol1 = eftReconClosing + form.eftUnbankedDeposit;
 
   const handleSave = async () => {
