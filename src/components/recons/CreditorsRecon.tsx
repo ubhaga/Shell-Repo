@@ -87,9 +87,13 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   if (getDay(monthEnd) !== 0) sundays.push(monthEnd);
 
   const FUEL_CREDITORS = ['Shell Downstream', 'F2K'];
+  const DIRECTLY_EXPENSED_CREDITORS = ['Dawn Consultants'];
   const isFuelCreditor = (s: string) => FUEL_CREDITORS.some(fc => fc.toUpperCase() === s.toUpperCase());
+  const isDirectlyExpensed = (s: string) =>
+    DIRECTLY_EXPENSED_CREDITORS.some(dc => dc.toUpperCase() === s.toUpperCase());
   const allSuppliers = [...eftSuppliers].sort();
-  const suppliers = allSuppliers.filter(s => !isFuelCreditor(s));
+  const suppliers = allSuppliers.filter(s => !isFuelCreditor(s) && !isDirectlyExpensed(s));
+  const directlyExpensedSuppliers = allSuppliers.filter(s => isDirectlyExpensed(s));
   const fuelSuppliers = allSuppliers.filter(s => isFuelCreditor(s));
 
   // EFT invoices from manager daily entries for this month
