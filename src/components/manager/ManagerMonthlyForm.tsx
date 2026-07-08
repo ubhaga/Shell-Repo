@@ -108,6 +108,9 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     airtimeBldBalance: 0,
     airtimeEasypayBalance: 0,
     airtimeLottoBalance: 0,
+    airtimeBldXero: 0,
+    airtimeEasypayXero: 0,
+    airtimeLottoXero: 0,
   });
 
   const [bankChargesExpanded, setBankChargesExpanded] = useState(false);
