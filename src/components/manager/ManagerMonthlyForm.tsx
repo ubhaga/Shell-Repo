@@ -235,16 +235,19 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     bankLookup[key] = (bankLookup[key] || 0) + Number(l.amount ?? 0);
   });
   const eftPerTerminal = SP_TERMINALS.map((term) => {
-    // Aggregate cashup speedpoints by batchNo (cumulative through month end)
     const cashupByBatch: Record<string, number> = {};
     cashups
       .filter((c) => c.date <= monthEndStr)
       .forEach((c) => {
-        [...c.shop.speedpoints, ...c.opt.speedpoints].forEach((sp) => {
+        c.shop.speedpoints.forEach((sp) => {
           if (sp.terminal !== term) return;
-          const amt = (sp as { shopAmount?: number; optAmount?: number }).shopAmount ?? (sp as { shopAmount?: number; optAmount?: number }).optAmount ?? 0;
           const batch = sp.batchNo || "";
-          cashupByBatch[batch] = (cashupByBatch[batch] || 0) + amt;
+          cashupByBatch[batch] = (cashupByBatch[batch] || 0) + (sp.shopAmount || 0);
+        });
+        c.opt.speedpoints.forEach((sp) => {
+          if (sp.terminal !== term) return;
+          const batch = sp.batchNo || "";
+          cashupByBatch[batch] = (cashupByBatch[batch] || 0) + (sp.optAmount || 0);
         });
       });
     let diff = 0;
