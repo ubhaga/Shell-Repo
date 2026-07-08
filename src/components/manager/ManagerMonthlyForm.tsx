@@ -555,6 +555,67 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
             <CurrencyDisplay value={form.ccXero} className="text-right" highlight />
           </div>
         </div>
+
+        {/* 6.3 Petty Cash */}
+        <div className="border-t bg-muted/10">
+          <div className="px-3 py-2 text-sm font-semibold">6.3 Petty Cash</div>
+          <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+            <span>Description</span>
+            <span className="text-right">PC Recon</span>
+            <span className="text-right">Xero</span>
+          </div>
+          <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
+            <span className="text-muted-foreground">
+              PC Closing Balance ({lastMgr ? lastMgr.date : "—"})
+            </span>
+            <div className="flex justify-end">
+              <CurrencyInput
+                value={form.pettyCashRecon}
+                onChange={(v) => setForm((f) => ({ ...f, pettyCashRecon: v }))}
+                className="text-right w-full max-w-[140px]"
+                allowNegative
+              />
+            </div>
+            <div className="flex justify-end">
+              <CurrencyInput
+                value={form.pettyCashXero}
+                onChange={(v) => setForm((f) => ({ ...f, pettyCashXero: v }))}
+                className="text-right w-full max-w-[140px]"
+                allowNegative
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-2 border-b text-sm items-center">
+            <span className="text-muted-foreground">Un Banked Deposit</span>
+            <div className="flex justify-end">
+              <CurrencyInput
+                value={form.pettyCashUnbankedDeposit}
+                onChange={(v) => setForm((f) => ({ ...f, pettyCashUnbankedDeposit: v }))}
+                className="text-right w-full max-w-[140px]"
+                allowNegative
+              />
+            </div>
+            <span></span>
+          </div>
+          <div className="grid grid-cols-[2fr_1fr_1fr] gap-3 px-3 py-2 text-sm items-center bg-secondary font-semibold">
+            <div className="flex items-center gap-2">
+              <span>Total</span>
+              {(() => {
+                const match = Math.abs(pettyCashTotalCol1 - form.pettyCashXero) < 0.01;
+                return (
+                  <span
+                    className={`flex items-center gap-1 rounded px-2 py-0.5 font-semibold text-xs ${match ? "status-green" : "status-red"}`}
+                  >
+                    {match ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                    {match ? "MATCH" : <CurrencyDisplay value={pettyCashTotalCol1 - form.pettyCashXero} />}
+                  </span>
+                );
+              })()}
+            </div>
+            <CurrencyDisplay value={pettyCashTotalCol1} className="text-right" highlight />
+            <CurrencyDisplay value={form.pettyCashXero} className="text-right" highlight />
+          </div>
+        </div>
       </Section>
 
       <Button onClick={handleSave} className="w-full" size="sm">
