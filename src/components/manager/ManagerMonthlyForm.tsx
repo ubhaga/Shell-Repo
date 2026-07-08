@@ -89,6 +89,8 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     explanationBankCharges: "",
     cashConnectInvoiceInclVat: 0,
     bankChargesAdj: 0,
+    ccXero: 0,
+    ccUnbankedDeposit: 0,
     notes: "",
     airtimeBldBalance: 0,
     airtimeEasypayBalance: 0,
