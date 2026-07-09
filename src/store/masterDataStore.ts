@@ -171,6 +171,28 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
     });
   },
 
+  addDirectlyExpensedSupplier: (name) => {
+    set(s => {
+      const next = [...s.directlyExpensedSuppliers, name].sort();
+      persistKey('directlyExpensedSuppliers', next);
+      return { directlyExpensedSuppliers: next };
+    });
+  },
+  updateDirectlyExpensedSupplier: (old, next) => {
+    set(s => {
+      const list = replace(s.directlyExpensedSuppliers, old, next).sort();
+      persistKey('directlyExpensedSuppliers', list);
+      return { directlyExpensedSuppliers: list };
+    });
+  },
+  deleteDirectlyExpensedSupplier: (name) => {
+    set(s => {
+      const list = s.directlyExpensedSuppliers.filter(i => i !== name);
+      persistKey('directlyExpensedSuppliers', list);
+      return { directlyExpensedSuppliers: list };
+    });
+  },
+
   addAccount: (name) => {
     set(s => {
       const next = [...s.accounts, name];
