@@ -87,7 +87,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   if (getDay(monthEnd) !== 0) sundays.push(monthEnd);
 
   const FUEL_CREDITORS = ['Shell Downstream', 'F2K'];
-  const DIRECTLY_EXPENSED_CREDITORS = ['Dawn Consultants'];
+  const DIRECTLY_EXPENSED_CREDITORS = ['Dawn Consultants', 'Status Hygiene'];
   const isFuelCreditor = (s: string) => FUEL_CREDITORS.some(fc => fc.toUpperCase() === s.toUpperCase());
   const isDirectlyExpensed = (s: string) =>
     DIRECTLY_EXPENSED_CREDITORS.some(dc => dc.toUpperCase() === s.toUpperCase());

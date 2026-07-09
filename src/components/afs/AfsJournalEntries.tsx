@@ -183,6 +183,8 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
         const invoices = source === "Payout" ? e.payoutInvoices : e.eftInvoices;
         invoices.forEach((inv) => {
           const cat = inv.category || "Uncategorised";
+          // Exclude directly-expensed categories from JE 2.1 / 2.2 (booked elsewhere)
+          if (source === "EFT" && /cleaning\s*materials/i.test(cat)) return;
           const { inclVatPortion, noVatPortion } = splitAmounts(cat, inv.inclusive, inv.vat ?? 0);
           push(cat, { date: e.date, supplier: inv.supplier, source, amount: inv.inclusive, inclVatPortion, noVatPortion });
         });
