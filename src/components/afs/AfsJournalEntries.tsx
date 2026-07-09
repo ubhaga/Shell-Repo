@@ -222,7 +222,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     };
 
     return { je2Eft: build("EFT"), je2Payouts: build("Payout") };
-  }, [month, managerEntries, eftSuppliers]);
+  }, [month, managerEntries, eftSuppliers, directlyExpensedSuppliers]);
 
 
   const [expandedPayoutCats, setExpandedPayoutCats] = useState<Set<string>>(new Set());
