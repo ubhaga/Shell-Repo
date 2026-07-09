@@ -426,27 +426,36 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
 
             const totalDebits = debits.reduce((s, d) => s + d.amount, 0);
             const totalCredits = fuelClearingF2K + fuelClearingShell + tradeCreditorsTotal;
+            const vatOf = (label: string, amount: number, isCredit = false) =>
+              /incl vat/i.test(label) ? ((amount * 15) / 115) * (isCredit ? -1 : 1) : 0;
+            const totalVat = debits.reduce((s, d) => s + vatOf(d.label, d.amount), 0);
 
             return (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-xs">Description</TableHead>
+                    <TableHead className="text-xs text-right">VAT</TableHead>
                     <TableHead className="text-xs text-right">Debit</TableHead>
                     <TableHead className="text-xs text-right">Credit</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {debits.map((d, i) => (
-                    <TableRow key={`d-${i}`}>
-                      <TableCell className="text-sm py-1.5">{d.label}</TableCell>
-                      <TableCell className="text-right py-1.5"><CurrencyDisplay value={d.amount} /></TableCell>
-                      <TableCell className="text-right py-1.5" />
-                    </TableRow>
-                  ))}
+                  {debits.map((d, i) => {
+                    const vat = vatOf(d.label, d.amount);
+                    return (
+                      <TableRow key={`d-${i}`}>
+                        <TableCell className="text-sm py-1.5">{d.label}</TableCell>
+                        <TableCell className="text-right py-1.5">{vat !== 0 ? <CurrencyDisplay value={vat} /> : null}</TableCell>
+                        <TableCell className="text-right py-1.5"><CurrencyDisplay value={d.amount} /></TableCell>
+                        <TableCell className="text-right py-1.5" />
+                      </TableRow>
+                    );
+                  })}
                   {fuelClearingF2K !== 0 && (
                     <TableRow>
                       <TableCell className="text-sm py-1.5">Fuel Clearing F2K</TableCell>
+                      <TableCell className="text-right py-1.5" />
                       <TableCell className="text-right py-1.5" />
                       <TableCell className="text-right py-1.5"><CurrencyDisplay value={fuelClearingF2K} /></TableCell>
                     </TableRow>
@@ -455,12 +464,14 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                     <TableRow>
                       <TableCell className="text-sm py-1.5">Fuel Clearing Shell</TableCell>
                       <TableCell className="text-right py-1.5" />
+                      <TableCell className="text-right py-1.5" />
                       <TableCell className="text-right py-1.5"><CurrencyDisplay value={fuelClearingShell} /></TableCell>
                     </TableRow>
                   )}
                   {tradeCreditorsTotal !== 0 && (
                     <TableRow>
                       <TableCell className="text-sm py-1.5">Trade Creditors</TableCell>
+                      <TableCell className="text-right py-1.5" />
                       <TableCell className="text-right py-1.5" />
                       <TableCell className="text-right py-1.5"><CurrencyDisplay value={tradeCreditorsTotal} /></TableCell>
                     </TableRow>
@@ -470,12 +481,13 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                 <TableFooter>
                   <TableRow>
                     <TableCell className="font-semibold text-sm">Totals</TableCell>
+                    <TableCell className="text-right"><CurrencyDisplay value={totalVat} highlight /></TableCell>
                     <TableCell className="text-right"><CurrencyDisplay value={totalDebits} highlight /></TableCell>
                     <TableCell className="text-right"><CurrencyDisplay value={totalCredits} highlight /></TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell className="font-semibold text-sm">Difference</TableCell>
-                    <TableCell className="text-right" colSpan={2}>
+                    <TableCell className="text-right" colSpan={3}>
                       <CurrencyDisplay value={totalDebits - totalCredits} highlight />
                     </TableCell>
                   </TableRow>
@@ -518,6 +530,9 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
             const provPayoutsJe1 = je1.debits.find((d) => d.description === "Provision for Payouts")?.amount ?? 0;
             const variance = totalDebits - provPayoutsJe1;
             const hasException = Math.abs(variance) > 0.01;
+            const vatOf = (label: string, amount: number, isCredit = false) =>
+              /incl vat/i.test(label) ? ((amount * 15) / 115) * (isCredit ? -1 : 1) : 0;
+            const totalVat = debits.reduce((s, d) => s + vatOf(d.label, d.amount), 0);
 
             return (
               <>
@@ -525,20 +540,26 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-xs">Description</TableHead>
+                      <TableHead className="text-xs text-right">VAT</TableHead>
                       <TableHead className="text-xs text-right">Debit</TableHead>
                       <TableHead className="text-xs text-right">Credit</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {debits.map((d, i) => (
-                      <TableRow key={`d-${i}`}>
-                        <TableCell className="text-sm py-1.5">{d.label}</TableCell>
-                        <TableCell className="text-right py-1.5"><CurrencyDisplay value={d.amount} /></TableCell>
-                        <TableCell className="text-right py-1.5" />
-                      </TableRow>
-                    ))}
+                    {debits.map((d, i) => {
+                      const vat = vatOf(d.label, d.amount);
+                      return (
+                        <TableRow key={`d-${i}`}>
+                          <TableCell className="text-sm py-1.5">{d.label}</TableCell>
+                          <TableCell className="text-right py-1.5">{vat !== 0 ? <CurrencyDisplay value={vat} /> : null}</TableCell>
+                          <TableCell className="text-right py-1.5"><CurrencyDisplay value={d.amount} /></TableCell>
+                          <TableCell className="text-right py-1.5" />
+                        </TableRow>
+                      );
+                    })}
                     <TableRow>
                       <TableCell className="text-sm py-1.5">Prov for Payouts</TableCell>
+                      <TableCell className="text-right py-1.5" />
                       <TableCell className="text-right py-1.5" />
                       <TableCell className="text-right py-1.5"><CurrencyDisplay value={totalDebits} /></TableCell>
                     </TableRow>
@@ -546,6 +567,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                   <TableFooter>
                     <TableRow>
                       <TableCell className="font-semibold text-sm">Totals</TableCell>
+                      <TableCell className="text-right"><CurrencyDisplay value={totalVat} highlight /></TableCell>
                       <TableCell className="text-right"><CurrencyDisplay value={totalDebits} highlight /></TableCell>
                       <TableCell className="text-right"><CurrencyDisplay value={totalDebits} highlight /></TableCell>
                     </TableRow>
