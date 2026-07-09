@@ -292,14 +292,31 @@ export function MasterDataSettings() {
         </p>
       </div>
 
-      {/* Section 1.1 & 1.2 — Invoice Tables */}
+      {/* Section 1.1 — Directly Expensed Creditors */}
       <div>
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
-          1.1 Payout Invoice Suppliers &amp; 1.2 EFT / Non-Cash Invoice Suppliers
+          1.1 Directly Expensed Creditors
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           <EditableList
-            title="Payout Invoice Suppliers (1.1)"
+            title="Directly Expensed Creditors (1.1)"
+            color="bg-rose-700"
+            items={store.directlyExpensedSuppliers}
+            onAdd={item => store.addDirectlyExpensedSupplier(item)}
+            onUpdate={(old, next) => store.updateDirectlyExpensedSupplier(old, next)}
+            onDelete={item => store.deleteDirectlyExpensedSupplier(item)}
+          />
+        </div>
+      </div>
+
+      {/* Section 1.2 & 1.3 — Invoice Tables */}
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">
+          1.2 Payout Invoice Suppliers &amp; 1.3 EFT / Non-Cash Invoice Suppliers
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <EditableList
+            title="Payout Invoice Suppliers (1.2)"
             color="bg-red-600"
             items={store.payoutSuppliers}
             onAdd={item => store.addPayoutSupplier(item)}
@@ -307,7 +324,7 @@ export function MasterDataSettings() {
             onDelete={item => store.deletePayoutSupplier(item)}
           />
           <EditableList
-            title="EFT / Non-Cash Invoice Suppliers (1.2)"
+            title="EFT / Non-Cash Invoice Suppliers (1.3)"
             color="bg-orange-600"
             items={store.eftSuppliers}
             onAdd={item => store.addEftSupplier(item)}
@@ -315,7 +332,7 @@ export function MasterDataSettings() {
             onDelete={item => store.deleteEftSupplier(item)}
           />
           <EditableList
-            title="Invoice Categories (1.1 &amp; 1.2)"
+            title="Invoice Categories (1.2 &amp; 1.3)"
             color="bg-amber-700"
             items={store.categories}
             onAdd={item => store.addCategory(item)}
@@ -324,6 +341,7 @@ export function MasterDataSettings() {
           />
         </div>
       </div>
+
 
       {/* Other master data */}
       <div>
