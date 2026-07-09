@@ -20,7 +20,7 @@ interface CreditorsReconProps {
 
 export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   const { managerEntries } = useCashupStore();
-  const { eftSuppliers } = useMasterDataStore();
+  const { eftSuppliers, directlyExpensedSuppliers: directlyExpensedFromSettings } = useMasterDataStore();
   const { allocations: bankAllocations } = useBankAllocations(filterMonth);
 
   // Load bank lines for CR payments (now includes id for allocation matching)
