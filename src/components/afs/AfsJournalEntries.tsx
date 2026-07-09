@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { Textarea } from "@/components/ui/textarea";
 import { CurrencyDisplay } from "@/components/ui/CashupUI";
 import { useCashupStore } from "@/store/cashupStore";
+import { useMasterDataStore } from "@/store/masterDataStore";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
