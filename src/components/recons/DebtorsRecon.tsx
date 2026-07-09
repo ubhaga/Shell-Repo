@@ -537,6 +537,18 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
           </TableRow>
         </TableFooter>
       </Table>
+      <div className="border-t px-4 py-3 bg-muted/10">
+        <label className="text-xs font-semibold block mb-1">Explanation / Variance Notes</label>
+        <textarea
+          value={explanation}
+          onChange={(e) => {
+            setExplanation(e.target.value);
+            localStorage.setItem(explanationKey, e.target.value);
+          }}
+          placeholder="Describe any variances, unusual movements, or notes for this month's debtors recon..."
+          className="w-full min-h-[80px] text-xs p-2 border rounded bg-background resize-y"
+        />
+      </div>
     </div>
   );
 }
