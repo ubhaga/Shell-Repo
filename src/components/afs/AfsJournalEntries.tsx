@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { Textarea } from "@/components/ui/textarea";
 import { CurrencyDisplay } from "@/components/ui/CashupUI";
 import { useCashupStore } from "@/store/cashupStore";
+import { useMasterDataStore } from "@/store/masterDataStore";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
@@ -17,6 +18,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
   const cashups = useCashupStore((s) => s.cashups);
   const managerEntries = useCashupStore((s) => s.managerEntries);
   const monthlyFigures = useCashupStore((s) => s.monthlyFigures);
+  const eftSuppliers = useMasterDataStore((s) => s.eftSuppliers);
 
   const je1 = useMemo(() => {
     const monthlyCashups = cashups.filter((c) => c.month === month);
@@ -179,12 +181,15 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
         catMap[cat].transactions.push(txn);
       };
 
+      const eftSupplierSet = new Set(eftSuppliers.map((n) => n.trim().toUpperCase()));
+
       monthlyManagers.forEach((e) => {
         const invoices = source === "Payout" ? e.payoutInvoices : e.eftInvoices;
         invoices.forEach((inv) => {
+          // JE 2.1 (EFT): only include creditors listed in Settings 1.3 EFT Suppliers.
+          // Directly-expensed creditors (Settings 1.1) are booked elsewhere and excluded here.
+          if (source === "EFT" && !eftSupplierSet.has((inv.supplier ?? "").trim().toUpperCase())) return;
           const cat = inv.category || "Uncategorised";
-          // Exclude directly-expensed categories from JE 2.1 / 2.2 (booked elsewhere)
-          if (source === "EFT" && /cleaning\s*materials/i.test(cat)) return;
           const { inclVatPortion, noVatPortion } = splitAmounts(cat, inv.inclusive, inv.vat ?? 0);
           push(cat, { date: e.date, supplier: inv.supplier, source, amount: inv.inclusive, inclVatPortion, noVatPortion });
         });
@@ -209,7 +214,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     };
 
     return { je2Eft: build("EFT"), je2Payouts: build("Payout") };
-  }, [month, managerEntries]);
+  }, [month, managerEntries, eftSuppliers]);
 
 
   const [expandedPayoutCats, setExpandedPayoutCats] = useState<Set<string>>(new Set());
