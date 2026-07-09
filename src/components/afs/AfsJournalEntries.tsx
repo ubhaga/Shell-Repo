@@ -18,6 +18,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
   const cashups = useCashupStore((s) => s.cashups);
   const managerEntries = useCashupStore((s) => s.managerEntries);
   const monthlyFigures = useCashupStore((s) => s.monthlyFigures);
+  const eftSuppliers = useMasterDataStore((s) => s.eftSuppliers);
 
   const je1 = useMemo(() => {
     const monthlyCashups = cashups.filter((c) => c.month === month);
