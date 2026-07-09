@@ -20,7 +20,7 @@ interface CreditorsReconProps {
 
 export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   const { managerEntries } = useCashupStore();
-  const { eftSuppliers } = useMasterDataStore();
+  const { eftSuppliers, directlyExpensedSuppliers: directlyExpensedFromSettings } = useMasterDataStore();
   const { allocations: bankAllocations } = useBankAllocations(filterMonth);
 
   // Load bank lines for CR payments (now includes id for allocation matching)
@@ -87,11 +87,13 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   if (getDay(monthEnd) !== 0) sundays.push(monthEnd);
 
   const FUEL_CREDITORS = ['Shell Downstream', 'F2K'];
-  const DIRECTLY_EXPENSED_CREDITORS = ['Dawn Consultants', 'Status Hygiene'];
   const isFuelCreditor = (s: string) => FUEL_CREDITORS.some(fc => fc.toUpperCase() === s.toUpperCase());
   const isDirectlyExpensed = (s: string) =>
-    DIRECTLY_EXPENSED_CREDITORS.some(dc => dc.toUpperCase() === s.toUpperCase());
-  const allSuppliers = [...eftSuppliers].sort();
+    directlyExpensedFromSettings.some(dc => dc.toUpperCase() === s.toUpperCase());
+  // Merge suppliers from EFT list + directly-expensed settings list so directly-expensed
+  // items still appear in the recon even if removed from the EFT supplier list.
+  const mergedSuppliers = Array.from(new Set([...eftSuppliers, ...directlyExpensedFromSettings]));
+  const allSuppliers = mergedSuppliers.sort();
   const suppliers = allSuppliers.filter(s => !isFuelCreditor(s) && !isDirectlyExpensed(s));
   const directlyExpensedSuppliers = allSuppliers.filter(s => isDirectlyExpensed(s));
   const fuelSuppliers = allSuppliers.filter(s => isFuelCreditor(s));

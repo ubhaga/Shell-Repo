@@ -26,6 +26,7 @@ export function getTankColor(tanks: TankDescription[], gradeIdOrDesc: string): s
 interface MasterDataStore {
   payoutSuppliers: string[];
   eftSuppliers: string[];
+  directlyExpensedSuppliers: string[];
   accounts: string[];
   /** Optional account number per debtor account (keyed by account name) */
   accountNumbers: Record<string, string>;
@@ -44,6 +45,10 @@ interface MasterDataStore {
   addEftSupplier: (name: string) => void;
   updateEftSupplier: (old: string, next: string) => void;
   deleteEftSupplier: (name: string) => void;
+
+  addDirectlyExpensedSupplier: (name: string) => void;
+  updateDirectlyExpensedSupplier: (old: string, next: string) => void;
+  deleteDirectlyExpensedSupplier: (name: string) => void;
 
   addAccount: (name: string) => void;
   updateAccount: (old: string, next: string) => void;
@@ -80,6 +85,7 @@ async function persistKey(key: string, data: unknown) {
 export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
   payoutSuppliers: [...SUPPLIERS].sort(),
   eftSuppliers: DEFAULT_EFT_SUPPLIERS,
+  directlyExpensedSuppliers: ['Dawn Consultants', 'Status Hygiene'],
   accounts: [...DEFAULT_ACCOUNTS],
   accountNumbers: {} as Record<string, string>,
   cashierNames: [...DEFAULT_CASHIER_NAMES],
@@ -96,6 +102,7 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
       set({
         payoutSuppliers: (map.payoutSuppliers as string[]) ?? get().payoutSuppliers,
         eftSuppliers: (map.eftSuppliers as string[]) ?? get().eftSuppliers,
+        directlyExpensedSuppliers: (map.directlyExpensedSuppliers as string[]) ?? get().directlyExpensedSuppliers,
         accounts: (map.accounts as string[]) ?? get().accounts,
         accountNumbers: (map.accountNumbers as Record<string, string>) ?? get().accountNumbers,
         cashierNames: (map.cashierNames as string[]) ?? get().cashierNames,
@@ -110,6 +117,7 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
       await Promise.all([
         persistKey('payoutSuppliers', state.payoutSuppliers),
         persistKey('eftSuppliers', state.eftSuppliers),
+        persistKey('directlyExpensedSuppliers', state.directlyExpensedSuppliers),
         persistKey('accounts', state.accounts),
         persistKey('cashierNames', state.cashierNames),
         persistKey('managerNames', state.managerNames),
@@ -160,6 +168,28 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
       const list = s.eftSuppliers.filter(i => i !== name);
       persistKey('eftSuppliers', list);
       return { eftSuppliers: list };
+    });
+  },
+
+  addDirectlyExpensedSupplier: (name) => {
+    set(s => {
+      const next = [...s.directlyExpensedSuppliers, name].sort();
+      persistKey('directlyExpensedSuppliers', next);
+      return { directlyExpensedSuppliers: next };
+    });
+  },
+  updateDirectlyExpensedSupplier: (old, next) => {
+    set(s => {
+      const list = replace(s.directlyExpensedSuppliers, old, next).sort();
+      persistKey('directlyExpensedSuppliers', list);
+      return { directlyExpensedSuppliers: list };
+    });
+  },
+  deleteDirectlyExpensedSupplier: (name) => {
+    set(s => {
+      const list = s.directlyExpensedSuppliers.filter(i => i !== name);
+      persistKey('directlyExpensedSuppliers', list);
+      return { directlyExpensedSuppliers: list };
     });
   },
 
