@@ -186,8 +186,9 @@ export function DebtorsBranchComparison({ month }: Props) {
     const adjustmentJe3 = isJe3 ? purchase : 0;
     const reconClosing = ob + purchase - bankPmt - adjustmentJe3;
     const input = inputs[name] ?? { branch: 0, adjustment: 0, explanation: '' };
-    const difference = input.branch + input.adjustment - reconClosing;
-    return { name, reconClosing, ...input, difference };
+    const total = input.branch + input.adjustment;
+    const difference = total - reconClosing;
+    return { name, reconClosing, ...input, total, difference };
   });
 
   const totals = rows.reduce(
@@ -195,9 +196,10 @@ export function DebtorsBranchComparison({ month }: Props) {
       recon: acc.recon + r.reconClosing,
       branch: acc.branch + r.branch,
       adj: acc.adj + r.adjustment,
+      total: acc.total + r.total,
       diff: acc.diff + r.difference,
     }),
-    { recon: 0, branch: 0, adj: 0, diff: 0 },
+    { recon: 0, branch: 0, adj: 0, total: 0, diff: 0 },
   );
 
   const setInput = (name: string, patch: Partial<BranchInput>) =>
@@ -220,22 +222,26 @@ export function DebtorsBranchComparison({ month }: Props) {
     setSaving(false);
   };
 
+  const gridCols = 'grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr_1fr_2fr] gap-2 px-3';
+
   return (
     <Section title="2. Debtors Branch Comparison" color="purple">
-      <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr_2fr] gap-2 px-3 py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30">
+      <div className={`${gridCols} py-1.5 border-b text-xs font-semibold text-muted-foreground bg-muted/30`}>
         <span>Debtor</span>
         <span className="text-right">Recon Closing</span>
         <span className="text-right">Branch Value</span>
         <span className="text-right">Adjustment</span>
+        <span className="text-right">Total</span>
         <span className="text-right">Difference</span>
         <span>Explanation</span>
       </div>
       {rows.map(r => (
-        <div key={r.name} className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr_2fr] gap-2 px-3 py-1.5 border-b text-sm items-center">
+        <div key={r.name} className={`${gridCols} py-1.5 border-b text-sm items-center`}>
           <span className="text-muted-foreground">{r.name}</span>
           <CurrencyDisplay value={r.reconClosing} className="text-right" />
           <CurrencyInput value={r.branch} onChange={v => setInput(r.name, { branch: v })} className="text-right w-full" allowNegative />
           <CurrencyInput value={r.adjustment} onChange={v => setInput(r.name, { adjustment: v })} className="text-right w-full" allowNegative />
+          <CurrencyDisplay value={r.total} className="text-right font-semibold" />
           <CurrencyDisplay value={r.difference} className={`text-right font-semibold ${Math.abs(r.difference) < 0.01 ? 'text-green-600' : 'text-destructive'}`} />
           <input
             value={r.explanation}
@@ -245,16 +251,17 @@ export function DebtorsBranchComparison({ month }: Props) {
           />
         </div>
       ))}
-      <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr_2fr] gap-2 px-3 py-2 bg-secondary font-semibold text-sm items-center">
+      <div className={`${gridCols} py-2 bg-secondary font-semibold text-sm items-center`}>
         <span>Totals</span>
         <CurrencyDisplay value={totals.recon} className="text-right" highlight />
         <CurrencyDisplay value={totals.branch} className="text-right" highlight />
         <CurrencyDisplay value={totals.adj} className="text-right" highlight />
+        <CurrencyDisplay value={totals.total} className="text-right" highlight />
         <CurrencyDisplay value={totals.diff} className="text-right" highlight />
         <span />
       </div>
-      <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr_2fr] gap-2 px-3 py-2 border-b bg-secondary/40 text-sm items-start">
-        <span className="col-span-5 text-muted-foreground text-xs">Totals Explanation</span>
+      <div className={`${gridCols} py-2 border-b bg-secondary/40 text-sm items-start`}>
+        <span className="col-span-6 text-muted-foreground text-xs">Totals Explanation</span>
         <Textarea
           value={totalsExplanation}
           onChange={e => setTotalsExplanation(e.target.value)}
