@@ -102,6 +102,7 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
       set({
         payoutSuppliers: (map.payoutSuppliers as string[]) ?? get().payoutSuppliers,
         eftSuppliers: (map.eftSuppliers as string[]) ?? get().eftSuppliers,
+        directlyExpensedSuppliers: (map.directlyExpensedSuppliers as string[]) ?? get().directlyExpensedSuppliers,
         accounts: (map.accounts as string[]) ?? get().accounts,
         accountNumbers: (map.accountNumbers as Record<string, string>) ?? get().accountNumbers,
         cashierNames: (map.cashierNames as string[]) ?? get().cashierNames,
@@ -116,6 +117,7 @@ export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
       await Promise.all([
         persistKey('payoutSuppliers', state.payoutSuppliers),
         persistKey('eftSuppliers', state.eftSuppliers),
+        persistKey('directlyExpensedSuppliers', state.directlyExpensedSuppliers),
         persistKey('accounts', state.accounts),
         persistKey('cashierNames', state.cashierNames),
         persistKey('managerNames', state.managerNames),
