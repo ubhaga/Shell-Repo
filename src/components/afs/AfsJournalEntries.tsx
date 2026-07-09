@@ -19,6 +19,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
   const managerEntries = useCashupStore((s) => s.managerEntries);
   const monthlyFigures = useCashupStore((s) => s.monthlyFigures);
   const eftSuppliers = useMasterDataStore((s) => s.eftSuppliers);
+  const directlyExpensedSuppliers = useMasterDataStore((s) => s.directlyExpensedSuppliers);
 
   const je1 = useMemo(() => {
     const monthlyCashups = cashups.filter((c) => c.month === month);
@@ -181,14 +182,21 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
         catMap[cat].transactions.push(txn);
       };
 
-      const eftSupplierSet = new Set(eftSuppliers.map((n) => n.trim().toUpperCase()));
+      const norm = (n: string) => (n ?? "").trim().toUpperCase();
+      const directlyExpensedSet = new Set(directlyExpensedSuppliers.map(norm));
+      const eftSupplierSet = new Set(
+        eftSuppliers.map(norm).filter((n) => !directlyExpensedSet.has(n))
+      );
 
       monthlyManagers.forEach((e) => {
         const invoices = source === "Payout" ? e.payoutInvoices : e.eftInvoices;
         invoices.forEach((inv) => {
-          // JE 2.1 (EFT): only include creditors listed in Settings 1.3 EFT Suppliers.
-          // Directly-expensed creditors (Settings 1.1) are booked elsewhere and excluded here.
-          if (source === "EFT" && !eftSupplierSet.has((inv.supplier ?? "").trim().toUpperCase())) return;
+          // JE 2.1 (EFT): only suppliers in Settings 1.3, and never directly-expensed (1.1).
+          if (source === "EFT") {
+            const s = norm(inv.supplier);
+            if (directlyExpensedSet.has(s)) return;
+            if (!eftSupplierSet.has(s)) return;
+          }
           const cat = inv.category || "Uncategorised";
           const { inclVatPortion, noVatPortion } = splitAmounts(cat, inv.inclusive, inv.vat ?? 0);
           push(cat, { date: e.date, supplier: inv.supplier, source, amount: inv.inclusive, inclVatPortion, noVatPortion });
@@ -214,7 +222,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     };
 
     return { je2Eft: build("EFT"), je2Payouts: build("Payout") };
-  }, [month, managerEntries, eftSuppliers]);
+  }, [month, managerEntries, eftSuppliers, directlyExpensedSuppliers]);
 
 
   const [expandedPayoutCats, setExpandedPayoutCats] = useState<Set<string>>(new Set());
