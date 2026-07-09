@@ -230,10 +230,14 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
     useCashupStore();
   const {
     payoutSuppliers: SUPPLIERS,
-    eftSuppliers,
+    eftSuppliers: rawEftSuppliers,
+    directlyExpensedSuppliers,
     managerNames: MANAGER_NAMES,
     categories: CATEGORIES,
   } = useMasterDataStore();
+  // EFT invoice picker also shows directly-expensed creditors (booked as expenses,
+  // but still captured on the Manager Daily EFT/Non-Cash Invoices table).
+  const eftSuppliers = Array.from(new Set([...rawEftSuppliers, ...directlyExpensedSuppliers])).sort();
   const existing = getManagerEntryByDate(selectedDate);
   const cashup = getCashupByDate(selectedDate);
   const isLocked = selectedDate < "2026-01-01";
