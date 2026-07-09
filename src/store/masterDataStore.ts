@@ -26,6 +26,7 @@ export function getTankColor(tanks: TankDescription[], gradeIdOrDesc: string): s
 interface MasterDataStore {
   payoutSuppliers: string[];
   eftSuppliers: string[];
+  directlyExpensedSuppliers: string[];
   accounts: string[];
   /** Optional account number per debtor account (keyed by account name) */
   accountNumbers: Record<string, string>;
@@ -44,6 +45,10 @@ interface MasterDataStore {
   addEftSupplier: (name: string) => void;
   updateEftSupplier: (old: string, next: string) => void;
   deleteEftSupplier: (name: string) => void;
+
+  addDirectlyExpensedSupplier: (name: string) => void;
+  updateDirectlyExpensedSupplier: (old: string, next: string) => void;
+  deleteDirectlyExpensedSupplier: (name: string) => void;
 
   addAccount: (name: string) => void;
   updateAccount: (old: string, next: string) => void;
