@@ -85,6 +85,7 @@ async function persistKey(key: string, data: unknown) {
 export const useMasterDataStore = create<MasterDataStore>()((set, get) => ({
   payoutSuppliers: [...SUPPLIERS].sort(),
   eftSuppliers: DEFAULT_EFT_SUPPLIERS,
+  directlyExpensedSuppliers: ['Dawn Consultants', 'Status Hygiene'],
   accounts: [...DEFAULT_ACCOUNTS],
   accountNumbers: {} as Record<string, string>,
   cashierNames: [...DEFAULT_CASHIER_NAMES],
