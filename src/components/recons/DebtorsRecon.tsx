@@ -379,6 +379,13 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
 
   const hasEdits = Object.keys(editingOB).length > 0;
 
+  const explanationKey = `debtors-recon-explanation:${filterMonth}`;
+  const [explanation, setExplanation] = useState('');
+  useEffect(() => {
+    setExplanation(localStorage.getItem(explanationKey) ?? '');
+  }, [explanationKey]);
+
+
   return (
     <div className="bg-card border rounded-lg overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
