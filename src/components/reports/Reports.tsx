@@ -547,12 +547,14 @@ export function Reports({
   const accountsTotal = accountsReport.reduce((s, r) => s + r.amount, 0);
 
   // Invoice report
+  const [invoiceTypeFilter, setInvoiceTypeFilter] = useState<'all' | 'Payout' | 'EFT'>('all');
   const invoiceReport = monthManagers.flatMap(e => [
     ...e.payoutInvoices.map(i => ({ date: e.date, type: 'Payout', supplier: i.supplier, category: i.category, docNum: i.branchDocNum, inclusive: i.inclusive, vat: i.vat })),
     ...e.eftInvoices.map(i => ({ date: e.date, type: 'EFT', supplier: i.supplier, category: i.category, docNum: i.branchDocNum, inclusive: i.inclusive, vat: i.vat })),
   ]);
-  const invoiceTotal = invoiceReport.reduce((s, r) => s + r.inclusive, 0);
-  const invoiceVatTotal = invoiceReport.reduce((s, r) => s + r.vat, 0);
+  const filteredInvoiceReport = invoiceTypeFilter === 'all' ? invoiceReport : invoiceReport.filter(r => r.type === invoiceTypeFilter);
+  const invoiceTotal = filteredInvoiceReport.reduce((s, r) => s + r.inclusive, 0);
+  const invoiceVatTotal = filteredInvoiceReport.reduce((s, r) => s + r.vat, 0);
 
   // MOP report — Cash (CC) uses cashConnectTotal from section 5 MOP Cash
   const mopReport = monthCashups.map(c => {
@@ -1269,8 +1271,15 @@ export function Reports({
         <TabsContent value="invoices">
           <div className="bg-card border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
-              <h3 className="font-semibold text-sm">Detailed Invoices — {monthLabel}</h3>
-              <Button size="sm" variant="outline" onClick={() => exportCSV(invoiceReport, `invoices-${filterMonth}.csv`)}>
+              <div className="flex items-center gap-3">
+                <h3 className="font-semibold text-sm">Detailed Invoices — {monthLabel}</h3>
+                <div className="flex items-center gap-1 bg-muted rounded-md p-1">
+                  <button onClick={() => setInvoiceTypeFilter('all')} className={`px-2 py-0.5 text-xs rounded ${invoiceTypeFilter === 'all' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}>All</button>
+                  <button onClick={() => setInvoiceTypeFilter('Payout')} className={`px-2 py-0.5 text-xs rounded ${invoiceTypeFilter === 'Payout' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}>Payout</button>
+                  <button onClick={() => setInvoiceTypeFilter('EFT')} className={`px-2 py-0.5 text-xs rounded ${invoiceTypeFilter === 'EFT' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}>EFT</button>
+                </div>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => exportCSV(filteredInvoiceReport, `invoices-${filterMonth}.csv`)}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
             </div>
@@ -1287,11 +1296,11 @@ export function Reports({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoiceReport.length === 0 ? (
+                {filteredInvoiceReport.length === 0 ? (
                   <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No invoice data for this month</TableCell></TableRow>
                 ) : (
                   <>
-                    {invoiceReport.map((r, i) => (
+                    {filteredInvoiceReport.map((r, i) => (
                       <TableRow key={i}>
                         <TableCell className="text-sm">{formatDate(r.date)}</TableCell>
                         <TableCell><span className={`text-xs rounded px-1.5 py-0.5 ${r.type === 'Payout' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{r.type}</span></TableCell>
@@ -1309,8 +1318,8 @@ export function Reports({
                     </TableRow>
 
                     {/* Summary by Category — EFTs */}
-                    {(() => {
-                      const eftLines = invoiceReport.filter(r => r.type === 'EFT');
+                    {invoiceTypeFilter !== 'Payout' && (() => {
+                      const eftLines = filteredInvoiceReport.filter(r => r.type === 'EFT');
                       const catMap: Record<string, { incl: number; vat: number }> = {};
                       eftLines.forEach(r => {
                         const key = r.category || 'Uncategorised';
