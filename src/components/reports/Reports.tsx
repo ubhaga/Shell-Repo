@@ -547,12 +547,14 @@ export function Reports({
   const accountsTotal = accountsReport.reduce((s, r) => s + r.amount, 0);
 
   // Invoice report
+  const [invoiceTypeFilter, setInvoiceTypeFilter] = useState<'all' | 'Payout' | 'EFT'>('all');
   const invoiceReport = monthManagers.flatMap(e => [
     ...e.payoutInvoices.map(i => ({ date: e.date, type: 'Payout', supplier: i.supplier, category: i.category, docNum: i.branchDocNum, inclusive: i.inclusive, vat: i.vat })),
     ...e.eftInvoices.map(i => ({ date: e.date, type: 'EFT', supplier: i.supplier, category: i.category, docNum: i.branchDocNum, inclusive: i.inclusive, vat: i.vat })),
   ]);
-  const invoiceTotal = invoiceReport.reduce((s, r) => s + r.inclusive, 0);
-  const invoiceVatTotal = invoiceReport.reduce((s, r) => s + r.vat, 0);
+  const filteredInvoiceReport = invoiceTypeFilter === 'all' ? invoiceReport : invoiceReport.filter(r => r.type === invoiceTypeFilter);
+  const invoiceTotal = filteredInvoiceReport.reduce((s, r) => s + r.inclusive, 0);
+  const invoiceVatTotal = filteredInvoiceReport.reduce((s, r) => s + r.vat, 0);
 
   // MOP report — Cash (CC) uses cashConnectTotal from section 5 MOP Cash
   const mopReport = monthCashups.map(c => {
