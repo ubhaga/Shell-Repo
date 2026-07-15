@@ -419,7 +419,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
         <CardContent className="space-y-4">
           {(() => {
             const isFuelClearing = (cat: string) => /fuel|wsl|dsl/i.test(cat);
-            type DebitRow = { label: string; amount: number };
+            type DebitRow = { label: string; amount: number; vat: number };
             const debits: DebitRow[] = [];
             let fuelClearingF2K = 0;
             let fuelClearingShell = 0;
@@ -428,25 +428,24 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
             je2Eft.categories.forEach((r) => {
               const fuel = isFuelClearing(r.category);
               if (fuel) {
-                if (r.inclVat !== 0) debits.push({ label: `COS ${r.category} (Incl Vat)`, amount: r.inclVat });
-                if (r.noVat !== 0) debits.push({ label: `COS ${r.category} (Exempt)`, amount: r.noVat });
+                if (r.inclVat !== 0) debits.push({ label: `COS ${r.category} (Incl Vat)`, amount: r.inclVat, vat: r.capturedVat });
+                if (r.noVat !== 0) debits.push({ label: `COS ${r.category} (Exempt)`, amount: r.noVat, vat: 0 });
                 r.transactions.forEach((t) => {
                   const amt = t.inclVatPortion + t.noVatPortion;
                   if (/f2k/i.test(t.supplier)) fuelClearingF2K += amt;
                   else fuelClearingShell += amt;
                 });
               } else {
-                if (r.inclVat !== 0) debits.push({ label: `COS ${r.category} (Incl Vat)`, amount: r.inclVat });
-                if (r.noVat !== 0) debits.push({ label: `COS ${r.category} (No Vat)`, amount: r.noVat });
+                if (r.inclVat !== 0) debits.push({ label: `COS ${r.category} (Incl Vat)`, amount: r.inclVat, vat: r.capturedVat });
+                if (r.noVat !== 0) debits.push({ label: `COS ${r.category} (No Vat)`, amount: r.noVat, vat: 0 });
                 tradeCreditorsTotal += r.inclVat + r.noVat;
               }
             });
 
             const totalDebits = debits.reduce((s, d) => s + d.amount, 0);
             const totalCredits = fuelClearingF2K + fuelClearingShell + tradeCreditorsTotal;
-            const vatOf = (label: string, amount: number, isCredit = false) =>
-              /incl vat/i.test(label) ? ((amount * 15) / 115) * (isCredit ? -1 : 1) : 0;
-            const totalVat = debits.reduce((s, d) => s + vatOf(d.label, d.amount), 0);
+            const totalVat = debits.reduce((s, d) => s + d.vat, 0);
+
 
             return (
               <Table>
