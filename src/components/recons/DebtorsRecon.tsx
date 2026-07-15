@@ -87,6 +87,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
   // History for all months from FIRST_MONTH up to (but not including) filterMonth
   const [historyBankLines, setHistoryBankLines] = useState<BankLine[]>([]);
   const [historyOpeningBalances, setHistoryOpeningBalances] = useState<Record<string, Record<string, number>>>({});
+  const [historyAllocations, setHistoryAllocations] = useState<{ bank_line_id: string; recon_type: string; target_name: string }[]>([]);
   const [editingOB, setEditingOB] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
