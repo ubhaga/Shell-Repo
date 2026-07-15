@@ -459,7 +459,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                 </TableHeader>
                 <TableBody>
                   {debits.map((d, i) => {
-                    const vat = vatOf(d.label, d.amount);
+                    const vat = d.vat;
                     return (
                       <TableRow key={`d-${i}`}>
                         <TableCell className="text-sm py-1.5">{d.label}</TableCell>
@@ -469,6 +469,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                       </TableRow>
                     );
                   })}
+
                   {fuelClearingF2K !== 0 && (
                     <TableRow>
                       <TableCell className="text-sm py-1.5">Fuel Clearing F2K</TableCell>
