@@ -159,7 +159,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
   const { je2Eft, je2Payouts } = useMemo(() => {
     const monthlyManagers = managerEntries.filter((e) => e.date.startsWith(month));
 
-    type Txn = { date: string; supplier: string; source: "Payout" | "EFT"; amount: number; inclVatPortion: number; noVatPortion: number };
+    type Txn = { date: string; supplier: string; source: "Payout" | "EFT"; amount: number; inclVatPortion: number; noVatPortion: number; capturedVat: number };
 
     const splitAmounts = (category: string, inclusive: number, vat: number) => {
       const isExempt = /fuel|wsl|dsl/i.test(category);
@@ -174,11 +174,12 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     };
 
     const build = (source: "Payout" | "EFT") => {
-      const catMap: Record<string, { inclVat: number; noVat: number; transactions: Txn[] }> = {};
+      const catMap: Record<string, { inclVat: number; noVat: number; capturedVat: number; transactions: Txn[] }> = {};
       const push = (cat: string, txn: Txn) => {
-        if (!catMap[cat]) catMap[cat] = { inclVat: 0, noVat: 0, transactions: [] };
+        if (!catMap[cat]) catMap[cat] = { inclVat: 0, noVat: 0, capturedVat: 0, transactions: [] };
         catMap[cat].inclVat += txn.inclVatPortion;
         catMap[cat].noVat += txn.noVatPortion;
+        catMap[cat].capturedVat += txn.capturedVat;
         catMap[cat].transactions.push(txn);
       };
 
@@ -199,7 +200,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
           }
           const cat = inv.category || "Uncategorised";
           const { inclVatPortion, noVatPortion } = splitAmounts(cat, inv.inclusive, inv.vat ?? 0);
-          push(cat, { date: e.date, supplier: inv.supplier, source, amount: inv.inclusive, inclVatPortion, noVatPortion });
+          push(cat, { date: e.date, supplier: inv.supplier, source, amount: inv.inclusive, inclVatPortion, noVatPortion, capturedVat: inv.vat ?? 0 });
         });
       });
 
@@ -209,13 +210,14 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
           category,
           inclVat: v.inclVat,
           noVat: v.noVat,
+          capturedVat: v.capturedVat,
           total: v.inclVat + v.noVat,
           transactions: v.transactions.sort((a, b) => a.date.localeCompare(b.date)),
         }));
 
       const totals = categories.reduce(
-        (a, r) => ({ inclVat: a.inclVat + r.inclVat, noVat: a.noVat + r.noVat, total: a.total + r.total }),
-        { inclVat: 0, noVat: 0, total: 0 }
+        (a, r) => ({ inclVat: a.inclVat + r.inclVat, noVat: a.noVat + r.noVat, capturedVat: a.capturedVat + r.capturedVat, total: a.total + r.total }),
+        { inclVat: 0, noVat: 0, capturedVat: 0, total: 0 }
       );
 
       return { categories, totals };
@@ -223,6 +225,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
 
     return { je2Eft: build("EFT"), je2Payouts: build("Payout") };
   }, [month, managerEntries, eftSuppliers, directlyExpensedSuppliers]);
+
 
 
   const [expandedPayoutCats, setExpandedPayoutCats] = useState<Set<string>>(new Set());
