@@ -1318,8 +1318,8 @@ export function Reports({
                     </TableRow>
 
                     {/* Summary by Category — EFTs */}
-                    {(() => {
-                      const eftLines = invoiceReport.filter(r => r.type === 'EFT');
+                    {invoiceTypeFilter !== 'Payout' && (() => {
+                      const eftLines = filteredInvoiceReport.filter(r => r.type === 'EFT');
                       const catMap: Record<string, { incl: number; vat: number }> = {};
                       eftLines.forEach(r => {
                         const key = r.category || 'Uncategorised';
