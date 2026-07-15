@@ -31,6 +31,8 @@ export function Reports({
   onNavigateToDate?: (date: string) => void;
 }) {
   const { cashups, managerEntries } = useCashupStore();
+  const { eftSuppliers, directlyExpensedSuppliers } = useMasterDataStore();
+
   const [internalFilterMonth, setInternalFilterMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const filterMonth = selectedDate?.slice(0, 7) ?? internalFilterMonth;
   const setFilterMonth = (month: string) => {
