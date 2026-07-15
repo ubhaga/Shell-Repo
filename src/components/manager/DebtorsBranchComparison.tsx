@@ -166,27 +166,40 @@ export function DebtorsBranchComparison({ month }: Props) {
   };
 
   const purchases = useMemo(() => sumAccounts(month), [month, cashups]);
-  const prevPurchases = useMemo(() => sumAccounts(prevMonth), [prevMonth, cashups]);
   const roa = useMemo(() => sumRoa(month), [month, cashups]);
-  const prevRoa = useMemo(() => sumRoa(prevMonth), [prevMonth, cashups]);
   const bankPayments = useMemo(() => bankPaymentsFor(bankLines, true), [bankLines, allocations]);
-  const prevBankPayments = useMemo(() => bankPaymentsFor(prevBankLines, false), [prevBankLines]);
 
+  // Chain-forward opening balance from FIRST_MONTH, matching DebtorsRecon logic.
   const effectiveOB = useMemo(() => {
-    const cf: Record<string, number> = { ...openingBalances };
-    if (!isFirstMonth) {
+    if (isFirstMonth) return { ...openingBalances };
+
+    let balances: Record<string, number> = { ...(historyOpeningBalances[FIRST_MONTH] ?? {}) };
+    for (const m of priorMonths) {
+      const storedOb = historyOpeningBalances[m];
+      const monthOb: Record<string, number> = {};
       DEBTOR_ACCOUNTS.forEach(name => {
-        if (cf[name] !== undefined) return;
-        const prevOb = prevOpeningBalances[name] ?? 0;
-        const prevPurchase = prevPurchases[name] || 0;
-        const prevBankPmt = (prevBankPayments[name] || 0) + (prevRoa[name] || 0);
-        const prevAdj = JE3_WRITEOFF_ACCOUNTS.includes(name) ? prevPurchase : 0;
-        const closing = prevOb + prevPurchase - prevBankPmt - prevAdj;
-        if (closing !== 0) cf[name] = closing;
+        monthOb[name] = storedOb?.[name] ?? balances[name] ?? 0;
       });
+      const p = sumAccounts(m);
+      const r = sumRoa(m);
+      const monthBank = historyBankLines.filter(b => b.month === m);
+      const bp = bankPaymentsFor(monthBank, true);
+      const next: Record<string, number> = {};
+      DEBTOR_ACCOUNTS.forEach(name => {
+        const purchase = p[name] || 0;
+        const bankPmt = (bp[name] || 0) + (r[name] || 0);
+        const adj = JE3_WRITEOFF_ACCOUNTS.includes(name) ? purchase : 0;
+        next[name] = (monthOb[name] || 0) + purchase - bankPmt - adj;
+      });
+      balances = next;
     }
-    return cf;
-  }, [openingBalances, isFirstMonth, prevOpeningBalances, prevPurchases, prevBankPayments, prevRoa]);
+
+    const out: Record<string, number> = {};
+    DEBTOR_ACCOUNTS.forEach(name => {
+      out[name] = openingBalances[name] ?? balances[name] ?? 0;
+    });
+    return out;
+  }, [isFirstMonth, openingBalances, historyOpeningBalances, historyBankLines, priorMonths, DEBTOR_ACCOUNTS, cashups, allocations]);
 
   const rows = DEBTOR_ACCOUNTS.map(name => {
     const ob = effectiveOB[name] ?? 0;
