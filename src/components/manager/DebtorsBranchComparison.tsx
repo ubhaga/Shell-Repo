@@ -32,7 +32,7 @@ const FALLBACK_DEBTOR_ACCOUNTS = [
 ];
 const JE3_WRITEOFF_ACCOUNTS = ['Generator', 'Shop Expense', 'Umesh'];
 
-type BankLine = { id: string; amount: number; description: string; transaction_date: string };
+type BankLine = { id: string; amount: number; description: string; transaction_date: string; month: string };
 type BranchInput = { branch: number; adjustment: number; explanation: string };
 
 export function DebtorsBranchComparison({ month }: Props) {
