@@ -122,8 +122,9 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     value.toUpperCase().replace(/[^A-Z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
 
   const supplierByNormalized = new Map(
-    [...suppliers, ...fuelSuppliers].map((supplier) => [normalizeName(supplier), supplier])
+    [...suppliers, ...directlyExpensedSuppliers, ...fuelSuppliers].map((supplier) => [normalizeName(supplier), supplier])
   );
+
 
   const resolveSupplier = (preferredNames: string[]): string | null => {
     for (const name of preferredNames) {
