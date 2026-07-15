@@ -32,7 +32,7 @@ const FALLBACK_DEBTOR_ACCOUNTS = [
 ];
 const JE3_WRITEOFF_ACCOUNTS = ['Generator', 'Shop Expense', 'Umesh'];
 
-type BankLine = { id: string; amount: number; description: string; transaction_date: string };
+type BankLine = { id: string; amount: number; description: string; transaction_date: string; month: string };
 type BranchInput = { branch: number; adjustment: number; explanation: string };
 
 export function DebtorsBranchComparison({ month }: Props) {
@@ -62,24 +62,32 @@ export function DebtorsBranchComparison({ month }: Props) {
     });
   }, [masterAccounts, accountNumbers]);
   const [bankLines, setBankLines] = useState<BankLine[]>([]);
-  const [prevBankLines, setPrevBankLines] = useState<BankLine[]>([]);
+  const [historyBankLines, setHistoryBankLines] = useState<BankLine[]>([]);
   const [openingBalances, setOpeningBalances] = useState<Record<string, number>>({});
-  const [prevOpeningBalances, setPrevOpeningBalances] = useState<Record<string, number>>({});
+  const [historyOpeningBalances, setHistoryOpeningBalances] = useState<Record<string, Record<string, number>>>({});
   const [allocations, setAllocations] = useState<{ bank_line_id: string; recon_type: string; target_name: string }[]>([]);
   const [inputs, setInputs] = useState<Record<string, BranchInput>>({});
   const [totalsExplanation, setTotalsExplanation] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const isFirstMonth = month === '2026-03';
-  const prevMonth = useMemo(() => {
-    const d = new Date(month + '-01');
-    d.setMonth(d.getMonth() - 1);
-    return d.toISOString().slice(0, 7);
+  const FIRST_MONTH = '2026-03';
+  const isFirstMonth = month === FIRST_MONTH;
+
+  const priorMonths = useMemo(() => {
+    const out: string[] = [];
+    const start = new Date(FIRST_MONTH + '-01');
+    const end = new Date(month + '-01');
+    const cur = new Date(start);
+    while (cur < end) {
+      out.push(cur.toISOString().slice(0, 7));
+      cur.setMonth(cur.getMonth() + 1);
+    }
+    return out;
   }, [month]);
 
   const loadData = useCallback(async () => {
     const [bankRes, obRes, allocRes, brRes] = await Promise.all([
-      supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', month),
+      supabase.from('bank_statement_lines').select('id, amount, description, transaction_date, month').eq('month', month),
       supabase.from('creditor_opening_balances').select('*').eq('month', month),
       supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name').eq('recon_type', 'debtor'),
       supabase.from('master_data').select('*').eq('key', `debtors_branch_${month}`).maybeSingle(),
@@ -91,26 +99,28 @@ export function DebtorsBranchComparison({ month }: Props) {
       if (r.supplier.startsWith('debtor:')) obMap[r.supplier.replace('debtor:', '')] = Number(r.amount);
     });
     setOpeningBalances(obMap);
-      const savedData = (brRes.data?.data ?? {}) as Record<string, unknown>;
-      setInputs((savedData.inputs as Record<string, BranchInput>) ?? {});
-      setTotalsExplanation((savedData.totals_explanation as string) ?? '');
+    const savedData = (brRes.data?.data ?? {}) as Record<string, unknown>;
+    setInputs((savedData.inputs as Record<string, BranchInput>) ?? {});
+    setTotalsExplanation((savedData.totals_explanation as string) ?? '');
 
-    if (!isFirstMonth) {
-      const [prevBank, prevOb] = await Promise.all([
-        supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', prevMonth),
-        supabase.from('creditor_opening_balances').select('*').eq('month', prevMonth),
+    if (priorMonths.length > 0) {
+      const [histBankRes, histObRes] = await Promise.all([
+        supabase.from('bank_statement_lines').select('id, amount, description, transaction_date, month').in('month', priorMonths),
+        supabase.from('creditor_opening_balances').select('*').in('month', priorMonths),
       ]);
-      setPrevBankLines((prevBank.data ?? []) as BankLine[]);
-      const pMap: Record<string, number> = {};
-      ((prevOb.data ?? []) as { supplier: string; amount: number }[]).forEach(r => {
-        if (r.supplier.startsWith('debtor:')) pMap[r.supplier.replace('debtor:', '')] = Number(r.amount);
+      setHistoryBankLines((histBankRes.data ?? []) as (BankLine & { month: string })[]);
+      const histOb: Record<string, Record<string, number>> = {};
+      ((histObRes.data ?? []) as { month: string; supplier: string; amount: number }[]).forEach(r => {
+        if (!r.supplier.startsWith('debtor:')) return;
+        const name = r.supplier.replace('debtor:', '');
+        (histOb[r.month] ||= {})[name] = Number(r.amount);
       });
-      setPrevOpeningBalances(pMap);
+      setHistoryOpeningBalances(histOb);
     } else {
-      setPrevBankLines([]);
-      setPrevOpeningBalances({});
+      setHistoryBankLines([]);
+      setHistoryOpeningBalances({});
     }
-  }, [month, prevMonth, isFirstMonth]);
+  }, [month, priorMonths]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -156,27 +166,40 @@ export function DebtorsBranchComparison({ month }: Props) {
   };
 
   const purchases = useMemo(() => sumAccounts(month), [month, cashups]);
-  const prevPurchases = useMemo(() => sumAccounts(prevMonth), [prevMonth, cashups]);
   const roa = useMemo(() => sumRoa(month), [month, cashups]);
-  const prevRoa = useMemo(() => sumRoa(prevMonth), [prevMonth, cashups]);
   const bankPayments = useMemo(() => bankPaymentsFor(bankLines, true), [bankLines, allocations]);
-  const prevBankPayments = useMemo(() => bankPaymentsFor(prevBankLines, false), [prevBankLines]);
 
+  // Chain-forward opening balance from FIRST_MONTH, matching DebtorsRecon logic.
   const effectiveOB = useMemo(() => {
-    const cf: Record<string, number> = { ...openingBalances };
-    if (!isFirstMonth) {
+    if (isFirstMonth) return { ...openingBalances };
+
+    let balances: Record<string, number> = { ...(historyOpeningBalances[FIRST_MONTH] ?? {}) };
+    for (const m of priorMonths) {
+      const storedOb = historyOpeningBalances[m];
+      const monthOb: Record<string, number> = {};
       DEBTOR_ACCOUNTS.forEach(name => {
-        if (cf[name] !== undefined) return;
-        const prevOb = prevOpeningBalances[name] ?? 0;
-        const prevPurchase = prevPurchases[name] || 0;
-        const prevBankPmt = (prevBankPayments[name] || 0) + (prevRoa[name] || 0);
-        const prevAdj = JE3_WRITEOFF_ACCOUNTS.includes(name) ? prevPurchase : 0;
-        const closing = prevOb + prevPurchase - prevBankPmt - prevAdj;
-        if (closing !== 0) cf[name] = closing;
+        monthOb[name] = storedOb?.[name] ?? balances[name] ?? 0;
       });
+      const p = sumAccounts(m);
+      const r = sumRoa(m);
+      const monthBank = historyBankLines.filter(b => b.month === m);
+      const bp = bankPaymentsFor(monthBank, true);
+      const next: Record<string, number> = {};
+      DEBTOR_ACCOUNTS.forEach(name => {
+        const purchase = p[name] || 0;
+        const bankPmt = (bp[name] || 0) + (r[name] || 0);
+        const adj = JE3_WRITEOFF_ACCOUNTS.includes(name) ? purchase : 0;
+        next[name] = (monthOb[name] || 0) + purchase - bankPmt - adj;
+      });
+      balances = next;
     }
-    return cf;
-  }, [openingBalances, isFirstMonth, prevOpeningBalances, prevPurchases, prevBankPayments, prevRoa]);
+
+    const out: Record<string, number> = {};
+    DEBTOR_ACCOUNTS.forEach(name => {
+      out[name] = openingBalances[name] ?? balances[name] ?? 0;
+    });
+    return out;
+  }, [isFirstMonth, openingBalances, historyOpeningBalances, historyBankLines, priorMonths, DEBTOR_ACCOUNTS, cashups, allocations]);
 
   const rows = DEBTOR_ACCOUNTS.map(name => {
     const ob = effectiveOB[name] ?? 0;
