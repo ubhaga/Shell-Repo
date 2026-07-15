@@ -3,16 +3,29 @@ export function parseBankStatementDate(dateStr: string): string | null {
 
   if (!normalized) return null;
 
-  const isoLikeMatch = normalized.match(/^(\d{4})[/-](\d{2})[/-](\d{2})$/);
+  const isoLikeMatch = normalized.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
   if (isoLikeMatch) {
     const [, year, month, day] = isoLikeMatch;
-    return `${year}-${month}-${day}`;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
 
-  const dayFirstMatch = normalized.match(/^(\d{2})[/-](\d{2})[/-](\d{4})$/);
-  if (dayFirstMatch) {
-    const [, day, month, year] = dayFirstMatch;
-    return `${year}-${month}-${day}`;
+  const slashMatch = normalized.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (slashMatch) {
+    const [, a, b, year] = slashMatch;
+    const n1 = parseInt(a, 10);
+    const n2 = parseInt(b, 10);
+    // Disambiguate: if second > 12 it must be day → m/d/yyyy;
+    // if first > 12 it must be day → d/m/yyyy; otherwise default to d/m/yyyy.
+    let day: string;
+    let month: string;
+    if (n2 > 12 && n1 <= 12) {
+      month = a;
+      day = b;
+    } else {
+      day = a;
+      month = b;
+    }
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
 
   return null;
