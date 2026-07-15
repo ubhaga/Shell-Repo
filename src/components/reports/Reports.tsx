@@ -1296,11 +1296,11 @@ export function Reports({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoiceReport.length === 0 ? (
+                {filteredInvoiceReport.length === 0 ? (
                   <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No invoice data for this month</TableCell></TableRow>
                 ) : (
                   <>
-                    {invoiceReport.map((r, i) => (
+                    {filteredInvoiceReport.map((r, i) => (
                       <TableRow key={i}>
                         <TableCell className="text-sm">{formatDate(r.date)}</TableCell>
                         <TableCell><span className={`text-xs rounded px-1.5 py-0.5 ${r.type === 'Payout' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{r.type}</span></TableCell>
