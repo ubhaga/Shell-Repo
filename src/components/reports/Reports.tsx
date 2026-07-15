@@ -1321,50 +1321,76 @@ export function Reports({
                       <TableCell className="text-right"><CurrencyDisplay value={invoiceVatTotal} /></TableCell>
                     </TableRow>
 
-                    {/* Summary by Category — EFTs */}
                     {invoiceTypeFilter !== 'Payout' && (() => {
                       const eftLines = filteredInvoiceReport.filter(r => r.type === 'EFT');
-                      const catMap: Record<string, { incl: number; vat: number }> = {};
+                      const norm = (n: string) => (n ?? '').trim().toUpperCase();
+                      const directSet = new Set(directlyExpensedSuppliers.map(norm));
+                      const eftSet = new Set(eftSuppliers.map(norm).filter(n => !directSet.has(n)));
+
+                      const groups: { key: string; title: string; rows: typeof eftLines }[] = [
+                        { key: 'eft', title: 'Summary by Category — EFTs (JE 2.1)', rows: [] },
+                        { key: 'direct', title: 'Summary by Category — Directly Expensed Suppliers', rows: [] },
+                        { key: 'other', title: 'Summary by Category — Other EFT Suppliers (not in Settings 1.3)', rows: [] },
+                      ];
                       eftLines.forEach(r => {
-                        const key = r.category || 'Uncategorised';
-                        if (!catMap[key]) catMap[key] = { incl: 0, vat: 0 };
-                        catMap[key].incl += r.inclusive;
-                        catMap[key].vat += r.vat;
+                        const s = norm(r.supplier);
+                        if (directSet.has(s)) groups[1].rows.push(r);
+                        else if (eftSet.has(s)) groups[0].rows.push(r);
+                        else groups[2].rows.push(r);
                       });
-                      const catSummary = Object.entries(catMap).sort((a, b) => a[0].localeCompare(b[0])).map(([category, v]) => ({
-                        category, incl: v.incl, vat: v.vat, excl: v.incl - v.vat,
-                      }));
-                      const catTotals = catSummary.reduce((a, r) => ({ incl: a.incl + r.incl, vat: a.vat + r.vat, excl: a.excl + r.excl }), { incl: 0, vat: 0, excl: 0 });
+
+                      const renderGroup = (title: string, rows: typeof eftLines, labelTotal: string, keyPrefix: string) => {
+                        if (rows.length === 0) return null;
+                        const catMap: Record<string, { incl: number; vat: number }> = {};
+                        rows.forEach(r => {
+                          const key = r.category || 'Uncategorised';
+                          if (!catMap[key]) catMap[key] = { incl: 0, vat: 0 };
+                          catMap[key].incl += r.inclusive;
+                          catMap[key].vat += r.vat;
+                        });
+                        const summary = Object.entries(catMap).sort((a, b) => a[0].localeCompare(b[0])).map(([category, v]) => ({
+                          category, incl: v.incl, vat: v.vat, excl: v.incl - v.vat,
+                        }));
+                        const totals = summary.reduce((a, r) => ({ incl: a.incl + r.incl, vat: a.vat + r.vat, excl: a.excl + r.excl }), { incl: 0, vat: 0, excl: 0 });
+                        return (
+                          <React.Fragment key={keyPrefix}>
+                            <TableRow><TableCell colSpan={7} className="pt-6 pb-1"><span className="font-semibold text-sm">{title}</span></TableCell></TableRow>
+                            <TableRow className="bg-muted/30">
+                              <TableCell colSpan={3} className="font-medium text-xs text-muted-foreground">Category</TableCell>
+                              <TableCell className="text-right font-medium text-xs text-muted-foreground">Incl. Amount</TableCell>
+                              <TableCell className="text-right font-medium text-xs text-muted-foreground">VAT</TableCell>
+                              <TableCell className="text-right font-medium text-xs text-muted-foreground">Excl. Amount</TableCell>
+                              <TableCell />
+                            </TableRow>
+                            {summary.map((r, i) => (
+                              <TableRow key={`${keyPrefix}-${i}`}>
+                                <TableCell colSpan={3} className="text-sm">{r.category}</TableCell>
+                                <TableCell className="text-right"><CurrencyDisplay value={r.incl} /></TableCell>
+                                <TableCell className="text-right"><CurrencyDisplay value={r.vat} /></TableCell>
+                                <TableCell className="text-right"><CurrencyDisplay value={r.excl} /></TableCell>
+                                <TableCell />
+                              </TableRow>
+                            ))}
+                            <TableRow className="bg-secondary font-semibold">
+                              <TableCell colSpan={3}>{labelTotal}</TableCell>
+                              <TableCell className="text-right"><CurrencyDisplay value={totals.incl} highlight /></TableCell>
+                              <TableCell className="text-right"><CurrencyDisplay value={totals.vat} /></TableCell>
+                              <TableCell className="text-right"><CurrencyDisplay value={totals.excl} /></TableCell>
+                              <TableCell />
+                            </TableRow>
+                          </React.Fragment>
+                        );
+                      };
 
                       return (
                         <>
-                          <TableRow><TableCell colSpan={7} className="pt-6 pb-1"><span className="font-semibold text-sm">Summary by Category — EFTs</span></TableCell></TableRow>
-                          <TableRow className="bg-muted/30">
-                            <TableCell colSpan={3} className="font-medium text-xs text-muted-foreground">Category</TableCell>
-                            <TableCell className="text-right font-medium text-xs text-muted-foreground">Incl. Amount</TableCell>
-                            <TableCell className="text-right font-medium text-xs text-muted-foreground">VAT</TableCell>
-                            <TableCell className="text-right font-medium text-xs text-muted-foreground">Excl. Amount</TableCell>
-                            <TableCell />
-                          </TableRow>
-                          {catSummary.map((r, i) => (
-                            <TableRow key={`ec-${i}`}>
-                              <TableCell colSpan={3} className="text-sm">{r.category}</TableCell>
-                              <TableCell className="text-right"><CurrencyDisplay value={r.incl} /></TableCell>
-                              <TableCell className="text-right"><CurrencyDisplay value={r.vat} /></TableCell>
-                              <TableCell className="text-right"><CurrencyDisplay value={r.excl} /></TableCell>
-                              <TableCell />
-                            </TableRow>
-                          ))}
-                          <TableRow className="bg-secondary font-semibold">
-                            <TableCell colSpan={3}>EFTs Total</TableCell>
-                            <TableCell className="text-right"><CurrencyDisplay value={catTotals.incl} highlight /></TableCell>
-                            <TableCell className="text-right"><CurrencyDisplay value={catTotals.vat} /></TableCell>
-                            <TableCell className="text-right"><CurrencyDisplay value={catTotals.excl} /></TableCell>
-                            <TableCell />
-                          </TableRow>
+                          {renderGroup(groups[0].title, groups[0].rows, 'EFTs Total (JE 2.1)', 'ec')}
+                          {renderGroup(groups[1].title, groups[1].rows, 'Directly Expensed Total', 'de')}
+                          {renderGroup(groups[2].title, groups[2].rows, 'Other EFT Total', 'oe')}
                         </>
                       );
                     })()}
+
                   </>
                 )}
               </TableBody>
