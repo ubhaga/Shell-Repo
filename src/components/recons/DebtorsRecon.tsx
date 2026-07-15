@@ -81,29 +81,37 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     });
   }, [masterAccounts, accountNumbers]);
 
-  const [bankLines, setBankLines] = useState<{ id: string; amount: number; description: string; transaction_date: string }[]>([]);
+  type BankLine = { id: string; amount: number; description: string; transaction_date: string; month: string };
+  const [bankLines, setBankLines] = useState<BankLine[]>([]);
   const [openingBalances, setOpeningBalances] = useState<Record<string, number>>({});
-  const [prevMonthBankLines, setPrevMonthBankLines] = useState<typeof bankLines>([]);
-  const [prevMonthOpeningBalances, setPrevMonthOpeningBalances] = useState<Record<string, number>>({});
+  // History for all months from FIRST_MONTH up to (but not including) filterMonth
+  const [historyBankLines, setHistoryBankLines] = useState<BankLine[]>([]);
+  const [historyOpeningBalances, setHistoryOpeningBalances] = useState<Record<string, Record<string, number>>>({});
   const [editingOB, setEditingOB] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const isFirstMonth = filterMonth === '2026-03';
+  const FIRST_MONTH = '2026-03';
+  const isFirstMonth = filterMonth === FIRST_MONTH;
 
-  // Previous month for rolling balances
-  const prevMonth = useMemo(() => {
-    const d = new Date(filterMonth + '-01');
-    d.setMonth(d.getMonth() - 1);
-    return d.toISOString().slice(0, 7);
+  // All prior months from FIRST_MONTH up to (but not including) filterMonth
+  const priorMonths = useMemo(() => {
+    const out: string[] = [];
+    const start = new Date(FIRST_MONTH + '-01');
+    const end = new Date(filterMonth + '-01');
+    const cur = new Date(start);
+    while (cur < end) {
+      out.push(cur.toISOString().slice(0, 7));
+      cur.setMonth(cur.getMonth() + 1);
+    }
+    return out;
   }, [filterMonth]);
 
   const loadData = useCallback(async () => {
     const [bankRes, obRes] = await Promise.all([
-      supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', filterMonth),
+      supabase.from('bank_statement_lines').select('id, amount, description, transaction_date, month').eq('month', filterMonth),
       supabase.from('creditor_opening_balances').select('*').eq('month', filterMonth),
     ]);
-    setBankLines((bankRes.data ?? []) as typeof bankLines);
-    // Re-use creditor_opening_balances table for debtors too (with "debtor:" prefix)
+    setBankLines((bankRes.data ?? []) as BankLine[]);
     const obMap: Record<string, number> = {};
     ((obRes.data ?? []) as { supplier: string; amount: number }[]).forEach(r => {
       if (r.supplier.startsWith('debtor:')) {
@@ -113,28 +121,27 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     setOpeningBalances(obMap);
     setEditingOB({});
 
-    if (!isFirstMonth) {
-      const [prevBankRes, prevObRes] = await Promise.all([
-        supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', prevMonth),
-        supabase.from('creditor_opening_balances').select('*').eq('month', prevMonth),
+    if (priorMonths.length > 0) {
+      const [histBankRes, histObRes] = await Promise.all([
+        supabase.from('bank_statement_lines').select('id, amount, description, transaction_date, month').in('month', priorMonths),
+        supabase.from('creditor_opening_balances').select('*').in('month', priorMonths),
       ]);
-
-      setPrevMonthBankLines((prevBankRes.data ?? []) as typeof bankLines);
-
-      const prevObMap: Record<string, number> = {};
-      ((prevObRes.data ?? []) as { supplier: string; amount: number }[]).forEach(r => {
-        if (r.supplier.startsWith('debtor:')) {
-          prevObMap[r.supplier.replace('debtor:', '')] = Number(r.amount);
-        }
+      setHistoryBankLines((histBankRes.data ?? []) as BankLine[]);
+      const histOb: Record<string, Record<string, number>> = {};
+      ((histObRes.data ?? []) as { month: string; supplier: string; amount: number }[]).forEach(r => {
+        if (!r.supplier.startsWith('debtor:')) return;
+        const name = r.supplier.replace('debtor:', '');
+        (histOb[r.month] ||= {})[name] = Number(r.amount);
       });
-      setPrevMonthOpeningBalances(prevObMap);
+      setHistoryOpeningBalances(histOb);
     } else {
-      setPrevMonthBankLines([]);
-      setPrevMonthOpeningBalances({});
+      setHistoryBankLines([]);
+      setHistoryOpeningBalances({});
     }
-  }, [filterMonth, isFirstMonth, prevMonth]);
+  }, [filterMonth, priorMonths]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
 
   // Purchases: sum of account entries from cashups for each debtor
   const purchases = useMemo(() => {
