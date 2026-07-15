@@ -122,8 +122,9 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     value.toUpperCase().replace(/[^A-Z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
 
   const supplierByNormalized = new Map(
-    [...suppliers, ...fuelSuppliers].map((supplier) => [normalizeName(supplier), supplier])
+    [...suppliers, ...directlyExpensedSuppliers, ...fuelSuppliers].map((supplier) => [normalizeName(supplier), supplier])
   );
+
 
   const resolveSupplier = (preferredNames: string[]): string | null => {
     for (const name of preferredNames) {
@@ -191,7 +192,9 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     bankLines.forEach(line => {
       // Check manual allocation first
       const allocation = bankAllocations.find(a => a.bank_line_id === line.id && a.recon_type === 'creditor');
-      const matched = allocation ? allocation.target_name : matchSupplier(line.description);
+      const rawMatched = allocation ? allocation.target_name : matchSupplier(line.description);
+      // Resolve to the canonical supplier name (handles whitespace/case variants in stored allocations)
+      const matched = rawMatched ? (supplierByNormalized.get(normalizeName(rawMatched)) ?? rawMatched) : null;
       if (matched !== supplier) return;
       const lineDate = parseBankDate(line.transaction_date);
       if (!lineDate) return;
