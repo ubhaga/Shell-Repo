@@ -1271,8 +1271,15 @@ export function Reports({
         <TabsContent value="invoices">
           <div className="bg-card border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
-              <h3 className="font-semibold text-sm">Detailed Invoices — {monthLabel}</h3>
-              <Button size="sm" variant="outline" onClick={() => exportCSV(invoiceReport, `invoices-${filterMonth}.csv`)}>
+              <div className="flex items-center gap-3">
+                <h3 className="font-semibold text-sm">Detailed Invoices — {monthLabel}</h3>
+                <div className="flex items-center gap-1 bg-muted rounded-md p-1">
+                  <button onClick={() => setInvoiceTypeFilter('all')} className={`px-2 py-0.5 text-xs rounded ${invoiceTypeFilter === 'all' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}>All</button>
+                  <button onClick={() => setInvoiceTypeFilter('Payout')} className={`px-2 py-0.5 text-xs rounded ${invoiceTypeFilter === 'Payout' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}>Payout</button>
+                  <button onClick={() => setInvoiceTypeFilter('EFT')} className={`px-2 py-0.5 text-xs rounded ${invoiceTypeFilter === 'EFT' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}>EFT</button>
+                </div>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => exportCSV(filteredInvoiceReport, `invoices-${filterMonth}.csv`)}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
             </div>
