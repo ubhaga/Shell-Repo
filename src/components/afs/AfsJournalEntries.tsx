@@ -564,7 +564,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                   </TableHeader>
                   <TableBody>
                     {debits.map((d, i) => {
-                      const vat = vatOf(d.label, d.amount);
+                      const vat = d.vat;
                       return (
                         <TableRow key={`d-${i}`}>
                           <TableCell className="text-sm py-1.5">{d.label}</TableCell>
