@@ -87,16 +87,29 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   if (getDay(monthEnd) !== 0) sundays.push(monthEnd);
 
   const FUEL_CREDITORS = ['Shell Downstream', 'F2K'];
-  const isFuelCreditor = (s: string) => FUEL_CREDITORS.some(fc => fc.toUpperCase() === s.toUpperCase());
+  const canon = (s: string) => s.toUpperCase().replace(/\s+/g, ' ').trim();
+  const isFuelCreditor = (s: string) => FUEL_CREDITORS.some(fc => canon(fc) === canon(s));
   const isDirectlyExpensed = (s: string) =>
-    directlyExpensedFromSettings.some(dc => dc.toUpperCase() === s.toUpperCase());
+    directlyExpensedFromSettings.some(dc => canon(dc) === canon(s));
   // Merge suppliers from EFT list + directly-expensed settings list so directly-expensed
   // items still appear in the recon even if removed from the EFT supplier list.
-  const mergedSuppliers = Array.from(new Set([...eftSuppliers, ...directlyExpensedFromSettings]));
+  // Deduplicate case/whitespace variants (e.g. "Status Hygiene" vs "Status  Hygiene").
+  const mergedSuppliersRaw = [...eftSuppliers, ...directlyExpensedFromSettings];
+  const seenCanon = new Set<string>();
+  const mergedSuppliers: string[] = [];
+  for (const s of mergedSuppliersRaw) {
+    const c = canon(s);
+    if (seenCanon.has(c)) continue;
+    seenCanon.add(c);
+    // Prefer the directly-expensed spelling when both exist
+    const preferred = directlyExpensedFromSettings.find(d => canon(d) === c) ?? s;
+    mergedSuppliers.push(preferred);
+  }
   const allSuppliers = mergedSuppliers.sort();
   const suppliers = allSuppliers.filter(s => !isFuelCreditor(s) && !isDirectlyExpensed(s));
   const directlyExpensedSuppliers = allSuppliers.filter(s => isDirectlyExpensed(s));
   const fuelSuppliers = allSuppliers.filter(s => isFuelCreditor(s));
+
 
   // EFT invoices from manager daily entries for this month
   const monthManagers = managerEntries.filter(e => e.date.startsWith(filterMonth));
