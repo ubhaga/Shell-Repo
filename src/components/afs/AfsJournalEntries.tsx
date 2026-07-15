@@ -159,7 +159,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
   const { je2Eft, je2Payouts } = useMemo(() => {
     const monthlyManagers = managerEntries.filter((e) => e.date.startsWith(month));
 
-    type Txn = { date: string; supplier: string; source: "Payout" | "EFT"; amount: number; inclVatPortion: number; noVatPortion: number };
+    type Txn = { date: string; supplier: string; source: "Payout" | "EFT"; amount: number; inclVatPortion: number; noVatPortion: number; capturedVat: number };
 
     const splitAmounts = (category: string, inclusive: number, vat: number) => {
       const isExempt = /fuel|wsl|dsl/i.test(category);
@@ -174,11 +174,12 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     };
 
     const build = (source: "Payout" | "EFT") => {
-      const catMap: Record<string, { inclVat: number; noVat: number; transactions: Txn[] }> = {};
+      const catMap: Record<string, { inclVat: number; noVat: number; capturedVat: number; transactions: Txn[] }> = {};
       const push = (cat: string, txn: Txn) => {
-        if (!catMap[cat]) catMap[cat] = { inclVat: 0, noVat: 0, transactions: [] };
+        if (!catMap[cat]) catMap[cat] = { inclVat: 0, noVat: 0, capturedVat: 0, transactions: [] };
         catMap[cat].inclVat += txn.inclVatPortion;
         catMap[cat].noVat += txn.noVatPortion;
+        catMap[cat].capturedVat += txn.capturedVat;
         catMap[cat].transactions.push(txn);
       };
 
@@ -199,7 +200,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
           }
           const cat = inv.category || "Uncategorised";
           const { inclVatPortion, noVatPortion } = splitAmounts(cat, inv.inclusive, inv.vat ?? 0);
-          push(cat, { date: e.date, supplier: inv.supplier, source, amount: inv.inclusive, inclVatPortion, noVatPortion });
+          push(cat, { date: e.date, supplier: inv.supplier, source, amount: inv.inclusive, inclVatPortion, noVatPortion, capturedVat: inv.vat ?? 0 });
         });
       });
 
@@ -209,13 +210,14 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
           category,
           inclVat: v.inclVat,
           noVat: v.noVat,
+          capturedVat: v.capturedVat,
           total: v.inclVat + v.noVat,
           transactions: v.transactions.sort((a, b) => a.date.localeCompare(b.date)),
         }));
 
       const totals = categories.reduce(
-        (a, r) => ({ inclVat: a.inclVat + r.inclVat, noVat: a.noVat + r.noVat, total: a.total + r.total }),
-        { inclVat: 0, noVat: 0, total: 0 }
+        (a, r) => ({ inclVat: a.inclVat + r.inclVat, noVat: a.noVat + r.noVat, capturedVat: a.capturedVat + r.capturedVat, total: a.total + r.total }),
+        { inclVat: 0, noVat: 0, capturedVat: 0, total: 0 }
       );
 
       return { categories, totals };
@@ -223,6 +225,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
 
     return { je2Eft: build("EFT"), je2Payouts: build("Payout") };
   }, [month, managerEntries, eftSuppliers, directlyExpensedSuppliers]);
+
 
 
   const [expandedPayoutCats, setExpandedPayoutCats] = useState<Set<string>>(new Set());
@@ -416,7 +419,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
         <CardContent className="space-y-4">
           {(() => {
             const isFuelClearing = (cat: string) => /fuel|wsl|dsl/i.test(cat);
-            type DebitRow = { label: string; amount: number };
+            type DebitRow = { label: string; amount: number; vat: number };
             const debits: DebitRow[] = [];
             let fuelClearingF2K = 0;
             let fuelClearingShell = 0;
@@ -425,25 +428,24 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
             je2Eft.categories.forEach((r) => {
               const fuel = isFuelClearing(r.category);
               if (fuel) {
-                if (r.inclVat !== 0) debits.push({ label: `COS ${r.category} (Incl Vat)`, amount: r.inclVat });
-                if (r.noVat !== 0) debits.push({ label: `COS ${r.category} (Exempt)`, amount: r.noVat });
+                if (r.inclVat !== 0) debits.push({ label: `COS ${r.category} (Incl Vat)`, amount: r.inclVat, vat: r.capturedVat });
+                if (r.noVat !== 0) debits.push({ label: `COS ${r.category} (Exempt)`, amount: r.noVat, vat: 0 });
                 r.transactions.forEach((t) => {
                   const amt = t.inclVatPortion + t.noVatPortion;
                   if (/f2k/i.test(t.supplier)) fuelClearingF2K += amt;
                   else fuelClearingShell += amt;
                 });
               } else {
-                if (r.inclVat !== 0) debits.push({ label: `COS ${r.category} (Incl Vat)`, amount: r.inclVat });
-                if (r.noVat !== 0) debits.push({ label: `COS ${r.category} (No Vat)`, amount: r.noVat });
+                if (r.inclVat !== 0) debits.push({ label: `COS ${r.category} (Incl Vat)`, amount: r.inclVat, vat: r.capturedVat });
+                if (r.noVat !== 0) debits.push({ label: `COS ${r.category} (No Vat)`, amount: r.noVat, vat: 0 });
                 tradeCreditorsTotal += r.inclVat + r.noVat;
               }
             });
 
             const totalDebits = debits.reduce((s, d) => s + d.amount, 0);
             const totalCredits = fuelClearingF2K + fuelClearingShell + tradeCreditorsTotal;
-            const vatOf = (label: string, amount: number, isCredit = false) =>
-              /incl vat/i.test(label) ? ((amount * 15) / 115) * (isCredit ? -1 : 1) : 0;
-            const totalVat = debits.reduce((s, d) => s + vatOf(d.label, d.amount), 0);
+            const totalVat = debits.reduce((s, d) => s + d.vat, 0);
+
 
             return (
               <Table>
@@ -457,7 +459,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                 </TableHeader>
                 <TableBody>
                   {debits.map((d, i) => {
-                    const vat = vatOf(d.label, d.amount);
+                    const vat = d.vat;
                     return (
                       <TableRow key={`d-${i}`}>
                         <TableCell className="text-sm py-1.5">{d.label}</TableCell>
@@ -467,6 +469,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                       </TableRow>
                     );
                   })}
+
                   {fuelClearingF2K !== 0 && (
                     <TableRow>
                       <TableCell className="text-sm py-1.5">Fuel Clearing F2K</TableCell>
