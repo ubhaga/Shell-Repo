@@ -87,6 +87,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
   // History for all months from FIRST_MONTH up to (but not including) filterMonth
   const [historyBankLines, setHistoryBankLines] = useState<BankLine[]>([]);
   const [historyOpeningBalances, setHistoryOpeningBalances] = useState<Record<string, Record<string, number>>>({});
+  const [historyAllocations, setHistoryAllocations] = useState<{ bank_line_id: string; recon_type: string; target_name: string }[]>([]);
   const [editingOB, setEditingOB] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -122,11 +123,13 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     setEditingOB({});
 
     if (priorMonths.length > 0) {
-      const [histBankRes, histObRes] = await Promise.all([
+      const [histBankRes, histObRes, histAllocRes] = await Promise.all([
         supabase.from('bank_statement_lines').select('id, amount, description, transaction_date, month').in('month', priorMonths),
         supabase.from('creditor_opening_balances').select('*').in('month', priorMonths),
+        supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name').in('month', priorMonths),
       ]);
       setHistoryBankLines((histBankRes.data ?? []) as BankLine[]);
+      setHistoryAllocations((histAllocRes.data ?? []) as { bank_line_id: string; recon_type: string; target_name: string }[]);
       const histOb: Record<string, Record<string, number>> = {};
       ((histObRes.data ?? []) as { month: string; supplier: string; amount: number }[]).forEach(r => {
         if (!r.supplier.startsWith('debtor:')) return;
@@ -137,6 +140,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     } else {
       setHistoryBankLines([]);
       setHistoryOpeningBalances({});
+      setHistoryAllocations([]);
     }
   }, [filterMonth, priorMonths]);
 
@@ -210,7 +214,9 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     for (const line of lines) {
       if (line.amount <= 0) continue;
       if (useAllocations) {
-        const allocation = bankAllocations.find(a => a.bank_line_id === line.id && a.recon_type === 'debtor');
+        const allocation =
+          bankAllocations.find(a => a.bank_line_id === line.id && a.recon_type === 'debtor') ??
+          historyAllocations.find(a => a.bank_line_id === line.id && a.recon_type === 'debtor');
         if (allocation) {
           totals[allocation.target_name] = (totals[allocation.target_name] || 0) + line.amount;
           continue;
@@ -224,7 +230,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
       }
     }
     return totals;
-  }, [bankAllocations, DEBTOR_ACCOUNTS]);
+  }, [bankAllocations, historyAllocations, DEBTOR_ACCOUNTS]);
 
   // Bank payments mapped to debtors (current month, honours manual allocations)
   const bankPayments = useMemo(() => bankPaymentsForMonth(bankLines, true), [bankPaymentsForMonth, bankLines]);
@@ -283,7 +289,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
       });
       const p = purchasesForMonth(m);
       const monthBankLines = historyBankLines.filter(b => b.month === m);
-      const bp = bankPaymentsForMonth(monthBankLines, false);
+      const bp = bankPaymentsForMonth(monthBankLines, true);
       const roa = roaForMonth(m);
       const next: Record<string, number> = {};
       DEBTOR_ACCOUNTS.forEach(name => {
