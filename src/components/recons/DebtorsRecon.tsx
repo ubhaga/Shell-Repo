@@ -214,7 +214,9 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     for (const line of lines) {
       if (line.amount <= 0) continue;
       if (useAllocations) {
-        const allocation = bankAllocations.find(a => a.bank_line_id === line.id && a.recon_type === 'debtor');
+        const allocation =
+          bankAllocations.find(a => a.bank_line_id === line.id && a.recon_type === 'debtor') ??
+          historyAllocations.find(a => a.bank_line_id === line.id && a.recon_type === 'debtor');
         if (allocation) {
           totals[allocation.target_name] = (totals[allocation.target_name] || 0) + line.amount;
           continue;
@@ -228,7 +230,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
       }
     }
     return totals;
-  }, [bankAllocations, DEBTOR_ACCOUNTS]);
+  }, [bankAllocations, historyAllocations, DEBTOR_ACCOUNTS]);
 
   // Bank payments mapped to debtors (current month, honours manual allocations)
   const bankPayments = useMemo(() => bankPaymentsForMonth(bankLines, true), [bankPaymentsForMonth, bankLines]);
