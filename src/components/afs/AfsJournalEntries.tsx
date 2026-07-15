@@ -535,22 +535,21 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
         </CardHeader>
         <CardContent className="space-y-4">
           {(() => {
-            type DebitRow = { label: string; amount: number };
+            type DebitRow = { label: string; amount: number; vat: number };
             const debits: DebitRow[] = [];
 
             je2Payouts.categories.forEach((r) => {
               const isExempt = /fuel|wsl|dsl/i.test(r.category);
-              if (r.inclVat !== 0) debits.push({ label: `COS ${r.category} (Incl Vat)`, amount: r.inclVat });
-              if (r.noVat !== 0) debits.push({ label: `COS ${r.category} ${isExempt ? "(Exempt)" : "(No Vat)"}`, amount: r.noVat });
+              if (r.inclVat !== 0) debits.push({ label: `COS ${r.category} (Incl Vat)`, amount: r.inclVat, vat: r.capturedVat });
+              if (r.noVat !== 0) debits.push({ label: `COS ${r.category} ${isExempt ? "(Exempt)" : "(No Vat)"}`, amount: r.noVat, vat: 0 });
             });
 
             const totalDebits = debits.reduce((s, d) => s + d.amount, 0);
             const provPayoutsJe1 = je1.debits.find((d) => d.description === "Provision for Payouts")?.amount ?? 0;
             const variance = totalDebits - provPayoutsJe1;
             const hasException = Math.abs(variance) > 0.01;
-            const vatOf = (label: string, amount: number, isCredit = false) =>
-              /incl vat/i.test(label) ? ((amount * 15) / 115) * (isCredit ? -1 : 1) : 0;
-            const totalVat = debits.reduce((s, d) => s + vatOf(d.label, d.amount), 0);
+            const totalVat = debits.reduce((s, d) => s + d.vat, 0);
+
 
             return (
               <>
@@ -565,7 +564,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
                   </TableHeader>
                   <TableBody>
                     {debits.map((d, i) => {
-                      const vat = vatOf(d.label, d.amount);
+                      const vat = d.vat;
                       return (
                         <TableRow key={`d-${i}`}>
                           <TableCell className="text-sm py-1.5">{d.label}</TableCell>
