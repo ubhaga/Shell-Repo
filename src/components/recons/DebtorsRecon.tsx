@@ -123,11 +123,13 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     setEditingOB({});
 
     if (priorMonths.length > 0) {
-      const [histBankRes, histObRes] = await Promise.all([
+      const [histBankRes, histObRes, histAllocRes] = await Promise.all([
         supabase.from('bank_statement_lines').select('id, amount, description, transaction_date, month').in('month', priorMonths),
         supabase.from('creditor_opening_balances').select('*').in('month', priorMonths),
+        supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name').in('month', priorMonths),
       ]);
       setHistoryBankLines((histBankRes.data ?? []) as BankLine[]);
+      setHistoryAllocations((histAllocRes.data ?? []) as { bank_line_id: string; recon_type: string; target_name: string }[]);
       const histOb: Record<string, Record<string, number>> = {};
       ((histObRes.data ?? []) as { month: string; supplier: string; amount: number }[]).forEach(r => {
         if (!r.supplier.startsWith('debtor:')) return;
@@ -138,6 +140,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
     } else {
       setHistoryBankLines([]);
       setHistoryOpeningBalances({});
+      setHistoryAllocations([]);
     }
   }, [filterMonth, priorMonths]);
 
