@@ -289,7 +289,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
       });
       const p = purchasesForMonth(m);
       const monthBankLines = historyBankLines.filter(b => b.month === m);
-      const bp = bankPaymentsForMonth(monthBankLines, false);
+      const bp = bankPaymentsForMonth(monthBankLines, true);
       const roa = roaForMonth(m);
       const next: Record<string, number> = {};
       DEBTOR_ACCOUNTS.forEach(name => {
