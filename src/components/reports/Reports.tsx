@@ -1420,9 +1420,10 @@ export function Reports({
 
                       return (
                         <>
-                          {renderGroup(groups[0].title, groups[0].rows, 'EFTs Total (JE 2.1)', 'ec')}
-                          {renderGroup(groups[1].title, groups[1].rows, 'Directly Expensed Total', 'de')}
-                          {renderGroup(groups[2].title, groups[2].rows, 'Other EFT Total', 'oe')}
+                          {renderGroup(groups[0].title, groups[0].rows, 'Fuel Total', 'fc')}
+                          {renderGroup(groups[1].title, groups[1].rows, 'EFTs Total (JE 2.1)', 'ec')}
+                          {renderGroup(groups[2].title, groups[2].rows, 'Directly Expensed Total', 'de')}
+                          {renderGroup(groups[3].title, groups[3].rows, 'Other EFT Total', 'oe')}
                         </>
                       );
                     })()}
