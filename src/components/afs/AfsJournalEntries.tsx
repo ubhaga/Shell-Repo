@@ -83,8 +83,9 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       totalCashDepositedBanking += c.shop.cashDepositedBanking ?? 0;
       // Coins
       totalCoins += c.shop.coins ?? 0;
-      // Deep Frozen CC (paid via Cash Connect)
-      totalDeepFrozenCC += c.shop.deepFrozenCC ?? 0;
+      // (Deep Frozen CC summed separately from manager entries below)
+
+
 
       // Speedpoints - separate V Plus from others
       for (const sp of c.shop.speedpoints ?? []) {
@@ -121,6 +122,13 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       const optDiff = optNetSales - optSpTotal - optAccTotal;
       totalCashierBalance += shopDiff + optDiff;
     }
+
+    // Deep Frozen CC — sum across all manager entries for the month
+    for (const m of monthlyManagers) {
+      totalDeepFrozenCC += m.deepFrozenCC ?? 0;
+    }
+
+
 
     credits.push({ description: "Prov Blue Label", amount: totalBlueLabel });
     credits.push({ description: "Prov for Flash (Receipts)", amount: totalEasypayReceipts + totalDeepFrozenCC });
