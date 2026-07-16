@@ -552,6 +552,12 @@ export function Reports({
 
   // Invoice report
   const [invoiceTypeFilter, setInvoiceTypeFilter] = useState<'all' | 'Payout' | 'EFT'>('all');
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const toggleCategory = (key: string) => setExpandedCategories(prev => {
+    const next = new Set(prev);
+    next.has(key) ? next.delete(key) : next.add(key);
+    return next;
+  });
   const invoiceReport = monthManagers.flatMap(e => [
     ...e.payoutInvoices.map(i => ({ date: e.date, type: 'Payout', supplier: i.supplier, category: i.category, docNum: i.branchDocNum, inclusive: i.inclusive, vat: i.vat })),
     ...e.eftInvoices.map(i => ({ date: e.date, type: 'EFT', supplier: i.supplier, category: i.category, docNum: i.branchDocNum, inclusive: i.inclusive, vat: i.vat })),
