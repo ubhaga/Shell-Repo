@@ -61,6 +61,8 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     let totalAccounts = 0;
     let totalOtherAdjustments = 0;
     let totalCashierBalance = 0;
+    let totalDeepFrozenCC = 0;
+
 
     for (const c of monthlyCashups) {
       // Receipts
