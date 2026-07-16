@@ -123,6 +123,13 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       totalCashierBalance += shopDiff + optDiff;
     }
 
+    // Deep Frozen CC — sum across all manager entries for the month
+    for (const m of monthlyManagers) {
+      totalDeepFrozenCC += m.deepFrozenCC ?? 0;
+    }
+
+
+
     credits.push({ description: "Prov Blue Label", amount: totalBlueLabel });
     credits.push({ description: "Prov for Flash (Receipts)", amount: totalEasypayReceipts + totalDeepFrozenCC });
     credits.push({ description: "Prov for Lotto", amount: totalLottoReceipts - totalLottoPayouts });
