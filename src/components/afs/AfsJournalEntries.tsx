@@ -83,6 +83,9 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       totalCashDepositedBanking += c.shop.cashDepositedBanking ?? 0;
       // Coins
       totalCoins += c.shop.coins ?? 0;
+      // Deep Frozen CC (paid via Cash Connect)
+      totalDeepFrozenCC += c.shop.deepFrozenCC ?? 0;
+
       // Speedpoints - separate V Plus from others
       for (const sp of c.shop.speedpoints ?? []) {
         if (sp.terminal === "V Plus") {
