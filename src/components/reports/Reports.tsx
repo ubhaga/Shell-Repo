@@ -1347,15 +1347,16 @@ export function Reports({
 
                       const renderGroup = (title: string, rows: typeof eftLines, labelTotal: string, keyPrefix: string) => {
                         if (rows.length === 0) return null;
-                        const catMap: Record<string, { incl: number; vat: number }> = {};
+                        const catMap: Record<string, { incl: number; vat: number; items: typeof eftLines }> = {};
                         rows.forEach(r => {
                           const key = r.category || 'Uncategorised';
-                          if (!catMap[key]) catMap[key] = { incl: 0, vat: 0 };
+                          if (!catMap[key]) catMap[key] = { incl: 0, vat: 0, items: [] };
                           catMap[key].incl += r.inclusive;
                           catMap[key].vat += r.vat;
+                          catMap[key].items.push(r);
                         });
                         const summary = Object.entries(catMap).sort((a, b) => a[0].localeCompare(b[0])).map(([category, v]) => ({
-                          category, incl: v.incl, vat: v.vat, excl: v.incl - v.vat,
+                          category, incl: v.incl, vat: v.vat, excl: v.incl - v.vat, items: v.items,
                         }));
                         const totals = summary.reduce((a, r) => ({ incl: a.incl + r.incl, vat: a.vat + r.vat, excl: a.excl + r.excl }), { incl: 0, vat: 0, excl: 0 });
                         return (
@@ -1368,15 +1369,36 @@ export function Reports({
                               <TableCell className="text-right font-medium text-xs text-muted-foreground">Excl. Amount</TableCell>
                               <TableCell />
                             </TableRow>
-                            {summary.map((r, i) => (
-                              <TableRow key={`${keyPrefix}-${i}`}>
-                                <TableCell colSpan={3} className="text-sm">{r.category}</TableCell>
-                                <TableCell className="text-right"><CurrencyDisplay value={r.incl} /></TableCell>
-                                <TableCell className="text-right"><CurrencyDisplay value={r.vat} /></TableCell>
-                                <TableCell className="text-right"><CurrencyDisplay value={r.excl} /></TableCell>
-                                <TableCell />
-                              </TableRow>
-                            ))}
+                            {summary.map((r, i) => {
+                              const catKey = `${keyPrefix}-${r.category}`;
+                              const isOpen = expandedCategories.has(catKey);
+                              return (
+                                <React.Fragment key={`${keyPrefix}-${i}`}>
+                                  <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => toggleCategory(catKey)}>
+                                    <TableCell colSpan={3} className="text-sm">
+                                      <span className="inline-block w-4 text-muted-foreground">{isOpen ? '▾' : '▸'}</span>
+                                      {r.category}
+                                      <span className="ml-2 text-xs text-muted-foreground">({r.items.length})</span>
+                                    </TableCell>
+                                    <TableCell className="text-right"><CurrencyDisplay value={r.incl} /></TableCell>
+                                    <TableCell className="text-right"><CurrencyDisplay value={r.vat} /></TableCell>
+                                    <TableCell className="text-right"><CurrencyDisplay value={r.excl} /></TableCell>
+                                    <TableCell />
+                                  </TableRow>
+                                  {isOpen && r.items.map((it, j) => (
+                                    <TableRow key={`${catKey}-item-${j}`} className="bg-muted/10 text-xs">
+                                      <TableCell className="pl-8 text-muted-foreground">{formatDate(it.date)}</TableCell>
+                                      <TableCell className="text-muted-foreground">{it.supplier}</TableCell>
+                                      <TableCell className="text-muted-foreground">{it.docNum}</TableCell>
+                                      <TableCell className="text-right"><CurrencyDisplay value={it.inclusive} /></TableCell>
+                                      <TableCell className="text-right"><CurrencyDisplay value={it.vat} /></TableCell>
+                                      <TableCell className="text-right"><CurrencyDisplay value={it.inclusive - it.vat} /></TableCell>
+                                      <TableCell />
+                                    </TableRow>
+                                  ))}
+                                </React.Fragment>
+                              );
+                            })}
                             <TableRow className="bg-secondary font-semibold">
                               <TableCell colSpan={3}>{labelTotal}</TableCell>
                               <TableCell className="text-right"><CurrencyDisplay value={totals.incl} highlight /></TableCell>
