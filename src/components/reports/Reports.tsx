@@ -1334,15 +1334,23 @@ export function Reports({
                       const eftSet = new Set(eftSuppliers.map(norm).filter(n => !directSet.has(n)));
 
                       const groups: { key: string; title: string; rows: typeof eftLines }[] = [
+                        { key: 'fuel', title: 'Summary by Category - Fuel', rows: [] },
                         { key: 'eft', title: 'Summary by Category — EFTs (JE 2.1)', rows: [] },
                         { key: 'direct', title: 'Summary by Category — Directly Expensed Suppliers', rows: [] },
                         { key: 'other', title: 'Summary by Category — Other EFT Suppliers (not in Settings 1.3)', rows: [] },
                       ];
                       eftLines.forEach(r => {
                         const s = norm(r.supplier);
-                        if (directSet.has(s)) groups[1].rows.push(r);
-                        else if (eftSet.has(s)) groups[0].rows.push(r);
-                        else groups[2].rows.push(r);
+                        const cat = norm(r.category);
+                        if (cat === 'COS FUEL') {
+                          groups[0].rows.push(r);
+                        } else if (directSet.has(s)) {
+                          groups[2].rows.push(r);
+                        } else if (eftSet.has(s)) {
+                          groups[1].rows.push(r);
+                        } else {
+                          groups[3].rows.push(r);
+                        }
                       });
 
                       const renderGroup = (title: string, rows: typeof eftLines, labelTotal: string, keyPrefix: string) => {
