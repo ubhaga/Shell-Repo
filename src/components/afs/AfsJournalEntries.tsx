@@ -83,9 +83,8 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       totalCashDepositedBanking += c.shop.cashDepositedBanking ?? 0;
       // Coins
       totalCoins += c.shop.coins ?? 0;
-      // Deep Frozen CC (paid via Cash Connect) — sourced from manager entry
-      const mgr = monthlyManagers.find((m) => m.date === c.date);
-      totalDeepFrozenCC += mgr?.deepFrozenCC ?? 0;
+      // (Deep Frozen CC summed separately from manager entries below)
+
 
 
       // Speedpoints - separate V Plus from others
