@@ -61,6 +61,8 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     let totalAccounts = 0;
     let totalOtherAdjustments = 0;
     let totalCashierBalance = 0;
+    let totalDeepFrozenCC = 0;
+
 
     for (const c of monthlyCashups) {
       // Receipts
@@ -81,6 +83,9 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       totalCashDepositedBanking += c.shop.cashDepositedBanking ?? 0;
       // Coins
       totalCoins += c.shop.coins ?? 0;
+      // Deep Frozen CC (paid via Cash Connect)
+      totalDeepFrozenCC += c.shop.deepFrozenCC ?? 0;
+
       // Speedpoints - separate V Plus from others
       for (const sp of c.shop.speedpoints ?? []) {
         if (sp.terminal === "V Plus") {
@@ -118,7 +123,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     }
 
     credits.push({ description: "Prov Blue Label", amount: totalBlueLabel });
-    credits.push({ description: "Prov for Flash (Receipts)", amount: totalEasypayReceipts });
+    credits.push({ description: "Prov for Flash (Receipts)", amount: totalEasypayReceipts + totalDeepFrozenCC });
     credits.push({ description: "Prov for Lotto", amount: totalLottoReceipts - totalLottoPayouts });
     credits.push({ description: "Debtors Received on Account", amount: totalDebtorsReceived });
 
@@ -131,7 +136,9 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       { description: "V Plus", amount: totalVPlus },
       { description: "Accounts", amount: totalAccounts },
       { description: "Prov for Flash (EasyPay MOP)", amount: totalEasypayMop },
+      { description: "Trade Creditors (Deep Frozen CC)", amount: totalDeepFrozenCC },
     ];
+
 
     // Other Adjustments: debit if positive, credit if negative
     if (totalOtherAdjustments >= 0) {
