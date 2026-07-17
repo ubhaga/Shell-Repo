@@ -17,8 +17,10 @@ interface AirtimeReconProps {
 export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   const { cashups, managerEntries, getMonthlyFiguresByMonth } = useCashupStore();
 
-  const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
+  const [bankLines, setBankLines] = useState<{ id: string; amount: number; description: string; transaction_date: string }[]>([]);
   const [prevBankLines, setPrevBankLines] = useState<typeof bankLines>([]);
+  const [allocations, setAllocations] = useState<{ bank_line_id: string; recon_type: string; target_name: string }[]>([]);
+  const [prevAllocations, setPrevAllocations] = useState<typeof allocations>([]);
 
   const isFirstMonth = filterMonth === '2026-03';
   const prevMonth = useMemo(() => {
@@ -28,15 +30,16 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   }, [filterMonth]);
 
   const loadData = useCallback(async () => {
-    const bankQuery = supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth);
-    const prevBankQuery = !isFirstMonth ? supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', prevMonth) : null;
+    const bankQuery = supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', filterMonth);
+    const prevBankQuery = !isFirstMonth ? supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', prevMonth) : null;
+    const allocQuery = supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name').eq('month', filterMonth);
+    const prevAllocQuery = !isFirstMonth ? supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name').eq('month', prevMonth) : null;
 
-    const [bankRes, prevBankRes] = await Promise.all([bankQuery, prevBankQuery]);
+    const [bankRes, prevBankRes, allocRes, prevAllocRes] = await Promise.all([bankQuery, prevBankQuery, allocQuery, prevAllocQuery]);
     setBankLines(((bankRes as any)?.data ?? []) as typeof bankLines);
-
-    if (!isFirstMonth && prevBankRes) {
-      setPrevBankLines(((prevBankRes as any)?.data ?? []) as typeof bankLines);
-    }
+    setAllocations(((allocRes as any)?.data ?? []) as typeof allocations);
+    if (!isFirstMonth && prevBankRes) setPrevBankLines(((prevBankRes as any)?.data ?? []) as typeof bankLines);
+    if (!isFirstMonth && prevAllocRes) setPrevAllocations(((prevAllocRes as any)?.data ?? []) as typeof allocations);
   }, [filterMonth, isFirstMonth, prevMonth]);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -45,12 +48,26 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   const SEED_EASYPAY = 14392.59;
   const SEED_LOTTO = -7691.21;
 
-  const parseBankDate = (dateStr: string): string | null => parseBankStatementDate(dateStr);
+  // Parse a bank date; if ambiguous (parsed month differs from expected month),
+  // swap day/month to coerce into the expected month.
+  const parseBankDate = (dateStr: string, expectedMonth?: string): string | null => {
+    const iso = parseBankStatementDate(dateStr);
+    if (!iso || !expectedMonth) return iso;
+    if (iso.slice(0, 7) === expectedMonth) return iso;
+    const [y, m, d] = iso.split('-');
+    const swapped = `${y}-${d.padStart(2, '0')}-${m.padStart(2, '0')}`;
+    if (swapped.slice(0, 7) === expectedMonth) {
+      const dt = new Date(`${swapped}T00:00:00`);
+      if (!isNaN(dt.getTime())) return swapped;
+    }
+    return iso;
+  };
 
   // Helper to compute closing balances for a given month's data
   const computeClosing = (
     monthStr: string,
     lines: typeof bankLines,
+    allocs: typeof allocations,
     openBld: number,
     openEp: number,
     openLt: number,
@@ -62,18 +79,22 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       cashups.filter(c => c.month === monthStr).map(c => [c.date, c])
     );
 
+    const allocByLine = new Map(allocs.map(a => [a.bank_line_id, a]));
     const bldPmts = new Map<string, number>();
     const lottoPmts = new Map<string, number>();
+    const flashCollections = new Map<string, number>();
     lines.forEach(line => {
       const desc = line.description.toUpperCase().trim();
-      const dateStr = parseBankDate(line.transaction_date);
+      const dateStr = parseBankDate(line.transaction_date, monthStr);
       if (!dateStr) return;
-      if (desc.includes('BLD DO') || desc.includes('BLUE LABEL')) {
-        bldPmts.set(dateStr, (bldPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
-      }
-      if (desc.includes('ITHUCOLL')) {
-        lottoPmts.set(dateStr, (lottoPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
-      }
+      const alloc = allocByLine.get(line.id);
+      const target = alloc?.target_name;
+      const isBld = target === 'Blue Label' || desc.includes('BLD DO') || desc.includes('BLUE LABEL');
+      const isLotto = target === 'Lotto' || desc.includes('ITHUCOLL');
+      const isFlash = target === 'Flash';
+      if (isBld) bldPmts.set(dateStr, (bldPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
+      if (isLotto) lottoPmts.set(dateStr, (lottoPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
+      if (isFlash) flashCollections.set(dateStr, (flashCollections.get(dateStr) ?? 0) + Math.abs(line.amount));
     });
 
     let bld = openBld, ep = openEp, lt = openLt;
@@ -86,12 +107,11 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       const dfCC = mgrEntry?.deepFrozenCC ?? 0;
       const ltRec = c ? c.shop.receipts.filter((r: any) => r.type === 'Lotto Receipts').reduce((s: number, r: any) => s + r.amount, 0) : 0;
       const ltPay = c ? (c.shop.lottoPayouts ?? 0) : 0;
-      // Manager daily commissions as payments
       const bldComm = mgrEntry?.blueLabelComm ?? 0;
       const epComm = mgrEntry?.easypayComm ?? 0;
       const ltComm = mgrEntry?.lottoComm ?? 0;
       bld = bld - bldInv + (bldPmts.get(ds) ?? 0) + bldComm;
-      ep = ep - (epInv + dfCC) + (c?.shop.easyPay ?? 0) + epComm;
+      ep = ep - (epInv + dfCC) + (c?.shop.easyPay ?? 0) + (flashCollections.get(ds) ?? 0) + epComm;
       lt = lt - (ltRec - ltPay) + (lottoPmts.get(ds) ?? 0) + ltComm;
     }
     return { bld, ep, lt };
@@ -100,9 +120,9 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   // Compute opening balances
   const openingBalances = useMemo(() => {
     if (isFirstMonth) return { bld: SEED_BLD, ep: SEED_EASYPAY, lt: SEED_LOTTO };
-    const prevClosing = computeClosing(prevMonth, prevBankLines, SEED_BLD, SEED_EASYPAY, SEED_LOTTO);
+    const prevClosing = computeClosing(prevMonth, prevBankLines, prevAllocations, SEED_BLD, SEED_EASYPAY, SEED_LOTTO);
     return prevClosing;
-  }, [isFirstMonth, prevMonth, prevBankLines, cashups, managerEntries]);
+  }, [isFirstMonth, prevMonth, prevBankLines, prevAllocations, cashups, managerEntries]);
 
   const monthStart = startOfMonth(new Date(filterMonth + '-01'));
   const monthEnd = endOfMonth(monthStart);
@@ -112,26 +132,21 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     cashups.filter(c => c.month === filterMonth).map(c => [c.date, c])
   );
 
+  const allocByLine = new Map(allocations.map(a => [a.bank_line_id, a]));
   const bldPaymentsByDate = new Map<string, number>();
-  bankLines.forEach(line => {
-    const desc = line.description.toUpperCase().trim();
-    if (desc.includes('BLD DO') || desc.includes('BLUE LABEL')) {
-      const dateStr = parseBankDate(line.transaction_date);
-      if (dateStr) {
-        bldPaymentsByDate.set(dateStr, (bldPaymentsByDate.get(dateStr) ?? 0) + Math.abs(line.amount));
-      }
-    }
-  });
-
   const lottoPaymentsByDate = new Map<string, number>();
+  const flashCollectionsByDate = new Map<string, number>();
   bankLines.forEach(line => {
     const desc = line.description.toUpperCase().trim();
-    if (desc.includes('ITHUCOLL')) {
-      const dateStr = parseBankDate(line.transaction_date);
-      if (dateStr) {
-        lottoPaymentsByDate.set(dateStr, (lottoPaymentsByDate.get(dateStr) ?? 0) + Math.abs(line.amount));
-      }
-    }
+    const dateStr = parseBankDate(line.transaction_date, filterMonth);
+    if (!dateStr) return;
+    const target = allocByLine.get(line.id)?.target_name;
+    const isBld = target === 'Blue Label' || desc.includes('BLD DO') || desc.includes('BLUE LABEL');
+    const isLotto = target === 'Lotto' || desc.includes('ITHUCOLL');
+    const isFlash = target === 'Flash';
+    if (isBld) bldPaymentsByDate.set(dateStr, (bldPaymentsByDate.get(dateStr) ?? 0) + Math.abs(line.amount));
+    if (isLotto) lottoPaymentsByDate.set(dateStr, (lottoPaymentsByDate.get(dateStr) ?? 0) + Math.abs(line.amount));
+    if (isFlash) flashCollectionsByDate.set(dateStr, (flashCollectionsByDate.get(dateStr) ?? 0) + Math.abs(line.amount));
   });
 
   type DayRow = {
@@ -176,7 +191,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       bldInvoice,
       bldPayment: bldPaymentsByDate.get(dateStr) ?? 0,
       easypayInvoice: easypayInvoice + deepFrozenCC,
-      easypayCollection: cashup?.shop.easyPay ?? 0,
+      easypayCollection: (cashup?.shop.easyPay ?? 0) + (flashCollectionsByDate.get(dateStr) ?? 0),
       lottoInvoice,
       lottoPayment: lottoPaymentsByDate.get(dateStr) ?? 0,
       bldComm,

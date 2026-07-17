@@ -215,6 +215,7 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
   const allocationOptions = [
     { group: 'Creditor', items: [...eftSuppliers].sort() },
     { group: 'Debtor', items: [...(accounts.length > 0 ? accounts : DEBTOR_ACCOUNTS)].sort() },
+    { group: 'Airtime/Lotto', items: ['Blue Label', 'Lotto', 'Flash'] },
   ];
 
   const getAllocationValue = (lineId: string) => {
