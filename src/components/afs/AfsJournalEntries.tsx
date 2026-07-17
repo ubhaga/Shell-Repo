@@ -350,9 +350,10 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     let blueLabel = 0;
     let easyPay = 0;
     let lotto = 0;
+    const epCommDate = `${month}-01`;
     for (const e of monthlyManagers) {
       if (e.date === bldCommDate) blueLabel += e.blueLabelComm ?? 0;
-      easyPay += e.easypayComm ?? 0;
+      if (e.date === epCommDate) easyPay += e.easypayComm ?? 0;
       lotto += e.lottoComm ?? 0;
     }
     const totalDebits = blueLabel + lotto + easyPay;

@@ -1,0 +1,1 @@
+UPDATE public.manager_daily_entries SET easypay_comm = 0 WHERE date IN ('2026-05-31','2026-06-30');
