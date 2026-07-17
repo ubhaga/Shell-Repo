@@ -176,16 +176,14 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
 
     type Txn = { date: string; supplier: string; source: "Payout" | "EFT"; amount: number; inclVatPortion: number; noVatPortion: number; capturedVat: number };
 
-    const splitAmounts = (category: string, inclusive: number, vat: number) => {
-      const isExempt = /fuel|wsl|dsl/i.test(category);
-      if (isExempt) {
-        const vatablePortion = vat > 0 ? (vat / 0.15) * 1.15 : 0;
+    const splitAmounts = (_category: string, inclusive: number, vat: number) => {
+      // The Incl VAT portion is the VAT-bearing amount grossed up at 15%.
+      // Any remainder of the inclusive value falls to the No VAT portion.
+      if ((vat ?? 0) > 0) {
+        const vatablePortion = (vat / 0.15) * 1.15;
         return { inclVatPortion: vatablePortion, noVatPortion: inclusive - vatablePortion };
       }
-      const hasVat = (vat ?? 0) > 0 || inclusive < 0;
-      return hasVat
-        ? { inclVatPortion: inclusive, noVatPortion: 0 }
-        : { inclVatPortion: 0, noVatPortion: inclusive };
+      return { inclVatPortion: 0, noVatPortion: inclusive };
     };
 
     const build = (source: "Payout" | "EFT") => {
