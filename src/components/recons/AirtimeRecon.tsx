@@ -48,6 +48,15 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   const SEED_EASYPAY = 14392.59;
   const SEED_LOTTO = -7691.21;
 
+  // BLD commission day rule:
+  //  - Before May 2026: 1st of month
+  //  - From May 2026 onwards: last day of month
+  const bldCommDateFor = (monthStr: string): string => {
+    const mStart = startOfMonth(new Date(monthStr + '-01'));
+    if (monthStr >= '2026-05') return format(endOfMonth(mStart), 'yyyy-MM-dd');
+    return format(mStart, 'yyyy-MM-dd');
+  };
+
   // Parse a bank date; if ambiguous (parsed month differs from expected month),
   // swap day/month to coerce into the expected month.
   const parseBankDate = (dateStr: string, expectedMonth?: string): string | null => {
