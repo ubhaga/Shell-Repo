@@ -116,7 +116,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       const dfCC = mgrEntry?.deepFrozenCC ?? 0;
       const ltRec = c ? c.shop.receipts.filter((r: any) => r.type === 'Lotto Receipts').reduce((s: number, r: any) => s + r.amount, 0) : 0;
       const ltPay = c ? (c.shop.lottoPayouts ?? 0) : 0;
-      const bldComm = mgrEntry?.blueLabelComm ?? 0;
+      const bldComm = ds === bldCommDateFor(monthStr) ? (mgrEntry?.blueLabelComm ?? 0) : 0;
       const epComm = mgrEntry?.easypayComm ?? 0;
       const ltComm = mgrEntry?.lottoComm ?? 0;
       bld = bld - bldInv + (bldPmts.get(ds) ?? 0) + bldComm;
