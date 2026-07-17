@@ -179,7 +179,8 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     const splitAmounts = (_category: string, inclusive: number, vat: number) => {
       // The Incl VAT portion is the VAT-bearing amount grossed up at 15%.
       // Any remainder of the inclusive value falls to the No VAT portion.
-      if ((vat ?? 0) > 0) {
+      // Negative VAT (credit/return) is handled the same way so the totals reconcile.
+      if ((vat ?? 0) !== 0) {
         const vatablePortion = (vat / 0.15) * 1.15;
         return { inclVatPortion: vatablePortion, noVatPortion: inclusive - vatablePortion };
       }
