@@ -17,8 +17,10 @@ interface AirtimeReconProps {
 export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   const { cashups, managerEntries, getMonthlyFiguresByMonth } = useCashupStore();
 
-  const [bankLines, setBankLines] = useState<{ amount: number; description: string; transaction_date: string }[]>([]);
+  const [bankLines, setBankLines] = useState<{ id: string; amount: number; description: string; transaction_date: string }[]>([]);
   const [prevBankLines, setPrevBankLines] = useState<typeof bankLines>([]);
+  const [allocations, setAllocations] = useState<{ bank_line_id: string; recon_type: string; target_name: string }[]>([]);
+  const [prevAllocations, setPrevAllocations] = useState<typeof allocations>([]);
 
   const isFirstMonth = filterMonth === '2026-03';
   const prevMonth = useMemo(() => {
@@ -28,15 +30,16 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   }, [filterMonth]);
 
   const loadData = useCallback(async () => {
-    const bankQuery = supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', filterMonth);
-    const prevBankQuery = !isFirstMonth ? supabase.from('bank_statement_lines').select('amount, description, transaction_date').eq('month', prevMonth) : null;
+    const bankQuery = supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', filterMonth);
+    const prevBankQuery = !isFirstMonth ? supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', prevMonth) : null;
+    const allocQuery = supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name').eq('month', filterMonth);
+    const prevAllocQuery = !isFirstMonth ? supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name').eq('month', prevMonth) : null;
 
-    const [bankRes, prevBankRes] = await Promise.all([bankQuery, prevBankQuery]);
+    const [bankRes, prevBankRes, allocRes, prevAllocRes] = await Promise.all([bankQuery, prevBankQuery, allocQuery, prevAllocQuery]);
     setBankLines(((bankRes as any)?.data ?? []) as typeof bankLines);
-
-    if (!isFirstMonth && prevBankRes) {
-      setPrevBankLines(((prevBankRes as any)?.data ?? []) as typeof bankLines);
-    }
+    setAllocations(((allocRes as any)?.data ?? []) as typeof allocations);
+    if (!isFirstMonth && prevBankRes) setPrevBankLines(((prevBankRes as any)?.data ?? []) as typeof bankLines);
+    if (!isFirstMonth && prevAllocRes) setPrevAllocations(((prevAllocRes as any)?.data ?? []) as typeof allocations);
   }, [filterMonth, isFirstMonth, prevMonth]);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -45,7 +48,20 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   const SEED_EASYPAY = 14392.59;
   const SEED_LOTTO = -7691.21;
 
-  const parseBankDate = (dateStr: string): string | null => parseBankStatementDate(dateStr);
+  // Parse a bank date; if ambiguous (parsed month differs from expected month),
+  // swap day/month to coerce into the expected month.
+  const parseBankDate = (dateStr: string, expectedMonth?: string): string | null => {
+    const iso = parseBankStatementDate(dateStr);
+    if (!iso || !expectedMonth) return iso;
+    if (iso.slice(0, 7) === expectedMonth) return iso;
+    const [y, m, d] = iso.split('-');
+    const swapped = `${y}-${d.padStart(2, '0')}-${m.padStart(2, '0')}`;
+    if (swapped.slice(0, 7) === expectedMonth) {
+      const dt = new Date(`${swapped}T00:00:00`);
+      if (!isNaN(dt.getTime())) return swapped;
+    }
+    return iso;
+  };
 
   // Helper to compute closing balances for a given month's data
   const computeClosing = (
