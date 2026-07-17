@@ -48,6 +48,15 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   const SEED_EASYPAY = 14392.59;
   const SEED_LOTTO = -7691.21;
 
+  // BLD commission day rule:
+  //  - Before May 2026: 1st of month
+  //  - From May 2026 onwards: last day of month
+  const bldCommDateFor = (monthStr: string): string => {
+    const mStart = startOfMonth(new Date(monthStr + '-01'));
+    if (monthStr >= '2026-05') return format(endOfMonth(mStart), 'yyyy-MM-dd');
+    return format(mStart, 'yyyy-MM-dd');
+  };
+
   // Parse a bank date; if ambiguous (parsed month differs from expected month),
   // swap day/month to coerce into the expected month.
   const parseBankDate = (dateStr: string, expectedMonth?: string): string | null => {
@@ -107,7 +116,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       const dfCC = mgrEntry?.deepFrozenCC ?? 0;
       const ltRec = c ? c.shop.receipts.filter((r: any) => r.type === 'Lotto Receipts').reduce((s: number, r: any) => s + r.amount, 0) : 0;
       const ltPay = c ? (c.shop.lottoPayouts ?? 0) : 0;
-      const bldComm = mgrEntry?.blueLabelComm ?? 0;
+      const bldComm = ds === bldCommDateFor(monthStr) ? (mgrEntry?.blueLabelComm ?? 0) : 0;
       const epComm = mgrEntry?.easypayComm ?? 0;
       const ltComm = mgrEntry?.lottoComm ?? 0;
       bld = bld - bldInv + (bldPmts.get(ds) ?? 0) + bldComm;
@@ -175,7 +184,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       : 0;
     const managerEntry = managerEntries.find(e => e.date === dateStr);
     const deepFrozenCC = managerEntry?.deepFrozenCC ?? 0;
-    const bldComm = managerEntry?.blueLabelComm ?? 0;
+    const bldComm = dateStr === bldCommDateFor(filterMonth) ? (managerEntry?.blueLabelComm ?? 0) : 0;
     const epComm = managerEntry?.easypayComm ?? 0;
     const ltComm = managerEntry?.lottoComm ?? 0;
     const lottoReceipts = cashup

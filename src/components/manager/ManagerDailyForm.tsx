@@ -420,11 +420,15 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   const openingIsReadOnly = true;
 
   // Commission day rules
+  //  - BLD: 1st of month before May 2026; last day of month from May 2026 onwards
+  //  - Easy Pay: 1st of month
+  //  - Lotto: every Monday
   const selectedParsed = parseISO(selectedDate);
   const isFirstOfMonth = selectedParsed.getDate() === 1;
   const isLastOfMonth = format(lastDayOfMonth(selectedParsed), "yyyy-MM-dd") === selectedDate;
   const isMon = isMonday(selectedParsed);
-  const showBlueLabelComm = isLastOfMonth;
+  const selectedMonth = selectedDate.slice(0, 7);
+  const showBlueLabelComm = selectedMonth >= '2026-05' ? isLastOfMonth : isFirstOfMonth;
   const showEasypayComm = isFirstOfMonth;
   const showLottoComm = isMon;
 
