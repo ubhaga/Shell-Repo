@@ -191,7 +191,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       bldInvoice,
       bldPayment: bldPaymentsByDate.get(dateStr) ?? 0,
       easypayInvoice: easypayInvoice + deepFrozenCC,
-      easypayCollection: cashup?.shop.easyPay ?? 0,
+      easypayCollection: (cashup?.shop.easyPay ?? 0) + (flashCollectionsByDate.get(dateStr) ?? 0),
       lottoInvoice,
       lottoPayment: lottoPaymentsByDate.get(dateStr) ?? 0,
       bldComm,
