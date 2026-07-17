@@ -223,9 +223,10 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
         .map(([category, v]) => ({
           category,
           inclVat: v.inclVat,
-          noVat: v.noVat,
+          // No VAT portion cannot be negative — clamp small rounding/over-grossed residuals to 0.
+          noVat: v.noVat < 0 && v.noVat > -1 ? 0 : v.noVat,
           capturedVat: v.capturedVat,
-          total: v.inclVat + v.noVat,
+          total: v.inclVat + (v.noVat < 0 && v.noVat > -1 ? 0 : v.noVat),
           transactions: v.transactions.sort((a, b) => a.date.localeCompare(b.date)),
         }));
 
