@@ -256,7 +256,9 @@ export function MonthlyDashboard({ selectedDate }: Props) {
       const dfCC = mgrEntry?.deepFrozenCC ?? 0;
       const ltRec = c ? c.shop.receipts.filter((r: any) => r.type === 'Lotto Receipts').reduce((s: number, r: any) => s + r.amount, 0) : 0;
       const ltPay = c ? (c.shop.lottoPayouts ?? 0) : 0;
-      bld = bld - bldInv + (bldPmts.get(ds) ?? 0) + (mgrEntry?.blueLabelComm ?? 0);
+      const bldCommDs = monthStr >= '2026-05' ? format(endOfMonth(mStart), 'yyyy-MM-dd') : format(mStart, 'yyyy-MM-dd');
+      const bldComm = ds === bldCommDs ? (mgrEntry?.blueLabelComm ?? 0) : 0;
+      bld = bld - bldInv + (bldPmts.get(ds) ?? 0) + bldComm;
       ep = ep - (epInv + dfCC) + (c?.shop.easyPay ?? 0) + (mgrEntry?.easypayComm ?? 0);
       lt = lt - (ltRec - ltPay) + (lottoPmts.get(ds) ?? 0) + (mgrEntry?.lottoComm ?? 0);
     }
