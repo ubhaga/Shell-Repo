@@ -120,9 +120,9 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   // Compute opening balances
   const openingBalances = useMemo(() => {
     if (isFirstMonth) return { bld: SEED_BLD, ep: SEED_EASYPAY, lt: SEED_LOTTO };
-    const prevClosing = computeClosing(prevMonth, prevBankLines, SEED_BLD, SEED_EASYPAY, SEED_LOTTO);
+    const prevClosing = computeClosing(prevMonth, prevBankLines, prevAllocations, SEED_BLD, SEED_EASYPAY, SEED_LOTTO);
     return prevClosing;
-  }, [isFirstMonth, prevMonth, prevBankLines, cashups, managerEntries]);
+  }, [isFirstMonth, prevMonth, prevBankLines, prevAllocations, cashups, managerEntries]);
 
   const monthStart = startOfMonth(new Date(filterMonth + '-01'));
   const monthEnd = endOfMonth(monthStart);
@@ -132,26 +132,21 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     cashups.filter(c => c.month === filterMonth).map(c => [c.date, c])
   );
 
+  const allocByLine = new Map(allocations.map(a => [a.bank_line_id, a]));
   const bldPaymentsByDate = new Map<string, number>();
-  bankLines.forEach(line => {
-    const desc = line.description.toUpperCase().trim();
-    if (desc.includes('BLD DO') || desc.includes('BLUE LABEL')) {
-      const dateStr = parseBankDate(line.transaction_date);
-      if (dateStr) {
-        bldPaymentsByDate.set(dateStr, (bldPaymentsByDate.get(dateStr) ?? 0) + Math.abs(line.amount));
-      }
-    }
-  });
-
   const lottoPaymentsByDate = new Map<string, number>();
+  const flashCollectionsByDate = new Map<string, number>();
   bankLines.forEach(line => {
     const desc = line.description.toUpperCase().trim();
-    if (desc.includes('ITHUCOLL')) {
-      const dateStr = parseBankDate(line.transaction_date);
-      if (dateStr) {
-        lottoPaymentsByDate.set(dateStr, (lottoPaymentsByDate.get(dateStr) ?? 0) + Math.abs(line.amount));
-      }
-    }
+    const dateStr = parseBankDate(line.transaction_date, filterMonth);
+    if (!dateStr) return;
+    const target = allocByLine.get(line.id)?.target_name;
+    const isBld = target === 'Blue Label' || desc.includes('BLD DO') || desc.includes('BLUE LABEL');
+    const isLotto = target === 'Lotto' || desc.includes('ITHUCOLL');
+    const isFlash = target === 'Flash';
+    if (isBld) bldPaymentsByDate.set(dateStr, (bldPaymentsByDate.get(dateStr) ?? 0) + Math.abs(line.amount));
+    if (isLotto) lottoPaymentsByDate.set(dateStr, (lottoPaymentsByDate.get(dateStr) ?? 0) + Math.abs(line.amount));
+    if (isFlash) flashCollectionsByDate.set(dateStr, (flashCollectionsByDate.get(dateStr) ?? 0) + Math.abs(line.amount));
   });
 
   type DayRow = {
