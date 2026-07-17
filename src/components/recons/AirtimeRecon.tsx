@@ -146,12 +146,15 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     return { bld, ep, lt };
   };
 
-  // Compute opening balances
+  // Compute opening balances by rolling forward from the seed month
   const openingBalances = useMemo(() => {
-    if (isFirstMonth) return { bld: SEED_BLD, ep: SEED_EASYPAY, lt: SEED_LOTTO };
-    const prevClosing = computeClosing(prevMonth, prevBankLines, prevAllocations, SEED_BLD, SEED_EASYPAY, SEED_LOTTO);
-    return prevClosing;
-  }, [isFirstMonth, prevMonth, prevBankLines, prevAllocations, cashups, managerEntries]);
+    let bal = { bld: SEED_BLD, ep: SEED_EASYPAY, lt: SEED_LOTTO };
+    for (const m of priorMonths) {
+      const c = computeClosing(m, priorBankLinesByMonth[m] ?? [], priorAllocationsByMonth[m] ?? [], bal.bld, bal.ep, bal.lt);
+      bal = c;
+    }
+    return bal;
+  }, [priorMonths, priorBankLinesByMonth, priorAllocationsByMonth, cashups, managerEntries]);
 
   const monthStart = startOfMonth(new Date(filterMonth + '-01'));
   const monthEnd = endOfMonth(monthStart);
