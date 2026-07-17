@@ -29,19 +29,25 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   const [editingOB, setEditingOB] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
-  const [prevMonthBankLines, setPrevMonthBankLines] = useState<typeof bankLines>([]);
-  const [prevMonthOB, setPrevMonthOB] = useState<Record<string, number>>({});
-  const [prevMonth, setPrevMonth] = useState('');
+  const [priorBankLinesByMonth, setPriorBankLinesByMonth] = useState<Record<string, typeof bankLines>>({});
+  const [priorAllocationsByMonth, setPriorAllocationsByMonth] = useState<Record<string, { bank_line_id: string; recon_type: string; target_name: string }[]>>({});
+  const [seedOB, setSeedOB] = useState<Record<string, number>>({});
 
   const isFirstMonth = filterMonth <= '2026-03';
 
-  const loadData = useCallback(async () => {
-    const curDate = new Date(filterMonth + '-01');
-    const prevDate = new Date(curDate);
-    prevDate.setMonth(prevDate.getMonth() - 1);
-    const pm = format(prevDate, 'yyyy-MM');
-    setPrevMonth(pm);
+  // Build list of months from March 2026 up to (but not including) filterMonth
+  const priorMonths = useMemo(() => {
+    const months: string[] = [];
+    let d = new Date('2026-03-01');
+    const end = new Date(filterMonth + '-01');
+    while (d < end) {
+      months.push(format(d, 'yyyy-MM'));
+      d = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    }
+    return months;
+  }, [filterMonth]);
 
+  const loadData = useCallback(async () => {
     const [bankRes, obRes] = await Promise.all([
       supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', filterMonth),
       supabase.from('creditor_opening_balances').select('*').eq('month', filterMonth),
@@ -55,22 +61,41 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     setOpeningBalances(obMap);
     setEditingOB({});
 
-    if (filterMonth > '2026-03') {
-      const [prevBankRes, prevObRes] = await Promise.all([
-        supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', pm),
-        supabase.from('creditor_opening_balances').select('*').eq('month', pm),
-      ]);
-      setPrevMonthBankLines((prevBankRes.data ?? []) as typeof bankLines);
-      const prevObMap: Record<string, number> = {};
-      ((prevObRes.data ?? []) as { supplier: string; amount: number }[]).forEach(r => {
-        prevObMap[r.supplier] = Number(r.amount);
+    // Load seed OB (March 2026) always
+    if (filterMonth !== '2026-03') {
+      const { data: seedRes } = await supabase.from('creditor_opening_balances').select('*').eq('month', '2026-03');
+      const seedMap: Record<string, number> = {};
+      ((seedRes ?? []) as { supplier: string; amount: number }[]).forEach(r => {
+        seedMap[r.supplier] = Number(r.amount);
       });
-      setPrevMonthOB(prevObMap);
+      setSeedOB(seedMap);
     } else {
-      setPrevMonthBankLines([]);
-      setPrevMonthOB({});
+      setSeedOB({});
     }
-  }, [filterMonth]);
+
+    // Load bank lines + allocations for every prior month (chain)
+    if (priorMonths.length > 0) {
+      const [bankAll, allocAll] = await Promise.all([
+        supabase.from('bank_statement_lines').select('id, amount, description, transaction_date, month').in('month', priorMonths),
+        supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name, month').in('month', priorMonths),
+      ]);
+      const bankByMonth: Record<string, typeof bankLines> = {};
+      ((bankAll.data ?? []) as (typeof bankLines[number] & { month: string })[]).forEach(l => {
+        if (!bankByMonth[l.month]) bankByMonth[l.month] = [];
+        bankByMonth[l.month].push({ id: l.id, amount: l.amount, description: l.description, transaction_date: l.transaction_date });
+      });
+      setPriorBankLinesByMonth(bankByMonth);
+      const allocByMonth: Record<string, { bank_line_id: string; recon_type: string; target_name: string }[]> = {};
+      ((allocAll.data ?? []) as { bank_line_id: string; recon_type: string; target_name: string; month: string }[]).forEach(a => {
+        if (!allocByMonth[a.month]) allocByMonth[a.month] = [];
+        allocByMonth[a.month].push(a);
+      });
+      setPriorAllocationsByMonth(allocByMonth);
+    } else {
+      setPriorBankLinesByMonth({});
+      setPriorAllocationsByMonth({});
+    }
+  }, [filterMonth, priorMonths]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
