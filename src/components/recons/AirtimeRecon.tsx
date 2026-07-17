@@ -18,29 +18,49 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   const { cashups, managerEntries, getMonthlyFiguresByMonth } = useCashupStore();
 
   const [bankLines, setBankLines] = useState<{ id: string; amount: number; description: string; transaction_date: string }[]>([]);
-  const [prevBankLines, setPrevBankLines] = useState<typeof bankLines>([]);
   const [allocations, setAllocations] = useState<{ bank_line_id: string; recon_type: string; target_name: string }[]>([]);
-  const [prevAllocations, setPrevAllocations] = useState<typeof allocations>([]);
+  const [priorBankLinesByMonth, setPriorBankLinesByMonth] = useState<Record<string, typeof bankLines>>({});
+  const [priorAllocationsByMonth, setPriorAllocationsByMonth] = useState<Record<string, typeof allocations>>({});
 
-  const isFirstMonth = filterMonth === '2026-03';
-  const prevMonth = useMemo(() => {
-    const d = new Date(filterMonth + '-01');
-    d.setMonth(d.getMonth() - 1);
-    return d.toISOString().slice(0, 7);
-  }, [filterMonth]);
+  const SEED_MONTH = '2026-03';
+  const isFirstMonth = filterMonth === SEED_MONTH;
+
+  // All months from SEED_MONTH up to (but not including) filterMonth
+  const priorMonths = useMemo(() => {
+    const months: string[] = [];
+    if (isFirstMonth) return months;
+    const start = new Date(SEED_MONTH + '-01');
+    const end = new Date(filterMonth + '-01');
+    const cur = new Date(start);
+    while (cur < end) {
+      months.push(cur.toISOString().slice(0, 7));
+      cur.setMonth(cur.getMonth() + 1);
+    }
+    return months;
+  }, [filterMonth, isFirstMonth]);
 
   const loadData = useCallback(async () => {
     const bankQuery = supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', filterMonth);
-    const prevBankQuery = !isFirstMonth ? supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', prevMonth) : null;
     const allocQuery = supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name').eq('month', filterMonth);
-    const prevAllocQuery = !isFirstMonth ? supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name').eq('month', prevMonth) : null;
-
-    const [bankRes, prevBankRes, allocRes, prevAllocRes] = await Promise.all([bankQuery, prevBankQuery, allocQuery, prevAllocQuery]);
+    const [bankRes, allocRes] = await Promise.all([bankQuery, allocQuery]);
     setBankLines(((bankRes as any)?.data ?? []) as typeof bankLines);
     setAllocations(((allocRes as any)?.data ?? []) as typeof allocations);
-    if (!isFirstMonth && prevBankRes) setPrevBankLines(((prevBankRes as any)?.data ?? []) as typeof bankLines);
-    if (!isFirstMonth && prevAllocRes) setPrevAllocations(((prevAllocRes as any)?.data ?? []) as typeof allocations);
-  }, [filterMonth, isFirstMonth, prevMonth]);
+
+    if (priorMonths.length > 0) {
+      const results = await Promise.all(priorMonths.map(async (m) => {
+        const [b, a] = await Promise.all([
+          supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', m),
+          supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name').eq('month', m),
+        ]);
+        return { m, b: ((b as any)?.data ?? []) as typeof bankLines, a: ((a as any)?.data ?? []) as typeof allocations };
+      }));
+      const bMap: Record<string, typeof bankLines> = {};
+      const aMap: Record<string, typeof allocations> = {};
+      results.forEach(r => { bMap[r.m] = r.b; aMap[r.m] = r.a; });
+      setPriorBankLinesByMonth(bMap);
+      setPriorAllocationsByMonth(aMap);
+    }
+  }, [filterMonth, priorMonths]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -126,12 +146,15 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     return { bld, ep, lt };
   };
 
-  // Compute opening balances
+  // Compute opening balances by rolling forward from the seed month
   const openingBalances = useMemo(() => {
-    if (isFirstMonth) return { bld: SEED_BLD, ep: SEED_EASYPAY, lt: SEED_LOTTO };
-    const prevClosing = computeClosing(prevMonth, prevBankLines, prevAllocations, SEED_BLD, SEED_EASYPAY, SEED_LOTTO);
-    return prevClosing;
-  }, [isFirstMonth, prevMonth, prevBankLines, prevAllocations, cashups, managerEntries]);
+    let bal = { bld: SEED_BLD, ep: SEED_EASYPAY, lt: SEED_LOTTO };
+    for (const m of priorMonths) {
+      const c = computeClosing(m, priorBankLinesByMonth[m] ?? [], priorAllocationsByMonth[m] ?? [], bal.bld, bal.ep, bal.lt);
+      bal = c;
+    }
+    return bal;
+  }, [priorMonths, priorBankLinesByMonth, priorAllocationsByMonth, cashups, managerEntries]);
 
   const monthStart = startOfMonth(new Date(filterMonth + '-01'));
   const monthEnd = endOfMonth(monthStart);
