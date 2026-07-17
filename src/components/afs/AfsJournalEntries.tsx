@@ -341,11 +341,17 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
   // ── JE 5 — Airtime / Lotto Commissions ──
   const je5 = useMemo(() => {
     const monthlyManagers = managerEntries.filter((e) => e.date.startsWith(month));
+    // BLD commission valid day: 1st before May 2026, last day of month from May 2026 onwards
+    const monthStart = new Date(month + '-01T00:00:00');
+    const lastDay = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+    const bldCommDate = month >= '2026-05'
+      ? `${month}-${String(lastDay.getDate()).padStart(2, '0')}`
+      : `${month}-01`;
     let blueLabel = 0;
     let easyPay = 0;
     let lotto = 0;
     for (const e of monthlyManagers) {
-      blueLabel += e.blueLabelComm ?? 0;
+      if (e.date === bldCommDate) blueLabel += e.blueLabelComm ?? 0;
       easyPay += e.easypayComm ?? 0;
       lotto += e.lottoComm ?? 0;
     }
