@@ -67,6 +67,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
   const computeClosing = (
     monthStr: string,
     lines: typeof bankLines,
+    allocs: typeof allocations,
     openBld: number,
     openEp: number,
     openLt: number,
@@ -78,18 +79,22 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       cashups.filter(c => c.month === monthStr).map(c => [c.date, c])
     );
 
+    const allocByLine = new Map(allocs.map(a => [a.bank_line_id, a]));
     const bldPmts = new Map<string, number>();
     const lottoPmts = new Map<string, number>();
+    const flashCollections = new Map<string, number>();
     lines.forEach(line => {
       const desc = line.description.toUpperCase().trim();
-      const dateStr = parseBankDate(line.transaction_date);
+      const dateStr = parseBankDate(line.transaction_date, monthStr);
       if (!dateStr) return;
-      if (desc.includes('BLD DO') || desc.includes('BLUE LABEL')) {
-        bldPmts.set(dateStr, (bldPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
-      }
-      if (desc.includes('ITHUCOLL')) {
-        lottoPmts.set(dateStr, (lottoPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
-      }
+      const alloc = allocByLine.get(line.id);
+      const target = alloc?.target_name;
+      const isBld = target === 'Blue Label' || desc.includes('BLD DO') || desc.includes('BLUE LABEL');
+      const isLotto = target === 'Lotto' || desc.includes('ITHUCOLL');
+      const isFlash = target === 'Flash';
+      if (isBld) bldPmts.set(dateStr, (bldPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
+      if (isLotto) lottoPmts.set(dateStr, (lottoPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
+      if (isFlash) flashCollections.set(dateStr, (flashCollections.get(dateStr) ?? 0) + Math.abs(line.amount));
     });
 
     let bld = openBld, ep = openEp, lt = openLt;
@@ -102,12 +107,11 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       const dfCC = mgrEntry?.deepFrozenCC ?? 0;
       const ltRec = c ? c.shop.receipts.filter((r: any) => r.type === 'Lotto Receipts').reduce((s: number, r: any) => s + r.amount, 0) : 0;
       const ltPay = c ? (c.shop.lottoPayouts ?? 0) : 0;
-      // Manager daily commissions as payments
       const bldComm = mgrEntry?.blueLabelComm ?? 0;
       const epComm = mgrEntry?.easypayComm ?? 0;
       const ltComm = mgrEntry?.lottoComm ?? 0;
       bld = bld - bldInv + (bldPmts.get(ds) ?? 0) + bldComm;
-      ep = ep - (epInv + dfCC) + (c?.shop.easyPay ?? 0) + epComm;
+      ep = ep - (epInv + dfCC) + (c?.shop.easyPay ?? 0) + (flashCollections.get(ds) ?? 0) + epComm;
       lt = lt - (ltRec - ltPay) + (lottoPmts.get(ds) ?? 0) + ltComm;
     }
     return { bld, ep, lt };
