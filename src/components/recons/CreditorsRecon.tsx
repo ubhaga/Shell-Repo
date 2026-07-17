@@ -246,45 +246,52 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     supplierWeekly[supplier] = weeks;
   });
 
-  // Compute effective opening balances: for April+, use previous month closing as default
+  // Compute effective opening balances by walking chain from March 2026 forward.
+  // Each month's closing = OB + invoices - payments (regex-matched + manually allocated).
   const effectiveOB = useMemo(() => {
-    const result: Record<string, number> = { ...openingBalances };
+    if (isFirstMonth) return { ...openingBalances };
 
-    if (!isFirstMonth && prevMonth) {
-      const prevMonthManagers = managerEntries.filter(e => e.date.startsWith(prevMonth));
+    const allSup = [...suppliers, ...directlyExpensedSuppliers, ...fuelSuppliers];
+    // Running balance per supplier — start from seed (March 2026) stored OB
+    const running: Record<string, number> = {};
+    allSup.forEach(s => { running[s] = seedOB[s] ?? 0; });
 
-      [...suppliers, ...directlyExpensedSuppliers, ...fuelSuppliers].forEach(supplier => {
-        // If there's already a manually-entered OB for this month, keep it
-        if (openingBalances[supplier] !== undefined) return;
+    for (const m of priorMonths) {
+      const monthManagersM = managerEntries.filter(e => e.date.startsWith(m));
+      const bankM = priorBankLinesByMonth[m] ?? [];
+      const allocM = priorAllocationsByMonth[m] ?? [];
 
-        // Compute previous month closing: OB + invoices - payments
-        const prevOB = prevMonthOB[supplier] ?? 0;
-        let totalInv = 0;
-        let totalPay = 0;
-
-        // Previous month invoices
-        prevMonthManagers.forEach(entry => {
-          entry.eftInvoices.forEach(inv => {
-            if (inv.supplier === supplier) totalInv += inv.inclusive;
+      allSup.forEach(supplier => {
+        let inv = 0;
+        let pay = 0;
+        monthManagersM.forEach(entry => {
+          entry.eftInvoices.forEach(i => {
+            if (i.supplier === supplier) inv += i.inclusive;
           });
         });
-
-        // Previous month payments from bank
-        prevMonthBankLines.forEach(line => {
-          const matched = matchSupplier(line.description);
+        bankM.forEach(line => {
+          const alloc = allocM.find(a => a.bank_line_id === line.id && a.recon_type === 'creditor');
+          const rawMatched = alloc ? alloc.target_name : matchSupplier(line.description);
+          const matched = rawMatched ? (supplierByNormalized.get(normalizeName(rawMatched)) ?? rawMatched) : null;
           if (matched !== supplier) return;
-          totalPay += Math.abs(line.amount);
+          pay += Math.abs(line.amount);
         });
-
-        const closing = prevOB + totalInv - totalPay;
-        if (closing !== 0) {
-          result[supplier] = closing;
+        // Deep frozen CC counts as payment for "Deep frozen"
+        if (supplier.toLowerCase().replace(/\s+/g, '') === 'deepfrozen') {
+          monthManagersM.forEach(entry => { pay += entry.deepFrozenCC ?? 0; });
         }
+        running[supplier] = running[supplier] + inv - pay;
       });
     }
 
+    // Manual override for this month takes precedence
+    const result: Record<string, number> = {};
+    allSup.forEach(s => {
+      result[s] = openingBalances[s] !== undefined ? openingBalances[s] : running[s];
+    });
     return result;
-  }, [openingBalances, isFirstMonth, prevMonth, prevMonthOB, prevMonthBankLines, managerEntries, suppliers, directlyExpensedSuppliers, fuelSuppliers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openingBalances, isFirstMonth, seedOB, priorMonths, priorBankLinesByMonth, priorAllocationsByMonth, managerEntries, suppliers, directlyExpensedSuppliers, fuelSuppliers]);
 
   // Save opening balances
   const handleSaveOB = async () => {
