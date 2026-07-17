@@ -184,7 +184,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       : 0;
     const managerEntry = managerEntries.find(e => e.date === dateStr);
     const deepFrozenCC = managerEntry?.deepFrozenCC ?? 0;
-    const bldComm = managerEntry?.blueLabelComm ?? 0;
+    const bldComm = dateStr === bldCommDateFor(filterMonth) ? (managerEntry?.blueLabelComm ?? 0) : 0;
     const epComm = managerEntry?.easypayComm ?? 0;
     const ltComm = managerEntry?.lottoComm ?? 0;
     const lottoReceipts = cashup
