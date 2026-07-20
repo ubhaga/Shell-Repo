@@ -31,6 +31,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
 
   const [priorBankLinesByMonth, setPriorBankLinesByMonth] = useState<Record<string, typeof bankLines>>({});
   const [priorAllocationsByMonth, setPriorAllocationsByMonth] = useState<Record<string, { bank_line_id: string; recon_type: string; target_name: string }[]>>({});
+  const [priorOpeningByMonth, setPriorOpeningByMonth] = useState<Record<string, Record<string, number>>>({});
   const [seedOB, setSeedOB] = useState<Record<string, number>>({});
 
   const isFirstMonth = filterMonth <= '2026-03';
