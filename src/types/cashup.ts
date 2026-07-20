@@ -39,8 +39,12 @@ export interface CashierShift {
   // Section 2 - Payouts
   payouts: PayoutLine[];
   lottoPayouts: number;
+  payoutsAdjustment: number;
+  payoutsAdjustmentExplanation: string;
   // Section 3 - Receipts
   receipts: ReceiptLine[];
+  receiptsAdjustment: number;
+  receiptsAdjustmentExplanation: string;
   // MOP Cash (shop only)
   cashConnectTotal: number;
   cashDepositedBanking: number;
