@@ -59,8 +59,8 @@ function DailyDashboard({ selectedDate }: Props) {
   const optNetSales = cashup ? cashup.opt.income - cashup.opt.returns : 0;
   const totalNetSales = shopNetSales + optNetSales;
 
-  const shopPayoutsTotal = cashup ? cashup.shop.payouts.reduce((s, p) => s + p.amount, 0) : 0;
-  const shopReceipts = cashup ? cashup.shop.receipts.reduce((s, r) => s + r.amount, 0) : 0;
+  const shopPayoutsTotal = cashup ? cashup.shop.payouts.reduce((s, p) => s + p.amount, 0) + (cashup.shop.payoutsAdjustment ?? 0) : 0;
+  const shopReceipts = cashup ? cashup.shop.receipts.reduce((s, r) => s + r.amount, 0) + (cashup.shop.receiptsAdjustment ?? 0) : 0;
   const shopTakings = cashup ? shopNetSales - shopPayoutsTotal - cashup.shop.lottoPayouts + shopReceipts : 0;
 
   const shopSP = cashup ? cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0) : 0;

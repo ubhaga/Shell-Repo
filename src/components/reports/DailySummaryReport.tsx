@@ -26,11 +26,11 @@ function computeDaySummary(c: DailyCashup) {
 
   const netSales = totalIncome - totalReturnsYest - totalReturnsToday;
 
-  const payoutsTotal = c.shop.payouts.reduce((s, p) => s + p.amount, 0);
+  const payoutsTotal = c.shop.payouts.reduce((s, p) => s + p.amount, 0) + (c.shop.payoutsAdjustment ?? 0);
   const lottoPayouts = c.shop.lottoPayouts;
   const totalPayouts = payoutsTotal + lottoPayouts;
 
-  const totalReceipts = c.shop.receipts.reduce((s, r) => s + r.amount, 0);
+  const totalReceipts = c.shop.receipts.reduce((s, r) => s + r.amount, 0) + (c.shop.receiptsAdjustment ?? 0);
 
   const cashBanking = c.shop.cashDepositedBanking;
   const easyPay = c.shop.easyPay;

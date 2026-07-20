@@ -29,6 +29,7 @@ import { format, addDays, subDays, parseISO } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { extractDayEndPayouts } from "@/lib/dayEndPayouts";
+import { shopPayoutsTotal, shopReceiptsTotal } from "@/lib/cashupTotals";
 
 const DAY_END_PAYOUTS_CUTOFF = "2026-04-01";
 const DAY_END_PAYOUT_VENDOR = "Day End Payouts";
@@ -39,7 +40,11 @@ const blankShopShift = (): DailyCashup["shop"] => ({
   returns_today: 0,
   payouts: [],
   lottoPayouts: 0,
+  payoutsAdjustment: 0,
+  payoutsAdjustmentExplanation: "",
   receipts: RECEIPT_TYPES.map((type) => ({ id: uuidv4(), type, seqNo: "", amount: 0 })),
+  receiptsAdjustment: 0,
+  receiptsAdjustmentExplanation: "",
   cashConnectTotal: 0,
   cashDepositedBanking: 0,
   easyPay: 0,
@@ -112,7 +117,15 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
 
   useEffect(() => {
     if (existing) {
-      setForm({ ...existing });
+      // Ensure new adjustment fields default to 0 / "" for legacy records
+      const patchedShop = {
+        ...existing.shop,
+        payoutsAdjustment: existing.shop.payoutsAdjustment ?? 0,
+        payoutsAdjustmentExplanation: existing.shop.payoutsAdjustmentExplanation ?? "",
+        receiptsAdjustment: existing.shop.receiptsAdjustment ?? 0,
+        receiptsAdjustmentExplanation: existing.shop.receiptsAdjustmentExplanation ?? "",
+      };
+      setForm({ ...existing, shop: patchedShop });
     } else {
       const shopBase = blankShopShift();
       // Seed Jan 1 2026 MOP Cash from spreadsheet (Daily Cashup row)
@@ -186,10 +199,10 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
   }, [useDayEndPayouts, dayEndPayoutsAmount, selectedDate]);
 
   // ---- CALCULATIONS ----
-  const shopPayoutsTotal = form.shop.payouts.reduce((s, p) => s + p.amount, 0);
+  const shopPayoutsTotalCalc = shopPayoutsTotal(form.shop);
   const shopNetSales = form.shop.income - form.shop.returns - form.shop.returns_today;
-  const shopTotalReceipts = form.shop.receipts.reduce((s, r) => s + r.amount, 0);
-  const shopTotalTakings = shopNetSales - shopPayoutsTotal - form.shop.lottoPayouts + shopTotalReceipts;
+  const shopTotalReceipts = shopReceiptsTotal(form.shop);
+  const shopTotalTakings = shopNetSales - shopPayoutsTotalCalc - form.shop.lottoPayouts + shopTotalReceipts;
 
   const optNetSales = form.opt.income - form.opt.returns;
   // OPT Total Takings = Net Sales only (no payouts/receipts for OPT)
@@ -292,6 +305,24 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
       toast({
         title: "Attendant Name required",
         description: "Please select the attendant name when Attendant Short/(Over) is entered.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // --- Adjustment explanations mandatory when adjustment is non-zero ---
+    if (form.shop.payoutsAdjustment !== 0 && !form.shop.payoutsAdjustmentExplanation.trim()) {
+      toast({
+        title: "Payouts Adjustment explanation required",
+        description: "Please explain the Payouts Adjustment.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (form.shop.receiptsAdjustment !== 0 && !form.shop.receiptsAdjustmentExplanation.trim()) {
+      toast({
+        title: "Receipts Adjustment explanation required",
+        description: "Please explain the Receipts Adjustment.",
         variant: "destructive",
       });
       return;
@@ -556,7 +587,7 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
               </Button>
               <div className="flex gap-4 text-sm font-semibold pr-8">
                 <span className="text-muted-foreground">Payouts (excl. Lotto):</span>
-                <CurrencyDisplay value={shopPayoutsTotal} />
+                <CurrencyDisplay value={shopPayoutsTotalCalc} />
               </div>
             </div>
             <div className="flex items-center justify-between px-3 py-1.5 text-sm">
@@ -565,6 +596,33 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
             </div>
           </>
         )}
+        {/* Adjustment row — feeds into Total Payouts */}
+        <div className="border-t bg-amber-50/60">
+          <div className="flex items-center justify-between px-3 py-1.5 text-sm">
+            <span className="text-muted-foreground font-medium">Adjustment</span>
+            <CurrencyInput
+              value={form.shop.payoutsAdjustment}
+              onChange={(v) => setShop({ payoutsAdjustment: v })}
+              allowNegative
+            />
+          </div>
+          {form.shop.payoutsAdjustment !== 0 && (
+            <div className="px-3 pb-2">
+              <label className="text-xs text-muted-foreground">Explanation (required)</label>
+              <textarea
+                value={form.shop.payoutsAdjustmentExplanation}
+                onChange={(e) => setShop({ payoutsAdjustmentExplanation: e.target.value })}
+                rows={2}
+                className="input-cell w-full resize-y text-sm mt-0.5"
+                placeholder="Reason for payout adjustment..."
+              />
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-between px-3 py-1.5 bg-secondary font-semibold text-sm border-t">
+          <span>Total Payouts (incl. Adjustment, excl. Lotto)</span>
+          <CurrencyDisplay value={shopPayoutsTotalCalc} highlight />
+        </div>
       </div>
 
 
@@ -605,8 +663,31 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
             </div>
           </div>
         ))}
-        <div className="flex items-center justify-between px-3 py-1.5 bg-secondary font-semibold text-sm">
-          <span>Total Receipts</span>
+        {/* Adjustment row — feeds into Total Receipts */}
+        <div className="border-t bg-amber-50/60">
+          <div className="flex items-center justify-between px-3 py-1.5 text-sm">
+            <span className="text-muted-foreground font-medium">Adjustment</span>
+            <CurrencyInput
+              value={form.shop.receiptsAdjustment}
+              onChange={(v) => setShop({ receiptsAdjustment: v })}
+              allowNegative
+            />
+          </div>
+          {form.shop.receiptsAdjustment !== 0 && (
+            <div className="px-3 pb-2">
+              <label className="text-xs text-muted-foreground">Explanation (required)</label>
+              <textarea
+                value={form.shop.receiptsAdjustmentExplanation}
+                onChange={(e) => setShop({ receiptsAdjustmentExplanation: e.target.value })}
+                rows={2}
+                className="input-cell w-full resize-y text-sm mt-0.5"
+                placeholder="Reason for receipt adjustment..."
+              />
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-between px-3 py-1.5 bg-secondary font-semibold text-sm border-t">
+          <span>Total Receipts (incl. Adjustment)</span>
           <CurrencyDisplay value={shopTotalReceipts} highlight />
         </div>
       </div>
