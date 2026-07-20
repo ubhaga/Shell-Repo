@@ -7,7 +7,7 @@ import { Section, DataRow, CurrencyInput, CurrencyDisplay } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Save, AlertCircle, CheckCircle, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { format, subDays, addDays, parseISO, lastDayOfMonth, isMonday } from "date-fns";
+import { format, subDays, addDays, parseISO, lastDayOfMonth, isMonday, isSaturday } from "date-fns";
 import { ManualPumpReadings } from "./ManualPumpReadings";
 import { supabase } from "@/integrations/supabase/client";
 import { extractDayEndInvoiceTotals } from "@/lib/dayEndInvoiceTotals";
@@ -422,15 +422,16 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   // Commission day rules
   //  - BLD: 1st of month before May 2026; last day of month from May 2026 onwards
   //  - Easy Pay: 1st of month
-  //  - Lotto: every Monday
+  //  - Lotto: every Saturday before June 2026; every Monday from June 2026 onwards
   const selectedParsed = parseISO(selectedDate);
   const isFirstOfMonth = selectedParsed.getDate() === 1;
   const isLastOfMonth = format(lastDayOfMonth(selectedParsed), "yyyy-MM-dd") === selectedDate;
   const isMon = isMonday(selectedParsed);
+  const isSat = isSaturday(selectedParsed);
   const selectedMonth = selectedDate.slice(0, 7);
   const showBlueLabelComm = selectedMonth >= '2026-05' ? isLastOfMonth : isFirstOfMonth;
   const showEasypayComm = isFirstOfMonth;
-  const showLottoComm = isMon;
+  const showLottoComm = selectedMonth >= '2026-06' ? isMon : isSat;
 
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
