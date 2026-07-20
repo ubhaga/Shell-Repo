@@ -76,8 +76,8 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       totalEasypayMop += c.shop.easyPay ?? 0;
       // Lotto payouts
       totalLottoPayouts += c.shop.lottoPayouts ?? 0;
-      // Total payouts
-      const shopPayoutsTotal = (c.shop.payouts ?? []).reduce((s, p) => s + p.amount, 0) + (c.shop.payoutsAdjustment ?? 0);
+      // Total payouts (day end payouts - lotto +/- adjustment)
+      const shopPayoutsTotal = (c.shop.payouts ?? []).reduce((s, p) => s + p.amount, 0) + (c.shop.payoutsAdjustment ?? 0) - (c.shop.lottoPayouts ?? 0);
       totalPayouts += shopPayoutsTotal;
       // Cash deposited for banking
       totalCashDepositedBanking += c.shop.cashDepositedBanking ?? 0;
