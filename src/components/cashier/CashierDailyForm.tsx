@@ -587,13 +587,13 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
                 Add Payout
               </Button>
               <div className="flex gap-4 text-sm font-semibold pr-8">
-                <span className="text-muted-foreground">Payouts (excl. Lotto):</span>
-                <CurrencyDisplay value={shopPayoutsTotalCalc} />
+                <span className="text-muted-foreground">Day End Payouts (lines + adjustment):</span>
+                <CurrencyDisplay value={shopPayoutsGrossCalc} />
               </div>
             </div>
             <div className="flex items-center justify-between px-3 py-1.5 text-sm">
-              <span className="text-muted-foreground">Lotto Payouts Only</span>
-              <CurrencyInput value={form.shop.lottoPayouts} onChange={(v) => setShop({ lottoPayouts: v })} />
+              <span className="text-muted-foreground">Less: Lotto Payouts</span>
+              <CurrencyDisplay value={form.shop.lottoPayouts} />
             </div>
           </>
         )}
@@ -621,7 +621,7 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
           )}
         </div>
         <div className="flex items-center justify-between px-3 py-1.5 bg-secondary font-semibold text-sm border-t">
-          <span>Total Payouts (incl. Adjustment, excl. Lotto)</span>
+          <span>Total Payouts (day end - lotto +/- adjustment)</span>
           <CurrencyDisplay value={shopPayoutsTotalCalc} highlight />
         </div>
       </div>
