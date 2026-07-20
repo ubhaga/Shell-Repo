@@ -31,16 +31,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { extractDayEndPayouts } from "@/lib/dayEndPayouts";
 import {
   optShortOver,
-  optSpeedpointTotal,
-  shopAccountTotal,
-  shopCashConnectTotal,
+  optSpeedpointTotal as calcOptSpeedpointTotal,
+  shopAccountTotal as calcShopAccountTotal,
+  shopCashConnectTotal as calcShopCashConnectTotal,
   shopManualOtherAdjustmentsTotal,
-  shopNetSales,
+  shopNetSales as calcShopNetSales,
   shopPayoutsTotal,
   shopReceiptsTotal,
   shopShortOver,
-  shopSpeedpointTotal,
-  shopTotalTakings,
+  shopSpeedpointTotal as calcShopSpeedpointTotal,
+  shopTotalTakings as calcShopTotalTakings,
 } from "@/lib/cashupTotals";
 
 const DAY_END_PAYOUTS_CUTOFF = "2026-04-01";
@@ -213,9 +213,9 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
   // ---- CALCULATIONS ----
   const shopPayoutsGrossCalc = (form.shop.payouts?.reduce((s, p) => s + (p.amount || 0), 0) ?? 0) + (form.shop.payoutsAdjustment ?? 0);
   const shopPayoutsTotalCalc = shopPayoutsTotal(form.shop);
-  const shopNetSales = shopNetSales(form.shop);
+  const shopNetSales = calcShopNetSales(form.shop);
   const shopTotalReceipts = shopReceiptsTotal(form.shop);
-  const shopTotalTakings = shopTotalTakings(form.shop);
+  const shopTotalTakings = calcShopTotalTakings(form.shop);
 
   const optNetSales = form.opt.income - form.opt.returns;
   // OPT Total Takings = Net Sales only (no payouts/receipts for OPT)
@@ -223,16 +223,16 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
 
   const combinedTotalTakings = shopTotalTakings + optTotalTakings;
 
-  const shopSpeedpointTotal = shopSpeedpointTotal(form.shop);
-  const optSpeedpointTotal = optSpeedpointTotal(form.opt);
+  const shopSpeedpointTotal = calcShopSpeedpointTotal(form.shop);
+  const optSpeedpointTotal = calcOptSpeedpointTotal(form.opt);
 
-  const shopAccountTotal = shopAccountTotal(form.shop);
+  const shopAccountTotal = calcShopAccountTotal(form.shop);
   const optAccountTotal = form.opt.accounts.reduce((s, a) => s + a.amount, 0);
 
   const shopOtherTotal = shopManualOtherAdjustmentsTotal(form.shop);
   const shopSection8Total = shopOtherTotal + form.shop.returns_mop + form.shop.returnsNotCaptured + form.shop.attendantShortOver;
 
-  const cashConnectTotal = shopCashConnectTotal(form.shop);
+  const cashConnectTotal = calcShopCashConnectTotal(form.shop);
 
   // Shop balance = Shop Takings - MOP Cash - Shop Speedpoints - Shop Accounts - Other adjustments - Lotto Payouts
   const shopDifference = shopShortOver(form.shop);
