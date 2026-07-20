@@ -310,6 +310,24 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
       return;
     }
 
+    // --- Adjustment explanations mandatory when adjustment is non-zero ---
+    if (form.shop.payoutsAdjustment !== 0 && !form.shop.payoutsAdjustmentExplanation.trim()) {
+      toast({
+        title: "Payouts Adjustment explanation required",
+        description: "Please explain the Payouts Adjustment.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (form.shop.receiptsAdjustment !== 0 && !form.shop.receiptsAdjustmentExplanation.trim()) {
+      toast({
+        title: "Receipts Adjustment explanation required",
+        description: "Please explain the Receipts Adjustment.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // --- Over (negative balance) confirmation ---
     const shopOver = shopDifference < -0.01;
     const optOver = optDifference < -0.01;
