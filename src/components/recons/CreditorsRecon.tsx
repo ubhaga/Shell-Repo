@@ -31,6 +31,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
 
   const [priorBankLinesByMonth, setPriorBankLinesByMonth] = useState<Record<string, typeof bankLines>>({});
   const [priorAllocationsByMonth, setPriorAllocationsByMonth] = useState<Record<string, { bank_line_id: string; recon_type: string; target_name: string }[]>>({});
+  const [priorOpeningByMonth, setPriorOpeningByMonth] = useState<Record<string, Record<string, number>>>({});
   const [seedOB, setSeedOB] = useState<Record<string, number>>({});
 
   const isFirstMonth = filterMonth <= '2026-03';
@@ -75,9 +76,10 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
 
     // Load bank lines + allocations for every prior month (chain)
     if (priorMonths.length > 0) {
-      const [bankAll, allocAll] = await Promise.all([
+      const [bankAll, allocAll, obAll] = await Promise.all([
         supabase.from('bank_statement_lines').select('id, amount, description, transaction_date, month').in('month', priorMonths),
         supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name, month').in('month', priorMonths),
+        supabase.from('creditor_opening_balances').select('month, supplier, amount').in('month', priorMonths),
       ]);
       const bankByMonth: Record<string, typeof bankLines> = {};
       ((bankAll.data ?? []) as (typeof bankLines[number] & { month: string })[]).forEach(l => {
@@ -91,9 +93,15 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
         allocByMonth[a.month].push(a);
       });
       setPriorAllocationsByMonth(allocByMonth);
+      const obByMonth: Record<string, Record<string, number>> = {};
+      ((obAll.data ?? []) as { month: string; supplier: string; amount: number }[]).forEach(r => {
+        (obByMonth[r.month] ||= {})[r.supplier] = Number(r.amount);
+      });
+      setPriorOpeningByMonth(obByMonth);
     } else {
       setPriorBankLinesByMonth({});
       setPriorAllocationsByMonth({});
+      setPriorOpeningByMonth({});
     }
   }, [filterMonth, priorMonths]);
 
@@ -260,8 +268,14 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
       const monthManagersM = managerEntries.filter(e => e.date.startsWith(m));
       const bankM = priorBankLinesByMonth[m] ?? [];
       const allocM = priorAllocationsByMonth[m] ?? [];
+      const storedObM = priorOpeningByMonth[m] ?? {};
 
       allSup.forEach(supplier => {
+        // If a manually-saved OB exists for this intermediate month, it takes
+        // precedence over the running chain — so closing→opening always agrees.
+        if (storedObM[supplier] !== undefined) {
+          running[supplier] = storedObM[supplier];
+        }
         let inv = 0;
         let pay = 0;
         monthManagersM.forEach(entry => {
@@ -291,7 +305,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     });
     return result;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openingBalances, isFirstMonth, seedOB, priorMonths, priorBankLinesByMonth, priorAllocationsByMonth, managerEntries, suppliers, directlyExpensedSuppliers, fuelSuppliers]);
+  }, [openingBalances, isFirstMonth, seedOB, priorMonths, priorBankLinesByMonth, priorAllocationsByMonth, priorOpeningByMonth, managerEntries, suppliers, directlyExpensedSuppliers, fuelSuppliers]);
 
   // Save opening balances
   const handleSaveOB = async () => {
