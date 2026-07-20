@@ -202,7 +202,7 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
   const shopPayoutsGrossCalc = (form.shop.payouts?.reduce((s, p) => s + (p.amount || 0), 0) ?? 0) + (form.shop.payoutsAdjustment ?? 0);
   const shopPayoutsTotalCalc = shopPayoutsTotal(form.shop);
   const shopNetSales = form.shop.income - form.shop.returns - form.shop.returns_today;
-  const shopTotal offerTotalReceipts = shopReceiptsTotal(form.shop);
+  const shopTotalReceipts = shopReceiptsTotal(form.shop);
   const shopTotalTakings = shopNetSales - shopPayoutsTotalCalc + shopTotalReceipts;
 
   const optNetSales = form.opt.income - form.opt.returns;
