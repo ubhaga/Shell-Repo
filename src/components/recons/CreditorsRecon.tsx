@@ -305,7 +305,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     });
     return result;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openingBalances, isFirstMonth, seedOB, priorMonths, priorBankLinesByMonth, priorAllocationsByMonth, managerEntries, suppliers, directlyExpensedSuppliers, fuelSuppliers]);
+  }, [openingBalances, isFirstMonth, seedOB, priorMonths, priorBankLinesByMonth, priorAllocationsByMonth, priorOpeningByMonth, managerEntries, suppliers, directlyExpensedSuppliers, fuelSuppliers]);
 
   // Save opening balances
   const handleSaveOB = async () => {
