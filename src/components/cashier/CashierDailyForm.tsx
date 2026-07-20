@@ -199,10 +199,11 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
   }, [useDayEndPayouts, dayEndPayoutsAmount, selectedDate]);
 
   // ---- CALCULATIONS ----
+  const shopPayoutsGrossCalc = (form.shop.payouts?.reduce((s, p) => s + (p.amount || 0), 0) ?? 0) + (form.shop.payoutsAdjustment ?? 0);
   const shopPayoutsTotalCalc = shopPayoutsTotal(form.shop);
   const shopNetSales = form.shop.income - form.shop.returns - form.shop.returns_today;
-  const shopTotalReceipts = shopReceiptsTotal(form.shop);
-  const shopTotalTakings = shopNetSales - shopPayoutsTotalCalc - form.shop.lottoPayouts + shopTotalReceipts;
+  const shopTotal offerTotalReceipts = shopReceiptsTotal(form.shop);
+  const shopTotalTakings = shopNetSales - shopPayoutsTotalCalc + shopTotalReceipts;
 
   const optNetSales = form.opt.income - form.opt.returns;
   // OPT Total Takings = Net Sales only (no payouts/receipts for OPT)

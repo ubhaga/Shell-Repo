@@ -1,9 +1,9 @@
 import type { CashierShift, DailyCashup } from '@/types/cashup';
 
-/** Total shop payouts (line items + adjustment). Excludes lotto payouts. */
-export function shopPayoutsTotal(shop: Pick<CashierShift, 'payouts'> & { payoutsAdjustment?: number }): number {
+/** Total shop payouts: day end payout lines + adjustment - lotto payouts. */
+export function shopPayoutsTotal(shop: Pick<CashierShift, 'payouts' | 'lottoPayouts'> & { payoutsAdjustment?: number }): number {
   const lines = shop.payouts?.reduce((s, p) => s + (p.amount || 0), 0) ?? 0;
-  return lines + (shop.payoutsAdjustment ?? 0);
+  return lines + (shop.payoutsAdjustment ?? 0) - (shop.lottoPayouts ?? 0);
 }
 
 /** Total shop receipts (line items + adjustment). */
