@@ -76,9 +76,10 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
 
     // Load bank lines + allocations for every prior month (chain)
     if (priorMonths.length > 0) {
-      const [bankAll, allocAll] = await Promise.all([
+      const [bankAll, allocAll, obAll] = await Promise.all([
         supabase.from('bank_statement_lines').select('id, amount, description, transaction_date, month').in('month', priorMonths),
         supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name, month').in('month', priorMonths),
+        supabase.from('creditor_opening_balances').select('month, supplier, amount').in('month', priorMonths),
       ]);
       const bankByMonth: Record<string, typeof bankLines> = {};
       ((bankAll.data ?? []) as (typeof bankLines[number] & { month: string })[]).forEach(l => {
@@ -92,9 +93,15 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
         allocByMonth[a.month].push(a);
       });
       setPriorAllocationsByMonth(allocByMonth);
+      const obByMonth: Record<string, Record<string, number>> = {};
+      ((obAll.data ?? []) as { month: string; supplier: string; amount: number }[]).forEach(r => {
+        (obByMonth[r.month] ||= {})[r.supplier] = Number(r.amount);
+      });
+      setPriorOpeningByMonth(obByMonth);
     } else {
       setPriorBankLinesByMonth({});
       setPriorAllocationsByMonth({});
+      setPriorOpeningByMonth({});
     }
   }, [filterMonth, priorMonths]);
 
