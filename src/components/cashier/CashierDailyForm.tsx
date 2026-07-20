@@ -578,6 +578,33 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
             </div>
           </>
         )}
+        {/* Adjustment row — feeds into Total Payouts */}
+        <div className="border-t bg-amber-50/60">
+          <div className="flex items-center justify-between px-3 py-1.5 text-sm">
+            <span className="text-muted-foreground font-medium">Adjustment</span>
+            <CurrencyInput
+              value={form.shop.payoutsAdjustment}
+              onChange={(v) => setShop({ payoutsAdjustment: v })}
+              allowNegative
+            />
+          </div>
+          {form.shop.payoutsAdjustment !== 0 && (
+            <div className="px-3 pb-2">
+              <label className="text-xs text-muted-foreground">Explanation (required)</label>
+              <textarea
+                value={form.shop.payoutsAdjustmentExplanation}
+                onChange={(e) => setShop({ payoutsAdjustmentExplanation: e.target.value })}
+                rows={2}
+                className="input-cell w-full resize-y text-sm mt-0.5"
+                placeholder="Reason for payout adjustment..."
+              />
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-between px-3 py-1.5 bg-secondary font-semibold text-sm border-t">
+          <span>Total Payouts (incl. Adjustment, excl. Lotto)</span>
+          <CurrencyDisplay value={shopPayoutsTotalCalc} highlight />
+        </div>
       </div>
 
 
@@ -618,8 +645,31 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
             </div>
           </div>
         ))}
-        <div className="flex items-center justify-between px-3 py-1.5 bg-secondary font-semibold text-sm">
-          <span>Total Receipts</span>
+        {/* Adjustment row — feeds into Total Receipts */}
+        <div className="border-t bg-amber-50/60">
+          <div className="flex items-center justify-between px-3 py-1.5 text-sm">
+            <span className="text-muted-foreground font-medium">Adjustment</span>
+            <CurrencyInput
+              value={form.shop.receiptsAdjustment}
+              onChange={(v) => setShop({ receiptsAdjustment: v })}
+              allowNegative
+            />
+          </div>
+          {form.shop.receiptsAdjustment !== 0 && (
+            <div className="px-3 pb-2">
+              <label className="text-xs text-muted-foreground">Explanation (required)</label>
+              <textarea
+                value={form.shop.receiptsAdjustmentExplanation}
+                onChange={(e) => setShop({ receiptsAdjustmentExplanation: e.target.value })}
+                rows={2}
+                className="input-cell w-full resize-y text-sm mt-0.5"
+                placeholder="Reason for receipt adjustment..."
+              />
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-between px-3 py-1.5 bg-secondary font-semibold text-sm border-t">
+          <span>Total Receipts (incl. Adjustment)</span>
           <CurrencyDisplay value={shopTotalReceipts} highlight />
         </div>
       </div>
