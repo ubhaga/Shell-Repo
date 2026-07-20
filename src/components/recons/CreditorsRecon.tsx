@@ -268,8 +268,14 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
       const monthManagersM = managerEntries.filter(e => e.date.startsWith(m));
       const bankM = priorBankLinesByMonth[m] ?? [];
       const allocM = priorAllocationsByMonth[m] ?? [];
+      const storedObM = priorOpeningByMonth[m] ?? {};
 
       allSup.forEach(supplier => {
+        // If a manually-saved OB exists for this intermediate month, it takes
+        // precedence over the running chain — so closing→opening always agrees.
+        if (storedObM[supplier] !== undefined) {
+          running[supplier] = storedObM[supplier];
+        }
         let inv = 0;
         let pay = 0;
         monthManagersM.forEach(entry => {
