@@ -62,9 +62,9 @@ function computeDayMetrics(
 
   if (cashup) {
     const shopNetSales = cashup.shop.income - cashup.shop.returns - (cashup.shop.returns_today ?? 0);
-    const shopPayoutsTotal = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0) + (cashup.shop.payoutsAdjustment ?? 0);
+    const shopPayoutsTotal = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0) + (cashup.shop.payoutsAdjustment ?? 0) - cashup.shop.lottoPayouts;
     const shopReceipts = cashup.shop.receipts.reduce((s, r) => s + r.amount, 0) + (cashup.shop.receiptsAdjustment ?? 0);
-    const shopTakings = shopNetSales - shopPayoutsTotal - cashup.shop.lottoPayouts + shopReceipts;
+    const shopTakings = shopNetSales - shopPayoutsTotal + shopReceipts;
     const cashConnectTotal = cashup.shop.cashDepositedBanking + cashup.shop.easyPay + cashup.shop.coins;
     const shopSP = cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0);
     const shopAcc = cashup.shop.accounts.reduce((s, a) => s + a.amount, 0);
