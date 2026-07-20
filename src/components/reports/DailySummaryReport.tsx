@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 import type { DailyCashup } from '@/types/cashup';
+import { cashupShortOver, shopPayoutsTotal, shopReceiptsTotal } from '@/lib/cashupTotals';
 
 interface Props {
   filterMonth: string;
@@ -26,11 +27,11 @@ function computeDaySummary(c: DailyCashup) {
 
   const netSales = totalIncome - totalReturnsYest - totalReturnsToday;
 
-  const payoutsTotal = c.shop.payouts.reduce((s, p) => s + p.amount, 0) + (c.shop.payoutsAdjustment ?? 0) - c.shop.lottoPayouts;
+  const payoutsTotal = shopPayoutsTotal(c.shop);
   const lottoPayouts = c.shop.lottoPayouts;
   const totalPayouts = payoutsTotal;
 
-  const totalReceipts = c.shop.receipts.reduce((s, r) => s + r.amount, 0) + (c.shop.receiptsAdjustment ?? 0);
+  const totalReceipts = shopReceiptsTotal(c.shop);
 
   const cashBanking = c.shop.cashDepositedBanking;
   const easyPay = c.shop.easyPay;
@@ -67,23 +68,7 @@ function computeDaySummary(c: DailyCashup) {
   const shopSP = shopSPExVPlus + shopVPlus;
   const optSP = optSPExVPlus + optVPlus;
 
-  const shopNetSales = c.shop.income - c.shop.returns - c.shop.returns_today;
-  const shopTakings = shopNetSales - payoutsTotal + totalReceipts;
-  const shopBalance =
-    shopTakings -
-    cashConnectTotal -
-    shopSP -
-    shopAccounts -
-    manualOtherAdj -
-    returnsMop -
-    returnsNotCaptured -
-    lottoPayouts -
-    attendantShortOver;
-
-  const optNetSales = c.opt.income - c.opt.returns;
-  const optBalance = optNetSales - optSP - optAccounts;
-
-  const combinedShortOver = shopBalance + optBalance;
+  const combinedShortOver = cashupShortOver(c).totalDiff;
 
   return {
     date: c.date,

@@ -6,6 +6,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, addMonth
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { parseBankStatementDate } from "@/lib/bankStatementDate";
+import { cashupShortOver, shopPayoutsTotal } from "@/lib/cashupTotals";
 
 import type { DailyCashup, ManagerDailyEntry } from "@/types/cashup";
 
@@ -61,33 +62,14 @@ function computeDayMetrics(
   let optDiff: number | null = null;
 
   if (cashup) {
-    const shopNetSales = cashup.shop.income - cashup.shop.returns - (cashup.shop.returns_today ?? 0);
-    const shopPayoutsTotal = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0) + (cashup.shop.payoutsAdjustment ?? 0) - cashup.shop.lottoPayouts;
-    const shopReceipts = cashup.shop.receipts.reduce((s, r) => s + r.amount, 0) + (cashup.shop.receiptsAdjustment ?? 0);
-    const shopTakings = shopNetSales - shopPayoutsTotal + shopReceipts;
-    const cashConnectTotal = cashup.shop.cashDepositedBanking + cashup.shop.easyPay + cashup.shop.coins;
-    const shopSP = cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0);
-    const shopAcc = cashup.shop.accounts.reduce((s, a) => s + a.amount, 0);
-    const shopOther = cashup.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0);
-    shopDiff =
-      shopTakings -
-      cashConnectTotal -
-      shopSP -
-      shopAcc -
-      shopOther -
-      cashup.shop.returns_mop -
-      (cashup.shop.returnsNotCaptured ?? 0) -
-      cashup.shop.attendantShortOver;
-
-    const optNetSales = cashup.opt.income - cashup.opt.returns;
-    const optSP = cashup.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0);
-    const optAcc = cashup.opt.accounts.reduce((s, a) => s + a.amount, 0);
-    optDiff = optNetSales - optSP - optAcc;
+    const totals = cashupShortOver(cashup);
+    shopDiff = totals.shopDiff;
+    optDiff = totals.optDiff;
   }
 
   let payoutsDiff: number | null = null;
   if (cashup && managerEntry) {
-    const cashierPayoutsTotal = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0) + (cashup.shop.payoutsAdjustment ?? 0) - cashup.shop.lottoPayouts;
+    const cashierPayoutsTotal = shopPayoutsTotal(cashup.shop);
     const managerPayoutInvoicesTotal = managerEntry.payoutInvoices.reduce((s, i) => s + i.inclusive, 0);
     payoutsDiff = cashierPayoutsTotal - managerPayoutInvoicesTotal;
   }

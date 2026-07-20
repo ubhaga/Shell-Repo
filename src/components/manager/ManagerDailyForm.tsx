@@ -11,6 +11,7 @@ import { format, subDays, addDays, parseISO, lastDayOfMonth, isMonday, isSaturda
 import { ManualPumpReadings } from "./ManualPumpReadings";
 import { supabase } from "@/integrations/supabase/client";
 import { extractDayEndInvoiceTotals } from "@/lib/dayEndInvoiceTotals";
+import { cashupShortOver } from "@/lib/cashupTotals";
 
 const DAY_END_INVOICE_CUTOFF = "2026-04-01";
 
@@ -600,31 +601,7 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   // Cashier short/over calculations — must match CashierDailyForm exactly
   const cashierBlock = cashup
     ? (() => {
-        const shopNetSales = cashup.shop.income - cashup.shop.returns - (cashup.shop.returns_today ?? 0);
-        const shopPayoutsTotal = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0) + (cashup.shop.payoutsAdjustment ?? 0) - cashup.shop.lottoPayouts;
-        const shopTotalReceipts = cashup.shop.receipts.reduce((s, r) => s + r.amount, 0) + (cashup.shop.receiptsAdjustment ?? 0);
-        const shopTotalTakings = shopNetSales - shopPayoutsTotal + shopTotalReceipts;
-
-        // Must match CashierDailyForm exactly: cashConnectTotal = cashDepositedBanking + easyPay + coins
-        const cashConnectTotal = cashup.shop.cashDepositedBanking + cashup.shop.easyPay + cashup.shop.coins;
-        const shopSpeedpointTotal = cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0);
-        const shopAccountTotal = cashup.shop.accounts.reduce((s, a) => s + a.amount, 0);
-        const shopOtherTotal = cashup.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0);
-        const shopDiff =
-          shopTotalTakings -
-          cashConnectTotal -
-          shopSpeedpointTotal -
-          shopAccountTotal -
-          shopOtherTotal -
-          cashup.shop.returns_mop -
-          (cashup.shop.returnsNotCaptured ?? 0) -
-          (cashup.shop.attendantShortOver ?? 0);
-
-        const optNetSales = cashup.opt.income - cashup.opt.returns;
-        const optSpeedpointTotal = cashup.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0);
-        const optAccountTotal = cashup.opt.accounts.reduce((s, a) => s + a.amount, 0);
-        const optDiff = optNetSales - optSpeedpointTotal - optAccountTotal;
-
+        const { shopDiff, optDiff } = cashupShortOver(cashup);
         return { shopDiff, optDiff };
       })()
     : null;
