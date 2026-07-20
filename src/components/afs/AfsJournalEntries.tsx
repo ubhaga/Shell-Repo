@@ -7,6 +7,7 @@ import { useCashupStore } from "@/store/cashupStore";
 import { useMasterDataStore } from "@/store/masterDataStore";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { cashupShortOver, shopPayoutsTotal } from "@/lib/cashupTotals";
 
 interface AfsJournalEntriesProps {
   selectedDate: string;
@@ -77,8 +78,8 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       // Lotto payouts
       totalLottoPayouts += c.shop.lottoPayouts ?? 0;
       // Total payouts (day end payouts - lotto +/- adjustment)
-      const shopPayoutsTotal = (c.shop.payouts ?? []).reduce((s, p) => s + p.amount, 0) + (c.shop.payoutsAdjustment ?? 0) - (c.shop.lottoPayouts ?? 0);
-      totalPayouts += shopPayoutsTotal;
+      const payoutTotal = shopPayoutsTotal(c.shop);
+      totalPayouts += payoutTotal;
       // Cash deposited for banking
       totalCashDepositedBanking += c.shop.cashDepositedBanking ?? 0;
       // Coins
@@ -110,17 +111,8 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       const otherAdj = (c.shop.otherAdjustments ?? []).reduce((s, o) => s + o.amount, 0);
       const section8Total = otherAdj + (c.shop.returns_mop ?? 0) + (c.shop.returnsNotCaptured ?? 0) + (c.shop.attendantShortOver ?? 0);
       totalOtherAdjustments += section8Total;
-      // Cashier balance (shop + opt short/over)
-      const shopNetSales = (c.shop.income ?? 0) - (c.shop.returns ?? 0) - (c.shop.returns_today ?? 0);
-      const shopTotalReceipts = (c.shop.receipts ?? []).reduce((s, r) => s + r.amount, 0) + (c.shop.receiptsAdjustment ?? 0);
-      const shopTotalTakings = shopNetSales - shopPayoutsTotal + shopTotalReceipts;
-      const cashConnectTotal = (c.shop.cashDepositedBanking ?? 0) + (c.shop.easyPay ?? 0) + (c.shop.coins ?? 0);
-      const shopSpTotal = (c.shop.speedpoints ?? []).reduce((s, sp) => s + sp.shopAmount, 0);
-      const shopDiff = shopTotalTakings - cashConnectTotal - shopSpTotal - shopAccTotal - section8Total;
-      const optNetSales = (c.opt.income ?? 0) - (c.opt.returns ?? 0);
-      const optSpTotal = (c.opt.speedpoints ?? []).reduce((s, sp) => s + sp.optAmount, 0);
-      const optDiff = optNetSales - optSpTotal - optAccTotal;
-      totalCashierBalance += shopDiff + optDiff;
+      // Cashier balance (shop + opt short/over) — same formula as Cashier Daily.
+      totalCashierBalance += cashupShortOver(c).totalDiff;
     }
 
     // Deep Frozen CC — sum across all manager entries for the month

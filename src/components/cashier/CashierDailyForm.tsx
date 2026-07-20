@@ -29,7 +29,19 @@ import { format, addDays, subDays, parseISO } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { extractDayEndPayouts } from "@/lib/dayEndPayouts";
-import { shopPayoutsTotal, shopReceiptsTotal } from "@/lib/cashupTotals";
+import {
+  optShortOver,
+  optSpeedpointTotal as calcOptSpeedpointTotal,
+  shopAccountTotal as calcShopAccountTotal,
+  shopCashConnectTotal as calcShopCashConnectTotal,
+  shopManualOtherAdjustmentsTotal,
+  shopNetSales as calcShopNetSales,
+  shopPayoutsTotal,
+  shopReceiptsTotal,
+  shopShortOver,
+  shopSpeedpointTotal as calcShopSpeedpointTotal,
+  shopTotalTakings as calcShopTotalTakings,
+} from "@/lib/cashupTotals";
 
 const DAY_END_PAYOUTS_CUTOFF = "2026-04-01";
 const DAY_END_PAYOUT_VENDOR = "Day End Payouts";
@@ -201,9 +213,9 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
   // ---- CALCULATIONS ----
   const shopPayoutsGrossCalc = (form.shop.payouts?.reduce((s, p) => s + (p.amount || 0), 0) ?? 0) + (form.shop.payoutsAdjustment ?? 0);
   const shopPayoutsTotalCalc = shopPayoutsTotal(form.shop);
-  const shopNetSales = form.shop.income - form.shop.returns - form.shop.returns_today;
+  const shopNetSales = calcShopNetSales(form.shop);
   const shopTotalReceipts = shopReceiptsTotal(form.shop);
-  const shopTotalTakings = shopNetSales - shopPayoutsTotalCalc + shopTotalReceipts;
+  const shopTotalTakings = calcShopTotalTakings(form.shop);
 
   const optNetSales = form.opt.income - form.opt.returns;
   // OPT Total Takings = Net Sales only (no payouts/receipts for OPT)
@@ -211,30 +223,21 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
 
   const combinedTotalTakings = shopTotalTakings + optTotalTakings;
 
-  const shopSpeedpointTotal = form.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0);
-  const optSpeedpointTotal = form.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0);
+  const shopSpeedpointTotal = calcShopSpeedpointTotal(form.shop);
+  const optSpeedpointTotal = calcOptSpeedpointTotal(form.opt);
 
-  const shopAccountTotal = form.shop.accounts.reduce((s, a) => s + a.amount, 0);
+  const shopAccountTotal = calcShopAccountTotal(form.shop);
   const optAccountTotal = form.opt.accounts.reduce((s, a) => s + a.amount, 0);
 
-  const shopOtherTotal = form.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0);
+  const shopOtherTotal = shopManualOtherAdjustmentsTotal(form.shop);
   const shopSection8Total = shopOtherTotal + form.shop.returns_mop + form.shop.returnsNotCaptured + form.shop.attendantShortOver;
 
-  const cashConnectTotal = form.shop.cashDepositedBanking + form.shop.easyPay + form.shop.coins;
+  const cashConnectTotal = calcShopCashConnectTotal(form.shop);
 
   // Shop balance = Shop Takings - MOP Cash - Shop Speedpoints - Shop Accounts - Other adjustments - Lotto Payouts
-  const shopDifference =
-    shopTotalTakings -
-    cashConnectTotal -
-    shopSpeedpointTotal -
-    shopAccountTotal -
-    shopOtherTotal -
-    form.shop.returns_mop -
-    form.shop.returnsNotCaptured -
-    (form.shop.lottoPayouts ?? 0) -
-    form.shop.attendantShortOver;
+  const shopDifference = shopShortOver(form.shop);
   // OPT balance = OPT Takings - OPT Speedpoints - OPT Accounts
-  const optDifference = optTotalTakings - optSpeedpointTotal - optAccountTotal;
+  const optDifference = optShortOver(form.opt);
 
   const commitSave = () => {
     if (existing) updateCashup(existing.id, form);

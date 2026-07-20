@@ -4,7 +4,19 @@ import { CurrencyDisplay } from '@/components/ui/CashupUI';
 import { CheckCircle, XCircle, AlertCircle, CalendarDays, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { MonthlyDashboard } from './MonthlyDashboard';
-import { shopPayoutsTotal as calcShopPayoutsTotal } from '@/lib/cashupTotals';
+import {
+  cashupShortOver,
+  optNetSales as calcOptNetSales,
+  optSpeedpointTotal,
+  shopAccountTotal,
+  shopCashConnectTotal,
+  shopManualOtherAdjustmentsTotal,
+  shopNetSales as calcShopNetSales,
+  shopPayoutsTotal as calcShopPayoutsTotal,
+  shopReceiptsTotal,
+  shopSpeedpointTotal,
+  shopTotalTakings,
+} from '@/lib/cashupTotals';
 
 interface Props { selectedDate: string; }
 
@@ -56,24 +68,24 @@ function DailyDashboard({ selectedDate }: Props) {
     );
   }
 
-  const shopNetSales = cashup ? cashup.shop.income - cashup.shop.returns - (cashup.shop.returns_today ?? 0) : 0;
-  const optNetSales = cashup ? cashup.opt.income - cashup.opt.returns : 0;
+  const shopNetSales = cashup ? calcShopNetSales(cashup.shop) : 0;
+  const optNetSales = cashup ? calcOptNetSales(cashup.opt) : 0;
   const totalNetSales = shopNetSales + optNetSales;
 
   const shopPayoutsTotal = cashup ? calcShopPayoutsTotal(cashup.shop) : 0;
-  const shopReceipts = cashup ? cashup.shop.receipts.reduce((s, r) => s + r.amount, 0) + (cashup.shop.receiptsAdjustment ?? 0) : 0;
-  const shopTakings = cashup ? shopNetSales - shopPayoutsTotal + shopReceipts : 0;
+  const shopReceipts = cashup ? shopReceiptsTotal(cashup.shop) : 0;
+  const shopTakings = cashup ? shopTotalTakings(cashup.shop) : 0;
 
-  const shopSP = cashup ? cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0) : 0;
-  const optSP = cashup ? cashup.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0) : 0;
-  const shopAcc = cashup ? cashup.shop.accounts.reduce((s, a) => s + a.amount, 0) : 0;
+  const shopSP = cashup ? shopSpeedpointTotal(cashup.shop) : 0;
+  const optSP = cashup ? optSpeedpointTotal(cashup.opt) : 0;
+  const shopAcc = cashup ? shopAccountTotal(cashup.shop) : 0;
   const optAcc = cashup ? cashup.opt.accounts.reduce((s, a) => s + a.amount, 0) : 0;
-  const shopOther = cashup ? cashup.shop.otherAdjustments.reduce((s, o) => s + o.amount, 0) : 0;
+  const shopOther = cashup ? shopManualOtherAdjustmentsTotal(cashup.shop) : 0;
 
-  const cashConnectTotal = cashup ? cashup.shop.cashDepositedBanking + cashup.shop.easyPay + cashup.shop.coins : 0;
-  const shopDiff = cashup ? shopTakings - cashConnectTotal - shopSP - shopAcc - shopOther - cashup.shop.returns_mop - (cashup.shop.returnsNotCaptured ?? 0) - (cashup.shop.lottoPayouts ?? 0) - cashup.shop.attendantShortOver : 0;
+  const cashConnectTotal = cashup ? shopCashConnectTotal(cashup.shop) : 0;
+  const shopDiff = cashup ? cashupShortOver(cashup).shopDiff : 0;
   const optMopTotal = optSP + optAcc;
-  const optDiff = optNetSales - optMopTotal;
+  const optDiff = cashup ? cashupShortOver(cashup).optDiff : optNetSales - optMopTotal;
 
   const invTotal = managerEntry
     ? managerEntry.payoutInvoices.reduce((s, i) => s + i.inclusive, 0) + managerEntry.eftInvoices.reduce((s, i) => s + i.inclusive, 0)
