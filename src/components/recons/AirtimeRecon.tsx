@@ -119,7 +119,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
       const alloc = allocByLine.get(line.id);
       const target = alloc?.target_name;
       const isBld = target === 'Blue Label' || desc.includes('BLD DO') || desc.includes('BLUE LABEL');
-      const isLotto = target === 'Lotto' || desc.includes('ITHUCOLL');
+      const isLotto = target === 'Lotto' || desc.includes('ITHUCOLL') || desc.includes('SIZEKHAYA');
       const isFlash = target === 'Flash';
       if (isBld) bldPmts.set(dateStr, (bldPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
       if (isLotto) lottoPmts.set(dateStr, (lottoPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
@@ -174,7 +174,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
     if (!dateStr) return;
     const target = allocByLine.get(line.id)?.target_name;
     const isBld = target === 'Blue Label' || desc.includes('BLD DO') || desc.includes('BLUE LABEL');
-    const isLotto = target === 'Lotto' || desc.includes('ITHUCOLL');
+    const isLotto = target === 'Lotto' || desc.includes('ITHUCOLL') || desc.includes('SIZEKHAYA');
     const isFlash = target === 'Flash';
     if (isBld) bldPaymentsByDate.set(dateStr, (bldPaymentsByDate.get(dateStr) ?? 0) + Math.abs(line.amount));
     if (isLotto) lottoPaymentsByDate.set(dateStr, (lottoPaymentsByDate.get(dateStr) ?? 0) + Math.abs(line.amount));

@@ -244,7 +244,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
       const dateStr = parseBankStatementDate(line.transaction_date);
       if (!dateStr) return;
       if (desc.includes('BLD DO') || desc.includes('BLUE LABEL')) bldPmts.set(dateStr, (bldPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
-      if (desc.includes('ITHUCOLL')) lottoPmts.set(dateStr, (lottoPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
+      if (desc.includes('ITHUCOLL') || desc.includes('SIZEKHAYA')) lottoPmts.set(dateStr, (lottoPmts.get(dateStr) ?? 0) + Math.abs(line.amount));
     });
     let bld = openBld, ep = openEp, lt = openLt;
     for (const day of mDays) {
