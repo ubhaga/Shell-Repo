@@ -599,7 +599,7 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
         {/* Adjustment row — feeds into Total Payouts */}
         <div className="border-t bg-amber-50/60">
           <div className="flex items-center justify-between px-3 py-1.5 text-sm">
-            <span className="text-muted-foreground font-medium">Adjustment</span>
+            <span className="text-muted-foreground font-medium">Adjustment (use this only IF cashier made an error in payout)</span>
             <CurrencyInput
               value={form.shop.payoutsAdjustment}
               onChange={(v) => setShop({ payoutsAdjustment: v })}
@@ -666,7 +666,7 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
         {/* Adjustment row — feeds into Total Receipts */}
         <div className="border-t bg-amber-50/60">
           <div className="flex items-center justify-between px-3 py-1.5 text-sm">
-            <span className="text-muted-foreground font-medium">Adjustment</span>
+            <span className="text-muted-foreground font-medium">Adjustment (use this only IF cashier made an error in receipt)</span>
             <CurrencyInput
               value={form.shop.receiptsAdjustment}
               onChange={(v) => setShop({ receiptsAdjustment: v })}
