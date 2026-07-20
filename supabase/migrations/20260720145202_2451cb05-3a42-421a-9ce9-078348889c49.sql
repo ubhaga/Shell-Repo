@@ -1,0 +1,1 @@
+UPDATE public.manager_daily_entries SET lotto_comm = 0, lotto_net_sales_comm = 0, lotto_payout_comm = 0 WHERE date = '2026-05-25';
