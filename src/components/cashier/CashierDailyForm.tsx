@@ -569,7 +569,7 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
               </Button>
               <div className="flex gap-4 text-sm font-semibold pr-8">
                 <span className="text-muted-foreground">Payouts (excl. Lotto):</span>
-                <CurrencyDisplay value={shopPayoutsTotal} />
+                <CurrencyDisplay value={shopPayoutsTotalCalc} />
               </div>
             </div>
             <div className="flex items-center justify-between px-3 py-1.5 text-sm">
