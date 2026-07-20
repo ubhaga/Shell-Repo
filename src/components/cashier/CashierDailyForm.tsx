@@ -29,6 +29,7 @@ import { format, addDays, subDays, parseISO } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { extractDayEndPayouts } from "@/lib/dayEndPayouts";
+import { shopPayoutsTotal, shopReceiptsTotal } from "@/lib/cashupTotals";
 
 const DAY_END_PAYOUTS_CUTOFF = "2026-04-01";
 const DAY_END_PAYOUT_VENDOR = "Day End Payouts";
@@ -116,7 +117,15 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
 
   useEffect(() => {
     if (existing) {
-      setForm({ ...existing });
+      // Ensure new adjustment fields default to 0 / "" for legacy records
+      const patchedShop = {
+        ...existing.shop,
+        payoutsAdjustment: existing.shop.payoutsAdjustment ?? 0,
+        payoutsAdjustmentExplanation: existing.shop.payoutsAdjustmentExplanation ?? "",
+        receiptsAdjustment: existing.shop.receiptsAdjustment ?? 0,
+        receiptsAdjustmentExplanation: existing.shop.receiptsAdjustmentExplanation ?? "",
+      };
+      setForm({ ...existing, shop: patchedShop });
     } else {
       const shopBase = blankShopShift();
       // Seed Jan 1 2026 MOP Cash from spreadsheet (Daily Cashup row)
@@ -190,10 +199,10 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
   }, [useDayEndPayouts, dayEndPayoutsAmount, selectedDate]);
 
   // ---- CALCULATIONS ----
-  const shopPayoutsTotal = form.shop.payouts.reduce((s, p) => s + p.amount, 0);
+  const shopPayoutsTotalCalc = shopPayoutsTotal(form.shop);
   const shopNetSales = form.shop.income - form.shop.returns - form.shop.returns_today;
-  const shopTotalReceipts = form.shop.receipts.reduce((s, r) => s + r.amount, 0);
-  const shopTotalTakings = shopNetSales - shopPayoutsTotal - form.shop.lottoPayouts + shopTotalReceipts;
+  const shopTotalReceipts = shopReceiptsTotal(form.shop);
+  const shopTotalTakings = shopNetSales - shopPayoutsTotalCalc - form.shop.lottoPayouts + shopTotalReceipts;
 
   const optNetSales = form.opt.income - form.opt.returns;
   // OPT Total Takings = Net Sales only (no payouts/receipts for OPT)
