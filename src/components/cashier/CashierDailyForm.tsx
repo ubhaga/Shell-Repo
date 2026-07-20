@@ -222,7 +222,7 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
 
   const cashConnectTotal = form.shop.cashDepositedBanking + form.shop.easyPay + form.shop.coins;
 
-  // Shop balance = Shop Takings - MOP Cash - Shop Speedpoints - Shop Accounts - Other adjustments
+  // Shop balance = Shop Takings - MOP Cash - Shop Speedpoints - Shop Accounts - Other adjustments - Lotto Payouts
   const shopDifference =
     shopTotalTakings -
     cashConnectTotal -
@@ -231,6 +231,7 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
     shopOtherTotal -
     form.shop.returns_mop -
     form.shop.returnsNotCaptured -
+    (form.shop.lottoPayouts ?? 0) -
     form.shop.attendantShortOver;
   // OPT balance = OPT Takings - OPT Speedpoints - OPT Accounts
   const optDifference = optTotalTakings - optSpeedpointTotal - optAccountTotal;
