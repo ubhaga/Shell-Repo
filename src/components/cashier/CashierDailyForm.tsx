@@ -199,10 +199,11 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
   }, [useDayEndPayouts, dayEndPayoutsAmount, selectedDate]);
 
   // ---- CALCULATIONS ----
+  const shopPayoutsGrossCalc = (form.shop.payouts?.reduce((s, p) => s + (p.amount || 0), 0) ?? 0) + (form.shop.payoutsAdjustment ?? 0);
   const shopPayoutsTotalCalc = shopPayoutsTotal(form.shop);
   const shopNetSales = form.shop.income - form.shop.returns - form.shop.returns_today;
   const shopTotalReceipts = shopReceiptsTotal(form.shop);
-  const shopTotalTakings = shopNetSales - shopPayoutsTotalCalc - form.shop.lottoPayouts + shopTotalReceipts;
+  const shopTotalTakings = shopNetSales - shopPayoutsTotalCalc + shopTotalReceipts;
 
   const optNetSales = form.opt.income - form.opt.returns;
   // OPT Total Takings = Net Sales only (no payouts/receipts for OPT)
@@ -586,8 +587,8 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
                 Add Payout
               </Button>
               <div className="flex gap-4 text-sm font-semibold pr-8">
-                <span className="text-muted-foreground">Payouts (excl. Lotto):</span>
-                <CurrencyDisplay value={shopPayoutsTotalCalc} />
+                <span className="text-muted-foreground">Payouts (lines + adjustment):</span>
+                <CurrencyDisplay value={shopPayoutsGrossCalc} />
               </div>
             </div>
             <div className="flex items-center justify-between px-3 py-1.5 text-sm">
@@ -620,7 +621,7 @@ export function CashierDailyForm({ selectedDate, onDateChange }: Props) {
           )}
         </div>
         <div className="flex items-center justify-between px-3 py-1.5 bg-secondary font-semibold text-sm border-t">
-          <span>Total Payouts (incl. Adjustment, excl. Lotto)</span>
+          <span>Total Payouts (day end - lotto +/- adjustment)</span>
           <CurrencyDisplay value={shopPayoutsTotalCalc} highlight />
         </div>
       </div>

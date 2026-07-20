@@ -26,9 +26,9 @@ function computeDaySummary(c: DailyCashup) {
 
   const netSales = totalIncome - totalReturnsYest - totalReturnsToday;
 
-  const payoutsTotal = c.shop.payouts.reduce((s, p) => s + p.amount, 0) + (c.shop.payoutsAdjustment ?? 0);
+  const payoutsTotal = c.shop.payouts.reduce((s, p) => s + p.amount, 0) + (c.shop.payoutsAdjustment ?? 0) - c.shop.lottoPayouts;
   const lottoPayouts = c.shop.lottoPayouts;
-  const totalPayouts = payoutsTotal + lottoPayouts;
+  const totalPayouts = payoutsTotal;
 
   const totalReceipts = c.shop.receipts.reduce((s, r) => s + r.amount, 0) + (c.shop.receiptsAdjustment ?? 0);
 
@@ -68,7 +68,7 @@ function computeDaySummary(c: DailyCashup) {
   const optSP = optSPExVPlus + optVPlus;
 
   const shopNetSales = c.shop.income - c.shop.returns - c.shop.returns_today;
-  const shopTakings = shopNetSales - payoutsTotal - lottoPayouts + totalReceipts;
+  const shopTakings = shopNetSales - payoutsTotal + totalReceipts;
   const shopBalance =
     shopTakings -
     cashConnectTotal -

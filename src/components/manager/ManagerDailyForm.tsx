@@ -601,9 +601,9 @@ export function ManagerDailyForm({ selectedDate, onDateChange }: Props) {
   const cashierBlock = cashup
     ? (() => {
         const shopNetSales = cashup.shop.income - cashup.shop.returns - (cashup.shop.returns_today ?? 0);
-        const shopPayoutsTotal = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0) + (cashup.shop.payoutsAdjustment ?? 0);
+        const shopPayoutsTotal = cashup.shop.payouts.reduce((s, p) => s + p.amount, 0) + (cashup.shop.payoutsAdjustment ?? 0) - cashup.shop.lottoPayouts;
         const shopTotalReceipts = cashup.shop.receipts.reduce((s, r) => s + r.amount, 0) + (cashup.shop.receiptsAdjustment ?? 0);
-        const shopTotalTakings = shopNetSales - shopPayoutsTotal - cashup.shop.lottoPayouts + shopTotalReceipts;
+        const shopTotalTakings = shopNetSales - shopPayoutsTotal + shopTotalReceipts;
 
         // Must match CashierDailyForm exactly: cashConnectTotal = cashDepositedBanking + easyPay + coins
         const cashConnectTotal = cashup.shop.cashDepositedBanking + cashup.shop.easyPay + cashup.shop.coins;

@@ -76,8 +76,8 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       totalEasypayMop += c.shop.easyPay ?? 0;
       // Lotto payouts
       totalLottoPayouts += c.shop.lottoPayouts ?? 0;
-      // Total payouts
-      const shopPayoutsTotal = (c.shop.payouts ?? []).reduce((s, p) => s + p.amount, 0) + (c.shop.payoutsAdjustment ?? 0);
+      // Total payouts (day end payouts - lotto +/- adjustment)
+      const shopPayoutsTotal = (c.shop.payouts ?? []).reduce((s, p) => s + p.amount, 0) + (c.shop.payoutsAdjustment ?? 0) - (c.shop.lottoPayouts ?? 0);
       totalPayouts += shopPayoutsTotal;
       // Cash deposited for banking
       totalCashDepositedBanking += c.shop.cashDepositedBanking ?? 0;
@@ -113,7 +113,7 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
       // Cashier balance (shop + opt short/over)
       const shopNetSales = (c.shop.income ?? 0) - (c.shop.returns ?? 0) - (c.shop.returns_today ?? 0);
       const shopTotalReceipts = (c.shop.receipts ?? []).reduce((s, r) => s + r.amount, 0) + (c.shop.receiptsAdjustment ?? 0);
-      const shopTotalTakings = shopNetSales - shopPayoutsTotal - (c.shop.lottoPayouts ?? 0) + shopTotalReceipts;
+      const shopTotalTakings = shopNetSales - shopPayoutsTotal + shopTotalReceipts;
       const cashConnectTotal = (c.shop.cashDepositedBanking ?? 0) + (c.shop.easyPay ?? 0) + (c.shop.coins ?? 0);
       const shopSpTotal = (c.shop.speedpoints ?? []).reduce((s, sp) => s + sp.shopAmount, 0);
       const shopDiff = shopTotalTakings - cashConnectTotal - shopSpTotal - shopAccTotal - section8Total;

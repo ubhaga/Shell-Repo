@@ -4,6 +4,7 @@ import { CurrencyDisplay } from '@/components/ui/CashupUI';
 import { CheckCircle, XCircle, AlertCircle, CalendarDays, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { MonthlyDashboard } from './MonthlyDashboard';
+import { shopPayoutsTotal as calcShopPayoutsTotal } from '@/lib/cashupTotals';
 
 interface Props { selectedDate: string; }
 
@@ -59,9 +60,9 @@ function DailyDashboard({ selectedDate }: Props) {
   const optNetSales = cashup ? cashup.opt.income - cashup.opt.returns : 0;
   const totalNetSales = shopNetSales + optNetSales;
 
-  const shopPayoutsTotal = cashup ? cashup.shop.payouts.reduce((s, p) => s + p.amount, 0) + (cashup.shop.payoutsAdjustment ?? 0) : 0;
+  const shopPayoutsTotal = cashup ? calcShopPayoutsTotal(cashup.shop) : 0;
   const shopReceipts = cashup ? cashup.shop.receipts.reduce((s, r) => s + r.amount, 0) + (cashup.shop.receiptsAdjustment ?? 0) : 0;
-  const shopTakings = cashup ? shopNetSales - shopPayoutsTotal - cashup.shop.lottoPayouts + shopReceipts : 0;
+  const shopTakings = cashup ? shopNetSales - shopPayoutsTotal + shopReceipts : 0;
 
   const shopSP = cashup ? cashup.shop.speedpoints.reduce((s, sp) => s + sp.shopAmount, 0) : 0;
   const optSP = cashup ? cashup.opt.speedpoints.reduce((s, sp) => s + sp.optAmount, 0) : 0;
@@ -151,7 +152,7 @@ function DailyDashboard({ selectedDate }: Props) {
                 { label: 'Shop Net Sales', v: shopNetSales },
                 { label: 'OPT Net Sales', v: optNetSales },
                 { label: 'Total Net Sales', v: totalNetSales, bold: true },
-                { label: 'Total Payouts', v: shopPayoutsTotal + (cashup.shop.lottoPayouts ?? 0) },
+                { label: 'Total Payouts', v: shopPayoutsTotal },
                 { label: 'Total Receipts', v: shopReceipts },
                 { label: 'Shop Total Takings', v: shopTakings, bold: true },
                 { label: 'Cash Connect', v: cashConnectTotal },
