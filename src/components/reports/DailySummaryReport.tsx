@@ -77,6 +77,7 @@ function computeDaySummary(c: DailyCashup) {
     manualOtherAdj -
     returnsMop -
     returnsNotCaptured -
+    lottoPayouts -
     attendantShortOver;
 
   const optNetSales = c.opt.income - c.opt.returns;
