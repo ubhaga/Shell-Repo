@@ -172,10 +172,10 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   }, 0);
 
   const spreadsheetPayouts = monthCashups.reduce((s, c) => {
-    return s + c.shop.payouts.reduce((ps, p) => ps + p.amount, 0) + c.shop.lottoPayouts;
+    return s + c.shop.payouts.reduce((ps, p) => ps + p.amount, 0) + (c.shop.payoutsAdjustment ?? 0) + c.shop.lottoPayouts;
   }, 0);
 
-  const spreadsheetReceipts = monthCashups.reduce((s, c) => s + c.shop.receipts.reduce((rs, r) => rs + r.amount, 0), 0);
+  const spreadsheetReceipts = monthCashups.reduce((s, c) => s + c.shop.receipts.reduce((rs, r) => rs + r.amount, 0) + (c.shop.receiptsAdjustment ?? 0), 0);
 
   const spreadsheetInvoicesTotal = monthManagers.reduce(
     (s, e) =>
