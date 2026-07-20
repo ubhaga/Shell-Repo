@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCashupStore } from '@/store/cushupStore';
+import { useCashupStore } from '@/store/cashupStore';
 import { CurrencyDisplay } from '@/components/ui/CashupUI';
 import { CheckCircle, XCircle, AlertCircle, CalendarDays, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
@@ -60,7 +60,7 @@ function DailyDashboard({ selectedDate }: Props) {
   const optNetSales = cashup ? cashup.opt.income - cashup.opt.returns : 0;
   const totalNetSales = shopNetSales + optNetSales;
 
-  const shopPayoutsTotal = cashup ? shopPayoutsTotal(cashup.shop) : 0;
+  const shopPayoutsTotal = cashup ? calcShopPayoutsTotal(cashup.shop) : 0;
   const shopReceipts = cashup ? cashup.shop.receipts.reduce((s, r) => s + r.amount, 0) + (cashup.shop.receiptsAdjustment ?? 0) : 0;
   const shopTakings = cashup ? shopNetSales - shopPayoutsTotal + shopReceipts : 0;
 
