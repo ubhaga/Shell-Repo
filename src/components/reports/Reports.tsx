@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
+import { downloadXlsxFromObjects } from '@/lib/csvExport';
 
 import { DailySummaryReport } from './DailySummaryReport';
 import { CreditorsRecon } from '@/components/recons/CreditorsRecon';
