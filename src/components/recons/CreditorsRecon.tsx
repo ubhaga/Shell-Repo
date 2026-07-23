@@ -354,7 +354,9 @@ function CreditorsReconMonth({ filterMonth }: CreditorsReconProps) {
 
   const hasEdits = Object.keys(editingOB).length > 0;
 
-  const dataReady = !loading && loadedMonth === filterMonth;
+  const priorMonthsReady = loadedPriorMonths.length === priorMonths.length
+    && loadedPriorMonths.every((month, index) => month === priorMonths[index]);
+  const dataReady = !loading && loadedMonth === filterMonth && priorMonthsReady;
 
   // Format sunday labels
   const weekLabels = sundays.map((sun, i) =>
