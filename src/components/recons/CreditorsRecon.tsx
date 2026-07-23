@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useCashupStore } from '@/store/cashupStore';
 import { useMasterDataStore } from '@/store/masterDataStore';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,18 +18,23 @@ interface CreditorsReconProps {
   filterMonth: string;
 }
 
+type BankLine = { id: string; amount: number; description: string; transaction_date: string };
+
 export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   const { managerEntries } = useCashupStore();
   const { eftSuppliers, directlyExpensedSuppliers: directlyExpensedFromSettings } = useMasterDataStore();
   const { allocations: bankAllocations } = useBankAllocations(filterMonth);
 
   // Load bank lines for CR payments (now includes id for allocation matching)
-  const [bankLines, setBankLines] = useState<{ id: string; amount: number; description: string; transaction_date: string }[]>([]);
+  const [bankLines, setBankLines] = useState<BankLine[]>([]);
   const [openingBalances, setOpeningBalances] = useState<Record<string, number>>({});
   const [editingOB, setEditingOB] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadedMonth, setLoadedMonth] = useState<string | null>(null);
+  const loadRequestRef = useRef(0);
 
-  const [priorBankLinesByMonth, setPriorBankLinesByMonth] = useState<Record<string, typeof bankLines>>({});
+  const [priorBankLinesByMonth, setPriorBankLinesByMonth] = useState<Record<string, BankLine[]>>({});
   const [priorAllocationsByMonth, setPriorAllocationsByMonth] = useState<Record<string, { bank_line_id: string; recon_type: string; target_name: string }[]>>({});
   const [seedOB, setSeedOB] = useState<Record<string, number>>({});
 
@@ -48,53 +53,57 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   }, [filterMonth]);
 
   const loadData = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
+    setLoading(true);
+    setLoadedMonth(null);
+
     const [bankRes, obRes] = await Promise.all([
       supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', filterMonth),
       supabase.from('creditor_opening_balances').select('*').eq('month', filterMonth),
     ]);
 
-    setBankLines((bankRes.data ?? []) as typeof bankLines);
+    const nextBankLines = (bankRes.data ?? []) as BankLine[];
     const obMap: Record<string, number> = {};
     ((obRes.data ?? []) as { supplier: string; amount: number }[]).forEach(r => {
       obMap[r.supplier] = Number(r.amount);
     });
-    setOpeningBalances(obMap);
-    setEditingOB({});
 
     // Load seed OB (March 2026) always
+    let nextSeedOB: Record<string, number> = {};
     if (filterMonth !== '2026-03') {
       const { data: seedRes } = await supabase.from('creditor_opening_balances').select('*').eq('month', '2026-03');
-      const seedMap: Record<string, number> = {};
       ((seedRes ?? []) as { supplier: string; amount: number }[]).forEach(r => {
-        seedMap[r.supplier] = Number(r.amount);
+        nextSeedOB[r.supplier] = Number(r.amount);
       });
-      setSeedOB(seedMap);
-    } else {
-      setSeedOB({});
     }
 
     // Load bank lines + allocations for every prior month (chain)
+    let bankByMonth: Record<string, BankLine[]> = {};
+    let allocByMonth: Record<string, { bank_line_id: string; recon_type: string; target_name: string }[]> = {};
     if (priorMonths.length > 0) {
       const [bankAll, allocAll] = await Promise.all([
         supabase.from('bank_statement_lines').select('id, amount, description, transaction_date, month').in('month', priorMonths),
         supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name, month').in('month', priorMonths),
       ]);
-      const bankByMonth: Record<string, typeof bankLines> = {};
-      ((bankAll.data ?? []) as (typeof bankLines[number] & { month: string })[]).forEach(l => {
+      ((bankAll.data ?? []) as (BankLine & { month: string })[]).forEach(l => {
         if (!bankByMonth[l.month]) bankByMonth[l.month] = [];
         bankByMonth[l.month].push({ id: l.id, amount: l.amount, description: l.description, transaction_date: l.transaction_date });
       });
-      setPriorBankLinesByMonth(bankByMonth);
-      const allocByMonth: Record<string, { bank_line_id: string; recon_type: string; target_name: string }[]> = {};
       ((allocAll.data ?? []) as { bank_line_id: string; recon_type: string; target_name: string; month: string }[]).forEach(a => {
         if (!allocByMonth[a.month]) allocByMonth[a.month] = [];
         allocByMonth[a.month].push(a);
       });
-      setPriorAllocationsByMonth(allocByMonth);
-    } else {
-      setPriorBankLinesByMonth({});
-      setPriorAllocationsByMonth({});
     }
+
+    if (loadRequestRef.current !== requestId) return;
+    setBankLines(nextBankLines);
+    setOpeningBalances(obMap);
+    setEditingOB({});
+    setSeedOB(nextSeedOB);
+    setPriorBankLinesByMonth(bankByMonth);
+    setPriorAllocationsByMonth(allocByMonth);
+    setLoadedMonth(filterMonth);
+    setLoading(false);
   }, [filterMonth, priorMonths]);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -332,6 +341,8 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
 
   const hasEdits = Object.keys(editingOB).length > 0;
 
+  const dataReady = !loading && loadedMonth === filterMonth;
+
   // Format sunday labels
   const weekLabels = sundays.map((sun, i) =>
     i === sundays.length - 1 && getDay(monthEnd) !== 0
@@ -363,6 +374,13 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
 
   return (
     <div className="space-y-6">
+      {!dataReady && (
+        <div className="rounded-lg border bg-card px-4 py-3 text-sm text-muted-foreground">
+          Loading creditors reconciliation for {format(monthStart, 'MMMM yyyy')}…
+        </div>
+      )}
+      {dataReady && (
+        <>
       <div className="flex items-center justify-end gap-2">
         <Button size="sm" variant="outline" onClick={() => {
           const allSup = [...suppliers, ...directlyExpensedSuppliers, ...fuelSuppliers];
@@ -390,6 +408,8 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
       {renderTable(`Creditors Reconciliation — ${format(monthStart, 'MMMM yyyy')}`, suppliers)}
       {directlyExpensedSuppliers.length > 0 && renderTable(`Directly Expensed Creditors — ${format(monthStart, 'MMMM yyyy')}`, directlyExpensedSuppliers)}
       {fuelSuppliers.length > 0 && renderTable(`Fuel Creditors — ${format(monthStart, 'MMMM yyyy')}`, fuelSuppliers)}
+        </>
+      )}
     </div>
   );
 }
