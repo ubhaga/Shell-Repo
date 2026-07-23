@@ -45,14 +45,21 @@ function CreditorsReconMonth({ filterMonth }: CreditorsReconProps) {
 
   const isFirstMonth = filterMonth <= '2026-03';
 
-  // Build list of months from March 2026 up to (but not including) filterMonth
+  // Build list of months from March 2026 up to (but not including) filterMonth.
+  // Use numeric year/month construction rather than Date string parsing so the
+  // current month can never leak into the opening-balance roll-forward.
   const priorMonths = useMemo(() => {
     const months: string[] = [];
-    let d = new Date('2026-03-01');
-    const end = new Date(filterMonth + '-01');
-    while (d < end) {
-      months.push(format(d, 'yyyy-MM'));
-      d = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    const [targetYear, targetMonth] = filterMonth.split('-').map(Number);
+    let year = 2026;
+    let month = 3;
+    while (year < targetYear || (year === targetYear && month < targetMonth)) {
+      months.push(`${year}-${String(month).padStart(2, '0')}`);
+      month += 1;
+      if (month > 12) {
+        month = 1;
+        year += 1;
+      }
     }
     return months;
   }, [filterMonth]);
@@ -92,10 +99,11 @@ function CreditorsReconMonth({ filterMonth }: CreditorsReconProps) {
     // Load bank lines + allocations for every prior month (chain)
     let bankByMonth: Record<string, BankLine[]> = {};
     let allocByMonth: Record<string, { bank_line_id: string; recon_type: string; target_name: string }[]> = {};
-    if (priorMonths.length > 0) {
+    const openingRollForwardMonths = priorMonths.filter((month) => month < filterMonth);
+    if (openingRollForwardMonths.length > 0) {
       const [bankAll, allocAll] = await Promise.all([
-        supabase.from('bank_statement_lines').select('id, amount, description, transaction_date, month').in('month', priorMonths),
-        supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name, month').in('month', priorMonths),
+        supabase.from('bank_statement_lines').select('id, amount, description, transaction_date, month').in('month', openingRollForwardMonths),
+        supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name, month').in('month', openingRollForwardMonths),
       ]);
       ((bankAll.data ?? []) as (BankLine & { month: string })[]).forEach(l => {
         if (!bankByMonth[l.month]) bankByMonth[l.month] = [];
@@ -112,7 +120,7 @@ function CreditorsReconMonth({ filterMonth }: CreditorsReconProps) {
     setOpeningBalances(obMap);
     setEditingOB({});
     setSeedOB(nextSeedOB);
-    setLoadedPriorMonths(priorMonths);
+    setLoadedPriorMonths(openingRollForwardMonths);
     setPriorBankLinesByMonth(bankByMonth);
     setPriorAllocationsByMonth(allocByMonth);
     setLoadedMonth(filterMonth);
@@ -294,7 +302,7 @@ function CreditorsReconMonth({ filterMonth }: CreditorsReconProps) {
     const normalizedSeedOB = normalizeBalanceMap(seedOB);
     allReconSuppliers.forEach(s => { running[s] = normalizedSeedOB[s] ?? 0; });
 
-    for (const m of loadedPriorMonths) {
+    for (const m of loadedPriorMonths.filter((month) => month < filterMonth)) {
       const monthManagersM = managerEntries.filter(e => e.date.startsWith(m));
       const bankM = priorBankLinesByMonth[m] ?? [];
       const allocM = priorAllocationsByMonth[m] ?? [];
@@ -329,7 +337,7 @@ function CreditorsReconMonth({ filterMonth }: CreditorsReconProps) {
     });
     return result;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openingBalances, isFirstMonth, seedOB, loadedPriorMonths, priorBankLinesByMonth, priorAllocationsByMonth, managerEntries, suppliers, directlyExpensedSuppliers, fuelSuppliers]);
+  }, [filterMonth, openingBalances, isFirstMonth, seedOB, loadedPriorMonths, priorBankLinesByMonth, priorAllocationsByMonth, managerEntries, suppliers, directlyExpensedSuppliers, fuelSuppliers]);
 
   // Save opening balances
   const handleSaveOB = async () => {
@@ -354,8 +362,9 @@ function CreditorsReconMonth({ filterMonth }: CreditorsReconProps) {
 
   const hasEdits = Object.keys(editingOB).length > 0;
 
-  const priorMonthsReady = loadedPriorMonths.length === priorMonths.length
-    && loadedPriorMonths.every((month, index) => month === priorMonths[index]);
+  const openingRollForwardMonths = priorMonths.filter((month) => month < filterMonth);
+  const priorMonthsReady = loadedPriorMonths.length === openingRollForwardMonths.length
+    && loadedPriorMonths.every((month, index) => month === openingRollForwardMonths[index]);
   const dataReady = !loading && loadedMonth === filterMonth && priorMonthsReady;
 
   // Format sunday labels
