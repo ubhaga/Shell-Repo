@@ -146,9 +146,23 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   const normalizeName = (value: string) =>
     value.toUpperCase().replace(/[^A-Z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
 
+  const allReconSuppliers = [...suppliers, ...directlyExpensedSuppliers, ...fuelSuppliers];
+
   const supplierByNormalized = new Map(
-    [...suppliers, ...directlyExpensedSuppliers, ...fuelSuppliers].map((supplier) => [normalizeName(supplier), supplier])
+    allReconSuppliers.map((supplier) => [normalizeName(supplier), supplier])
   );
+
+  const canonicalSupplier = (value: string): string =>
+    supplierByNormalized.get(normalizeName(value)) ?? value;
+
+  const normalizeBalanceMap = (balances: Record<string, number>) => {
+    const result: Record<string, number> = {};
+    Object.entries(balances).forEach(([supplier, amount]) => {
+      const canonical = canonicalSupplier(supplier);
+      result[canonical] = (result[canonical] ?? 0) + amount;
+    });
+    return result;
+  };
 
 
   const resolveSupplier = (preferredNames: string[]): string | null => {
@@ -182,7 +196,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     const crMatch = raw.match(/\bCR\s+(.+)$/);
     const candidate = crMatch ? normalizeName(crMatch[1]) : normalized;
 
-    for (const supplier of suppliers) {
+    for (const supplier of allReconSuppliers) {
       const supplierNormalized = normalizeName(supplier);
       if (candidate.startsWith(supplierNormalized) || supplierNormalized.startsWith(candidate)) {
         return supplier;
@@ -198,14 +212,14 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   type WeekData = { invoices: number; payments: number };
   const supplierWeekly: Record<string, WeekData[]> = {};
 
-  [...suppliers, ...directlyExpensedSuppliers, ...fuelSuppliers].forEach(supplier => {
+  allReconSuppliers.forEach(supplier => {
     const weeks: WeekData[] = sundays.map(() => ({ invoices: 0, payments: 0 }));
 
     // Add EFT invoices
     monthManagers.forEach(entry => {
       const entryDate = new Date(entry.date);
       entry.eftInvoices.forEach(inv => {
-        if (inv.supplier === supplier) {
+        if (canonicalSupplier(inv.supplier) === supplier) {
           const weekIdx = sundays.findIndex(sun => entryDate <= sun);
           const idx = weekIdx >= 0 ? weekIdx : sundays.length - 1;
           weeks[idx].invoices += inv.inclusive;
@@ -219,7 +233,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
       const allocation = bankAllocations.find(a => a.bank_line_id === line.id && a.recon_type === 'creditor');
       const rawMatched = allocation ? allocation.target_name : matchSupplier(line.description);
       // Resolve to the canonical supplier name (handles whitespace/case variants in stored allocations)
-      const matched = rawMatched ? (supplierByNormalized.get(normalizeName(rawMatched)) ?? rawMatched) : null;
+      const matched = rawMatched ? canonicalSupplier(rawMatched) : null;
       if (matched !== supplier) return;
       const lineDate = parseBankDate(line.transaction_date);
       if (!lineDate) return;
@@ -251,30 +265,30 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
   // previous month's calculated closing, so stale saved OB rows can never break
   // the roll-forward relationship again.
   const effectiveOB = useMemo(() => {
-    if (isFirstMonth) return { ...openingBalances };
+    if (isFirstMonth) return normalizeBalanceMap(openingBalances);
 
-    const allSup = [...suppliers, ...directlyExpensedSuppliers, ...fuelSuppliers];
     // Running balance per supplier — start from seed (March 2026) stored OB
     const running: Record<string, number> = {};
-    allSup.forEach(s => { running[s] = seedOB[s] ?? 0; });
+    const normalizedSeedOB = normalizeBalanceMap(seedOB);
+    allReconSuppliers.forEach(s => { running[s] = normalizedSeedOB[s] ?? 0; });
 
     for (const m of priorMonths) {
       const monthManagersM = managerEntries.filter(e => e.date.startsWith(m));
       const bankM = priorBankLinesByMonth[m] ?? [];
       const allocM = priorAllocationsByMonth[m] ?? [];
 
-      allSup.forEach(supplier => {
+      allReconSuppliers.forEach(supplier => {
         let inv = 0;
         let pay = 0;
         monthManagersM.forEach(entry => {
           entry.eftInvoices.forEach(i => {
-            if (i.supplier === supplier) inv += i.inclusive;
+            if (canonicalSupplier(i.supplier) === supplier) inv += i.inclusive;
           });
         });
         bankM.forEach(line => {
           const alloc = allocM.find(a => a.bank_line_id === line.id && a.recon_type === 'creditor');
           const rawMatched = alloc ? alloc.target_name : matchSupplier(line.description);
-          const matched = rawMatched ? (supplierByNormalized.get(normalizeName(rawMatched)) ?? rawMatched) : null;
+          const matched = rawMatched ? canonicalSupplier(rawMatched) : null;
           if (matched !== supplier) return;
           pay += Math.abs(line.amount);
         });
@@ -288,7 +302,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
 
     // Manual override for this month takes precedence
     const result: Record<string, number> = {};
-    allSup.forEach(s => {
+    allReconSuppliers.forEach(s => {
       result[s] = running[s];
     });
     return result;
