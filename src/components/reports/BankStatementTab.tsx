@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Upload, Trash2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useBankAllocations } from '@/hooks/useBankAllocations';
+import { downloadXlsx } from '@/lib/csvExport';
 
 const TERMINAL_PATTERNS: { pattern: RegExp; terminal: string }[] = [
   { pattern: /247608/, terminal: 'Term 247608' },
