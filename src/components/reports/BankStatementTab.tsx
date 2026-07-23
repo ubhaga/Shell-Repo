@@ -200,15 +200,12 @@ export function BankStatementTab({ filterMonth, monthLabel }: Props) {
 
   const exportCSV = () => {
     const headers = ['Date', 'Description', 'Amount', 'Matched Terminal', 'Allocation'];
-    const rows = lines.map(l => {
+    const rows: (string | number)[][] = lines.map(l => {
       const alloc = allocations.find(a => a.bank_line_id === l.id);
       const allocLabel = alloc ? `${alloc.recon_type}: ${alloc.target_name}` : '';
-      return [l.transaction_date, `"${l.description}"`, l.amount, l.matched_terminal, allocLabel].join(',');
+      return [l.transaction_date, l.description, l.amount, l.matched_terminal ?? '', allocLabel];
     });
-    const csv = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `bank-statement-${filterMonth}.csv`; a.click();
+    downloadXlsx(headers, rows, `bank-statement-${filterMonth}.xlsx`);
   };
 
   // Build allocation options
