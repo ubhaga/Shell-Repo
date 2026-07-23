@@ -7,6 +7,7 @@ import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 import type { DailyCashup } from '@/types/cashup';
 import { cashupShortOver, shopPayoutsTotal, shopReceiptsTotal } from '@/lib/cashupTotals';
+import { downloadXlsx } from '@/lib/csvExport';
 
 interface Props {
   filterMonth: string;
