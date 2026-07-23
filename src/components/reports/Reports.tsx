@@ -1491,7 +1491,7 @@ export function Reports({
 
         {/* Creditors */}
         <TabsContent value="creditors">
-          <CreditorsRecon filterMonth={filterMonth} />
+          <CreditorsRecon key={filterMonth} filterMonth={filterMonth} />
         </TabsContent>
 
         {/* Debtors */}

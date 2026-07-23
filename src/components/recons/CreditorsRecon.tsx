@@ -56,6 +56,12 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     const requestId = ++loadRequestRef.current;
     setLoading(true);
     setLoadedMonth(null);
+    setBankLines([]);
+    setOpeningBalances({});
+    setEditingOB({});
+    setSeedOB({});
+    setPriorBankLinesByMonth({});
+    setPriorAllocationsByMonth({});
 
     const [bankRes, obRes] = await Promise.all([
       supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', filterMonth),
@@ -359,6 +365,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     const inactiveSuppliers = supplierList.filter(s => !activeSuppliers.includes(s));
 
     return <CreditorsTable
+      key={`${filterMonth}-${title}`}
       title={title}
       activeSuppliers={activeSuppliers}
       inactiveSuppliers={inactiveSuppliers}
