@@ -117,16 +117,12 @@ export function DailySummaryReport({ filterMonth }: Props) {
 
   const exportCSV = () => {
     const headers = ['Date', 'Cashier', 'Income', 'Returns (Yest)', 'Returns (Today)', 'Net Sales', 'Payouts', 'Receipts', 'Banking', 'EasyPay', 'Coins', 'Speedpoints', 'V Plus', 'Accounts', 'Other Adj', 'Short/Over'];
-    const csvRows = rows.map(r => [
+    const xlsxRows: (string | number)[][] = rows.map(r => [
       r.date, r.cashier, r.totalIncome, r.totalReturnsYest, r.totalReturnsToday, r.netSales,
       r.totalPayouts, r.totalReceipts, r.cashBanking, r.easyPay, r.coins,
       r.totalSpeedpoints, r.totalVPlus, r.totalAccounts, r.totalOtherAdj, r.shortOver,
-    ].join(','));
-    const csv = [headers.join(','), ...csvRows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `daily-summary-${filterMonth}.csv`; a.click();
+    ]);
+    downloadXlsx(headers, xlsxRows, `daily-summary-${filterMonth}.xlsx`);
   };
 
   return (
