@@ -289,7 +289,6 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     // Manual override for this month takes precedence
     const result: Record<string, number> = {};
     allSup.forEach(s => {
-      result[s] = openingBalances[s] !== undefined ? openingBalances[s] : running[s];
       result[s] = running[s];
     });
     return result;
