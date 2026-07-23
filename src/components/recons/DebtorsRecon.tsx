@@ -388,7 +388,7 @@ export function DebtorsRecon({ filterMonth }: DebtorsReconProps) {
             downloadCsv(
               ['Debtor', 'Opening Balance', 'Purchases', 'Payments', 'Adjustments (JE3)', 'Closing Balance'],
               rows.map(r => [r.name, r.ob, r.purchase, r.bankPmt, r.adjustment, r.closing]),
-              `debtors-recon-${filterMonth}.csv`
+              `debtors-recon-${filterMonth}.xlsx`
             );
           }}>
             <Download className="h-3.5 w-3.5 mr-1" />Export CSV

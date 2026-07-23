@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
+import { downloadXlsxFromObjects } from '@/lib/csvExport';
 
 import { DailySummaryReport } from './DailySummaryReport';
 import { CreditorsRecon } from '@/components/recons/CreditorsRecon';
@@ -593,13 +594,7 @@ export function Reports({
 
   const exportCSV = (data: Record<string, string | number>[], filename: string) => {
     if (!data.length) return;
-    const headers = Object.keys(data[0]);
-    const rows = data.map(r => headers.map(h => r[h]).join(','));
-    const csv = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename; a.click();
+    downloadXlsxFromObjects(data, filename);
   };
 
   const formatDate = (d: string) => {
@@ -665,7 +660,7 @@ export function Reports({
           <div className="bg-card border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
               <h3 className="font-semibold text-sm">Detailed Payouts — {monthLabel}</h3>
-              <Button size="sm" variant="outline" onClick={() => exportCSV(payoutReport.map(({status, ...rest}) => ({...rest, cashierPayout: status === 'matched' ? 'Yes' : status === 'matched-other-day' ? 'Yes (diff day)' : 'No'})), `payouts-${filterMonth}.csv`)}>
+              <Button size="sm" variant="outline" onClick={() => exportCSV(payoutReport.map(({status, ...rest}) => ({...rest, cashierPayout: status === 'matched' ? 'Yes' : status === 'matched-other-day' ? 'Yes (diff day)' : 'No'})), `payouts-${filterMonth}.xlsx`)}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
             </div>
@@ -791,7 +786,7 @@ export function Reports({
           <div className="bg-card border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
               <h3 className="font-semibold text-sm">Detailed Receipts — {monthLabel}</h3>
-              <Button size="sm" variant="outline" onClick={() => exportCSV(receiptsReport, `receipts-${filterMonth}.csv`)}>
+              <Button size="sm" variant="outline" onClick={() => exportCSV(receiptsReport, `receipts-${filterMonth}.xlsx`)}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
             </div>
@@ -879,7 +874,7 @@ export function Reports({
                       row.Total = r.total;
                       return row;
                     });
-                    exportCSV(rows, `speedpoints-${filterMonth}.csv`);
+                    exportCSV(rows, `speedpoints-${filterMonth}.xlsx`);
                   }}>
                     <Download className="h-3.5 w-3.5 mr-1" />Export CSV
                   </Button>
@@ -1221,7 +1216,7 @@ export function Reports({
           <div className="bg-card border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
               <h3 className="font-semibold text-sm">Accounts Report — {monthLabel}</h3>
-              <Button size="sm" variant="outline" onClick={() => exportCSV(accountsReport, `accounts-${filterMonth}.csv`)}>
+              <Button size="sm" variant="outline" onClick={() => exportCSV(accountsReport, `accounts-${filterMonth}.xlsx`)}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
             </div>
@@ -1289,7 +1284,7 @@ export function Reports({
                   <button onClick={() => setInvoiceTypeFilter('EFT')} className={`px-2 py-0.5 text-xs rounded ${invoiceTypeFilter === 'EFT' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}>EFT</button>
                 </div>
               </div>
-              <Button size="sm" variant="outline" onClick={() => exportCSV(filteredInvoiceReport, `invoices-${filterMonth}.csv`)}>
+              <Button size="sm" variant="outline" onClick={() => exportCSV(filteredInvoiceReport, `invoices-${filterMonth}.xlsx`)}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
             </div>
@@ -1440,7 +1435,7 @@ export function Reports({
           <div className="bg-card border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
               <h3 className="font-semibold text-sm">Method of Payment Report — {monthLabel}</h3>
-              <Button size="sm" variant="outline" onClick={() => exportCSV(mopReport, `mop-${filterMonth}.csv`)}>
+              <Button size="sm" variant="outline" onClick={() => exportCSV(mopReport, `mop-${filterMonth}.xlsx`)}>
                 <Download className="h-3.5 w-3.5 mr-1" />Export CSV
               </Button>
             </div>

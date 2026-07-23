@@ -215,7 +215,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
             downloadCsv(
               ['Date', 'CC Opening', 'CC Daily Cashup', 'CC Transfer In', 'CC Bag Closure', 'Deep Frozen CC', 'CC Closing', 'Bank Charges', 'Expected Banking', 'Bank Stmt', 'Outstanding'],
               dailyRows.map(r => [r.date, r.ccOpening, r.ccDailyCashup, r.ccTransferIn, r.ccBagClosure, r.ccDeepFrozen, r.ccClosing, r.bankCharges, r.bankingExpected, r.bankActual, r.bankRunningBalance]),
-              `cash-connect-recon-${filterMonth}.csv`
+              `cash-connect-recon-${filterMonth}.xlsx`
             );
           }}>
             <Download className="h-3.5 w-3.5 mr-1" />Export CSV
@@ -362,7 +362,7 @@ export function CashRecon({ filterMonth }: CashReconProps) {
             downloadCsv(
               ['Date', 'Opening', 'Daily Cashup', 'Bag Closure', 'Transfer Out', 'Closing'],
               dailyRows.map(r => [r.date, r.coinsOpening, r.coinsDailyCashup, r.coinsBagClosure, r.coinsTransferOut, r.coinsClosing]),
-              `coins-recon-${filterMonth}.csv`
+              `coins-recon-${filterMonth}.xlsx`
             );
           }}>
             <Download className="h-3.5 w-3.5 mr-1" />Export CSV

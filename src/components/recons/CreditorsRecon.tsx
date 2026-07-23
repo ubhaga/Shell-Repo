@@ -395,7 +395,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
             });
             return [s, ob, ...weekCols] as (string | number)[];
           });
-          downloadCsv(headers, csvRows, `creditors-recon-${filterMonth}.csv`);
+          downloadCsv(headers, csvRows, `creditors-recon-${filterMonth}.xlsx`);
         }}>
           <Download className="h-3.5 w-3.5 mr-1" />Export CSV
         </Button>
