@@ -21,6 +21,10 @@ interface CreditorsReconProps {
 type BankLine = { id: string; amount: number; description: string; transaction_date: string };
 
 export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
+  return <CreditorsReconMonth key={filterMonth} filterMonth={filterMonth} />;
+}
+
+function CreditorsReconMonth({ filterMonth }: CreditorsReconProps) {
   const { managerEntries } = useCashupStore();
   const { eftSuppliers, directlyExpensedSuppliers: directlyExpensedFromSettings } = useMasterDataStore();
   const { allocations: bankAllocations } = useBankAllocations(filterMonth);
@@ -36,6 +40,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
 
   const [priorBankLinesByMonth, setPriorBankLinesByMonth] = useState<Record<string, BankLine[]>>({});
   const [priorAllocationsByMonth, setPriorAllocationsByMonth] = useState<Record<string, { bank_line_id: string; recon_type: string; target_name: string }[]>>({});
+  const [loadedPriorMonths, setLoadedPriorMonths] = useState<string[]>([]);
   const [seedOB, setSeedOB] = useState<Record<string, number>>({});
 
   const isFirstMonth = filterMonth <= '2026-03';
@@ -60,6 +65,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     setOpeningBalances({});
     setEditingOB({});
     setSeedOB({});
+    setLoadedPriorMonths([]);
     setPriorBankLinesByMonth({});
     setPriorAllocationsByMonth({});
 
@@ -106,6 +112,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     setOpeningBalances(obMap);
     setEditingOB({});
     setSeedOB(nextSeedOB);
+    setLoadedPriorMonths(priorMonths);
     setPriorBankLinesByMonth(bankByMonth);
     setPriorAllocationsByMonth(allocByMonth);
     setLoadedMonth(filterMonth);
@@ -287,7 +294,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     const normalizedSeedOB = normalizeBalanceMap(seedOB);
     allReconSuppliers.forEach(s => { running[s] = normalizedSeedOB[s] ?? 0; });
 
-    for (const m of priorMonths) {
+    for (const m of loadedPriorMonths) {
       const monthManagersM = managerEntries.filter(e => e.date.startsWith(m));
       const bankM = priorBankLinesByMonth[m] ?? [];
       const allocM = priorAllocationsByMonth[m] ?? [];
@@ -322,7 +329,7 @@ export function CreditorsRecon({ filterMonth }: CreditorsReconProps) {
     });
     return result;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openingBalances, isFirstMonth, seedOB, priorMonths, priorBankLinesByMonth, priorAllocationsByMonth, managerEntries, suppliers, directlyExpensedSuppliers, fuelSuppliers]);
+  }, [openingBalances, isFirstMonth, seedOB, loadedPriorMonths, priorBankLinesByMonth, priorAllocationsByMonth, managerEntries, suppliers, directlyExpensedSuppliers, fuelSuppliers]);
 
   // Save opening balances
   const handleSaveOB = async () => {
