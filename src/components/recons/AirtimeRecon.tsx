@@ -262,7 +262,7 @@ export function AirtimeRecon({ filterMonth }: AirtimeReconProps) {
               csvRows.push(['Final Balance', '', '', bld, '', '', ep, '', '', lt]);
               downloadCsv(
                 ['Date', 'BLD Invoice', 'BLD Payment', 'BLD Balance', 'Easypay Invoice', 'Easypay Collection', 'Easypay Balance', 'Lotto Invoice', 'Lotto Payment', 'Lotto Balance'],
-                csvRows, `airtime-lotto-recon-${filterMonth}.csv`
+                csvRows, `airtime-lotto-recon-${filterMonth}.xlsx`
               );
             }}>
               <Download className="h-3.5 w-3.5 mr-1" />Export CSV

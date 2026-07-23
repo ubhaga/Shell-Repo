@@ -197,7 +197,7 @@ export function OtherAdjustmentsRecon({ filterMonth, onNavigateToDate }: Props) 
             downloadCsv(
               ['Date', 'Explanation', 'Amount', 'Category', 'Netted'],
               lines.map(l => [formatDate(l.date), l.explanation, l.amount, l.category || '', l.isNetted ? 'Yes' : 'No']),
-              `other-adjustments-recon-${filterMonth}.csv`
+              `other-adjustments-recon-${filterMonth}.xlsx`
             );
           }}>
             <Download className="h-3.5 w-3.5 mr-1" />Export CSV
