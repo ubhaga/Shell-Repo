@@ -96,22 +96,29 @@ function CreditorsReconMonth({ filterMonth }: CreditorsReconProps) {
       });
     }
 
-    // Load bank lines + allocations for every prior month (chain)
-    let bankByMonth: Record<string, BankLine[]> = {};
-    let allocByMonth: Record<string, { bank_line_id: string; recon_type: string; target_name: string }[]> = {};
+    // Load each prior month separately. A single multi-month bank query eventually
+    // exceeds the backend's 1,000-row response limit and silently drops the newest
+    // lines, which caused later opening balances to diverge from prior closings.
+    const bankByMonth: Record<string, BankLine[]> = {};
+    const allocByMonth: Record<string, { bank_line_id: string; recon_type: string; target_name: string }[]> = {};
     const openingRollForwardMonths = priorMonths.filter((month) => month < filterMonth);
     if (openingRollForwardMonths.length > 0) {
-      const [bankAll, allocAll] = await Promise.all([
-        supabase.from('bank_statement_lines').select('id, amount, description, transaction_date, month').in('month', openingRollForwardMonths),
-        supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name, month').in('month', openingRollForwardMonths),
-      ]);
-      ((bankAll.data ?? []) as (BankLine & { month: string })[]).forEach(l => {
-        if (!bankByMonth[l.month]) bankByMonth[l.month] = [];
-        bankByMonth[l.month].push({ id: l.id, amount: l.amount, description: l.description, transaction_date: l.transaction_date });
-      });
-      ((allocAll.data ?? []) as { bank_line_id: string; recon_type: string; target_name: string; month: string }[]).forEach(a => {
-        if (!allocByMonth[a.month]) allocByMonth[a.month] = [];
-        allocByMonth[a.month].push(a);
+      const historicalMonths = await Promise.all(
+        openingRollForwardMonths.map(async (month) => {
+          const [bankRes, allocRes] = await Promise.all([
+            supabase.from('bank_statement_lines').select('id, amount, description, transaction_date').eq('month', month),
+            supabase.from('bank_line_allocations').select('bank_line_id, recon_type, target_name').eq('month', month),
+          ]);
+          return {
+            month,
+            bankLines: (bankRes.data ?? []) as BankLine[],
+            allocations: (allocRes.data ?? []) as { bank_line_id: string; recon_type: string; target_name: string }[],
+          };
+        }),
+      );
+      historicalMonths.forEach(({ month, bankLines: monthBankLines, allocations: monthAllocations }) => {
+        bankByMonth[month] = monthBankLines;
+        allocByMonth[month] = monthAllocations;
       });
     }
 
