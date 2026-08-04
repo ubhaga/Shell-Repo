@@ -350,22 +350,40 @@ function CreditorsReconMonth({ filterMonth }: CreditorsReconProps) {
   const handleSaveOB = async () => {
     setSaving(true);
     try {
-      const entries = Object.entries(editingOB);
-      for (const [supplier, valStr] of entries) {
+      // Existing rows for this month — used to purge duplicate spelling variants
+      // (e.g. "Status  Hygiene" vs "Status Hygiene"). Those rows are summed when
+      // displayed, so leaving them behind made edits look like they never saved.
+      const { data: existingRows } = await supabase
+        .from('creditor_opening_balances')
+        .select('id, supplier')
+        .eq('month', filterMonth);
+      const rows = (existingRows ?? []) as { id: string; supplier: string }[];
+
+      for (const [supplier, valStr] of Object.entries(editingOB)) {
         const amount = parseFloat(valStr) || 0;
-        await supabase.from('creditor_opening_balances').upsert(
+
+        const duplicateIds = rows
+          .filter(r => r.supplier !== supplier && canonicalSupplier(r.supplier) === canonicalSupplier(supplier))
+          .map(r => r.id);
+        if (duplicateIds.length > 0) {
+          await supabase.from('creditor_opening_balances').delete().in('id', duplicateIds);
+        }
+
+        const { error } = await supabase.from('creditor_opening_balances').upsert(
           { month: filterMonth, supplier, amount } as never,
           { onConflict: 'month,supplier' }
         );
-        setOpeningBalances(prev => ({ ...prev, [supplier]: amount }));
+        if (error) throw error;
       }
       setEditingOB({});
       toast.success('Opening balances saved');
+      await loadData();
     } catch {
       toast.error('Failed to save');
     }
     setSaving(false);
   };
+
 
   const hasEdits = Object.keys(editingOB).length > 0;
 
