@@ -100,6 +100,29 @@ export function Reports({
   }, [filterMonth, prevMonth]);
   useEffect(() => { loadManualMatches(); }, [loadManualMatches]);
 
+  // Auto-match unallocations: bank line IDs the user has un-matched from auto-matching
+  const [autoUnmatchedIds, setAutoUnmatchedIds] = useState<Set<string>>(new Set());
+  const loadAutoUnmatches = useCallback(async () => {
+    const { data } = await supabase
+      .from('speedpoint_auto_unmatches')
+      .select('bank_line_id')
+      .in('month', [filterMonth, prevMonth]);
+    setAutoUnmatchedIds(new Set(((data ?? []) as { bank_line_id: string }[]).map(r => r.bank_line_id)));
+  }, [filterMonth, prevMonth]);
+  useEffect(() => { loadAutoUnmatches(); }, [loadAutoUnmatches]);
+
+  const handleUnallocateAuto = async (bp: BankParsedLine) => {
+    setAutoUnmatchedIds(prev => new Set(prev).add(bp.bankLineId));
+    await supabase.from('speedpoint_auto_unmatches').insert({ month: filterMonth, bank_line_id: bp.bankLineId } as never);
+    toast({ title: 'Auto-match removed', description: 'The bank line is now in the Unmatched list.' });
+  };
+
+  const handleRestoreAuto = async (bp: BankParsedLine) => {
+    setAutoUnmatchedIds(prev => { const next = new Set(prev); next.delete(bp.bankLineId); return next; });
+    await supabase.from('speedpoint_auto_unmatches').delete().eq('bank_line_id', bp.bankLineId);
+    toast({ title: 'Auto-match restored' });
+  };
+
   // Diff clearances: pairs of differences that offset each other
   type DiffClearance = { id: string; month: string; terminal: string; date_1: string; date_2: string; amount: number };
   const [diffClearances, setDiffClearances] = useState<DiffClearance[]>([]);
