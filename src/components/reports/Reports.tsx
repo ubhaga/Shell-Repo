@@ -395,7 +395,7 @@ export function Reports({
     prevBankParsed.push({ terminal: l.matched_terminal, batch, amount: l.amount, date: l.transaction_date, description: l.description, idx: idx + 100000, bankLineId: l.id });
   });
   const prevBankLookup: Record<string, number> = {};
-  prevBankParsed.forEach(bp => { if (bp.batch) { const k = `${bp.terminal}|${bp.batch}`; prevBankLookup[k] = (prevBankLookup[k] || 0) + bp.amount; } });
+  prevBankParsed.forEach(bp => { if (bp.batch && !autoUnmatchedIds.has(bp.bankLineId)) { const k = `${bp.terminal}|${bp.batch}`; prevBankLookup[k] = (prevBankLookup[k] || 0) + bp.amount; } });
   const prevManuallyMatchedIds = new Set<string>();
   Object.values(prevManualMatches).forEach(arr => arr.forEach(bp => prevManuallyMatchedIds.add(bp.bankLineId)));
 
