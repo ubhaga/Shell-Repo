@@ -469,6 +469,7 @@ export function Reports({
   // Use consumedBankKeys from matching above instead of re-deriving
   const unmatchedTerminalLines = bankParsed.filter(bp => {
     if (manuallyMatchedIds.has(bp.bankLineId)) return false;
+    if (autoUnmatchedIds.has(bp.bankLineId)) return true;
     if (!bp.batch) return true;
     return !consumedBankKeys.has(`${bp.terminal}|${bp.batch}`);
   });
