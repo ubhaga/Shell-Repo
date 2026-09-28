@@ -373,6 +373,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                 <th className="text-center px-1 py-2 font-semibold text-muted-foreground w-8 border-r text-xs">Status</th>
                 <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">Date</th>
                 <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">Entered By</th>
+                <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">Cashier</th>
                 <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">Shop Till</th>
                 <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">Payouts</th>
                 <th className="text-center px-1 py-2 font-semibold text-muted-foreground border-r text-xs">OPT</th>
@@ -390,7 +391,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                     <tr key={row.date} className="border-b last:border-b-0 bg-muted/10">
                       <td className="px-1 py-1 border-r"><StatusIcon status="none" /></td>
                       <td className="px-1 py-1 text-center text-muted-foreground/40 border-r text-xs">{format(d, "EEE dd")}</td>
-                      <td colSpan={8} className="px-1 py-1 text-muted-foreground/30 text-center italic text-xs">
+                      <td colSpan={9} className="px-1 py-1 text-muted-foreground/30 text-center italic text-xs">
                         No data
                       </td>
                     </tr>
@@ -419,6 +420,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                     </td>
                     <td className="px-1 py-1 text-center font-medium border-r text-xs whitespace-nowrap">{format(d, "EEE dd")}</td>
                     <td className="px-1 py-1 text-center text-muted-foreground border-r text-xs">{row.enteredBy || "—"}</td>
+                    <td className="px-1 py-1 text-center border-r text-xs">{row.cashierName || "—"}</td>
                     <td className="px-1 py-1 text-center border-r">
                       {row.shopDiff !== null ? (
                         <span className={`inline-flex items-center justify-center font-mono text-xs ${shopOk ? "text-green-700" : "text-red-600 font-semibold"}`}>
