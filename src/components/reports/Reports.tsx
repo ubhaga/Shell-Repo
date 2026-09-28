@@ -379,7 +379,7 @@ export function Reports({
         isManual = true;
       }
       const diff = td.total - bankAmt;
-      rowMatch[t] = { bankAmount: bankAmt, diff, matched: bankAmt > 0 && Math.abs(diff) < 0.01, manual: isManual };
+      rowMatch[t] = { bankAmount: bankAmt, diff, matched: bankAmt > 0 && Math.abs(diff) < 0.01, manual: isManual, autoLines };
     });
     return rowMatch;
   });
