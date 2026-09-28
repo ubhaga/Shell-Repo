@@ -337,12 +337,16 @@ export function Reports({
     bankParsed.push({ terminal: l.matched_terminal, batch, amount: l.amount, date: l.transaction_date, description: l.description, idx, bankLineId: l.id });
   });
 
-  // Build auto-match lookup: key = "terminal|batch" -> bank amount
+  // Build auto-match lookup: key = "terminal|batch" -> bank amount (excluding user-unallocated lines)
   const bankLookup: Record<string, number> = {};
+  const bankLinesByKey: Record<string, BankParsedLine[]> = {};
   bankParsed.forEach(bp => {
     if (!bp.batch) return;
+    if (autoUnmatchedIds.has(bp.bankLineId)) return;
     const key = `${bp.terminal}|${bp.batch}`;
     bankLookup[key] = (bankLookup[key] || 0) + bp.amount;
+    if (!bankLinesByKey[key]) bankLinesByKey[key] = [];
+    bankLinesByKey[key].push(bp);
   });
 
   // Collect all manually matched bank line IDs
