@@ -1249,6 +1249,13 @@ export function Reports({
                       <div className="flex items-center gap-2">
                         <span className="text-muted-foreground">⠿</span>
                         <span className="truncate">{l.terminal} · B{l.batch}</span>
+                        {autoUnmatchedIds.has(l.bankLineId) && (
+                          <button
+                            onClick={() => handleRestoreAuto(l)}
+                            className="ml-auto text-primary hover:text-primary/80 font-semibold whitespace-nowrap"
+                            title="Restore auto-match for this bank line"
+                          >↩ restore</button>
+                        )}
                       </div>
                     </div>
                   ))}
