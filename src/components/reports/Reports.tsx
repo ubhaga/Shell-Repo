@@ -100,6 +100,29 @@ export function Reports({
   }, [filterMonth, prevMonth]);
   useEffect(() => { loadManualMatches(); }, [loadManualMatches]);
 
+  // Auto-match unallocations: bank line IDs the user has un-matched from auto-matching
+  const [autoUnmatchedIds, setAutoUnmatchedIds] = useState<Set<string>>(new Set());
+  const loadAutoUnmatches = useCallback(async () => {
+    const { data } = await supabase
+      .from('speedpoint_auto_unmatches')
+      .select('bank_line_id')
+      .in('month', [filterMonth, prevMonth]);
+    setAutoUnmatchedIds(new Set(((data ?? []) as { bank_line_id: string }[]).map(r => r.bank_line_id)));
+  }, [filterMonth, prevMonth]);
+  useEffect(() => { loadAutoUnmatches(); }, [loadAutoUnmatches]);
+
+  const handleUnallocateAuto = async (bp: BankParsedLine) => {
+    setAutoUnmatchedIds(prev => new Set(prev).add(bp.bankLineId));
+    await supabase.from('speedpoint_auto_unmatches').insert({ month: filterMonth, bank_line_id: bp.bankLineId } as never);
+    toast({ title: 'Auto-match removed', description: 'The bank line is now in the Unmatched list.' });
+  };
+
+  const handleRestoreAuto = async (bp: BankParsedLine) => {
+    setAutoUnmatchedIds(prev => { const next = new Set(prev); next.delete(bp.bankLineId); return next; });
+    await supabase.from('speedpoint_auto_unmatches').delete().eq('bank_line_id', bp.bankLineId);
+    toast({ title: 'Auto-match restored' });
+  };
+
   // Diff clearances: pairs of differences that offset each other
   type DiffClearance = { id: string; month: string; terminal: string; date_1: string; date_2: string; amount: number };
   const [diffClearances, setDiffClearances] = useState<DiffClearance[]>([]);
@@ -314,12 +337,16 @@ export function Reports({
     bankParsed.push({ terminal: l.matched_terminal, batch, amount: l.amount, date: l.transaction_date, description: l.description, idx, bankLineId: l.id });
   });
 
-  // Build auto-match lookup: key = "terminal|batch" -> bank amount
+  // Build auto-match lookup: key = "terminal|batch" -> bank amount (excluding user-unallocated lines)
   const bankLookup: Record<string, number> = {};
+  const bankLinesByKey: Record<string, BankParsedLine[]> = {};
   bankParsed.forEach(bp => {
     if (!bp.batch) return;
+    if (autoUnmatchedIds.has(bp.bankLineId)) return;
     const key = `${bp.terminal}|${bp.batch}`;
     bankLookup[key] = (bankLookup[key] || 0) + bp.amount;
+    if (!bankLinesByKey[key]) bankLinesByKey[key] = [];
+    bankLinesByKey[key].push(bp);
   });
 
   // Collect all manually matched bank line IDs
@@ -328,20 +355,21 @@ export function Reports({
 
   // Build per-row match data including manual matches
   // Each bank amount is consumed by the first cashup row that claims it
-  type SpRowMatch = Record<string, { bankAmount: number; diff: number; matched: boolean; manual: boolean }>;
+  type SpRowMatch = Record<string, { bankAmount: number; diff: number; matched: boolean; manual: boolean; autoLines: BankParsedLine[] }>;
   const consumedBankKeys = new Set<string>();
   const speedpointMatches: SpRowMatch[] = speedpointByDate.map(r => {
     const rowMatch: SpRowMatch = {};
     SP_TERMINALS.forEach(t => {
       const td = r.terminals[t];
-      if (!td || td.total === 0) { rowMatch[t] = { bankAmount: 0, diff: 0, matched: false, manual: false }; return; }
+      if (!td || td.total === 0) { rowMatch[t] = { bankAmount: 0, diff: 0, matched: false, manual: false, autoLines: [] }; return; }
       // Auto match by terminal+batch — only if not already consumed by a prior row
       const key = `${t}|${td.batchNo}`;
       let bankAmt = 0;
       let isManual = false;
+      let autoLines: BankParsedLine[] = [];
       if (!consumedBankKeys.has(key)) {
         bankAmt = bankLookup[key] ?? 0;
-        if (bankAmt > 0) consumedBankKeys.add(key);
+        if (bankAmt > 0) { consumedBankKeys.add(key); autoLines = bankLinesByKey[key] ?? []; }
       }
       // Add manual matches for this cell
       const manualKey = `${r.date}|${t}`;
@@ -351,7 +379,7 @@ export function Reports({
         isManual = true;
       }
       const diff = td.total - bankAmt;
-      rowMatch[t] = { bankAmount: bankAmt, diff, matched: bankAmt > 0 && Math.abs(diff) < 0.01, manual: isManual };
+      rowMatch[t] = { bankAmount: bankAmt, diff, matched: bankAmt > 0 && Math.abs(diff) < 0.01, manual: isManual, autoLines };
     });
     return rowMatch;
   });
@@ -367,7 +395,7 @@ export function Reports({
     prevBankParsed.push({ terminal: l.matched_terminal, batch, amount: l.amount, date: l.transaction_date, description: l.description, idx: idx + 100000, bankLineId: l.id });
   });
   const prevBankLookup: Record<string, number> = {};
-  prevBankParsed.forEach(bp => { if (bp.batch) { const k = `${bp.terminal}|${bp.batch}`; prevBankLookup[k] = (prevBankLookup[k] || 0) + bp.amount; } });
+  prevBankParsed.forEach(bp => { if (bp.batch && !autoUnmatchedIds.has(bp.bankLineId)) { const k = `${bp.terminal}|${bp.batch}`; prevBankLookup[k] = (prevBankLookup[k] || 0) + bp.amount; } });
   const prevManuallyMatchedIds = new Set<string>();
   Object.values(prevManualMatches).forEach(arr => arr.forEach(bp => prevManuallyMatchedIds.add(bp.bankLineId)));
 
@@ -441,6 +469,7 @@ export function Reports({
   // Use consumedBankKeys from matching above instead of re-deriving
   const unmatchedTerminalLines = bankParsed.filter(bp => {
     if (manuallyMatchedIds.has(bp.bankLineId)) return false;
+    if (autoUnmatchedIds.has(bp.bankLineId)) return true;
     if (!bp.batch) return true;
     return !consumedBankKeys.has(`${bp.terminal}|${bp.batch}`);
   });
@@ -1085,23 +1114,42 @@ export function Reports({
                                             onDragLeave={isDropTarget ? handleDragLeave : undefined}
                                             onDrop={isDropTarget ? (e) => handleDrop(e, dropKey) : undefined}
                                           >
-                                            {m.bankAmount > 0 ? (
+                                             {m.bankAmount > 0 ? (
                                               <Tooltip>
                                                 <TooltipTrigger asChild>
                                                   <span className={`${m.matched ? 'text-green-600 font-medium' : ''} ${m.manual ? 'underline decoration-dashed cursor-help' : ''}`}>
                                                     <CurrencyDisplay value={m.bankAmount} />
                                                   </span>
                                                 </TooltipTrigger>
-                                                {m.manual && (
+                                                {(m.manual || m.autoLines.length > 0) && (
                                                   <TooltipContent>
                                                     <div className="text-xs space-y-1">
-                                                      <div className="font-semibold mb-1">Manual matches:</div>
-                                                      {manualLines.map(ml => (
-                                                        <div key={ml.bankLineId} className="flex items-center gap-2">
-                                                          <span>{ml.description} = <CurrencyDisplay value={ml.amount} /></span>
-                                                          <button onClick={() => handleRemoveManualMatch(dropKey, ml.bankLineId)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
-                                                        </div>
-                                                      ))}
+                                                      {m.autoLines.length > 0 && (
+                                                        <>
+                                                          <div className="font-semibold mb-1">Auto-matched bank lines:</div>
+                                                          {m.autoLines.map(al => (
+                                                            <div key={al.bankLineId} className="flex items-center gap-2">
+                                                              <span>{al.description} = <CurrencyDisplay value={al.amount} /></span>
+                                                              <button
+                                                                onClick={() => handleUnallocateAuto(al)}
+                                                                className="text-destructive hover:text-destructive/80 text-xs font-bold"
+                                                                title="Unallocate this auto-match"
+                                                              >✕</button>
+                                                            </div>
+                                                          ))}
+                                                        </>
+                                                      )}
+                                                      {m.manual && (
+                                                        <>
+                                                          <div className="font-semibold mb-1 mt-2">Manual matches:</div>
+                                                          {manualLines.map(ml => (
+                                                            <div key={ml.bankLineId} className="flex items-center gap-2">
+                                                              <span>{ml.description} = <CurrencyDisplay value={ml.amount} /></span>
+                                                              <button onClick={() => handleRemoveManualMatch(dropKey, ml.bankLineId)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
+                                                            </div>
+                                                          ))}
+                                                        </>
+                                                      )}
                                                     </div>
                                                   </TooltipContent>
                                                 )}
@@ -1201,6 +1249,13 @@ export function Reports({
                       <div className="flex items-center gap-2">
                         <span className="text-muted-foreground">⠿</span>
                         <span className="truncate">{l.terminal} · B{l.batch}</span>
+                        {autoUnmatchedIds.has(l.bankLineId) && (
+                          <button
+                            onClick={() => handleRestoreAuto(l)}
+                            className="ml-auto text-primary hover:text-primary/80 font-semibold whitespace-nowrap"
+                            title="Restore auto-match for this bank line"
+                          >↩ restore</button>
+                        )}
                       </div>
                     </div>
                   ))}

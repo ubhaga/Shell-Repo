@@ -544,6 +544,35 @@ export type Database = {
         }
         Relationships: []
       }
+      speedpoint_auto_unmatches: {
+        Row: {
+          bank_line_id: string
+          created_at: string
+          id: string
+          month: string
+        }
+        Insert: {
+          bank_line_id: string
+          created_at?: string
+          id?: string
+          month: string
+        }
+        Update: {
+          bank_line_id?: string
+          created_at?: string
+          id?: string
+          month?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speedpoint_auto_unmatches_bank_line_id_fkey"
+            columns: ["bank_line_id"]
+            isOneToOne: true
+            referencedRelation: "bank_statement_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       speedpoint_diff_clearances: {
         Row: {
           amount: number
