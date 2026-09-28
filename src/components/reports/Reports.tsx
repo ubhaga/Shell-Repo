@@ -1114,23 +1114,42 @@ export function Reports({
                                             onDragLeave={isDropTarget ? handleDragLeave : undefined}
                                             onDrop={isDropTarget ? (e) => handleDrop(e, dropKey) : undefined}
                                           >
-                                            {m.bankAmount > 0 ? (
+                                             {m.bankAmount > 0 ? (
                                               <Tooltip>
                                                 <TooltipTrigger asChild>
                                                   <span className={`${m.matched ? 'text-green-600 font-medium' : ''} ${m.manual ? 'underline decoration-dashed cursor-help' : ''}`}>
                                                     <CurrencyDisplay value={m.bankAmount} />
                                                   </span>
                                                 </TooltipTrigger>
-                                                {m.manual && (
+                                                {(m.manual || m.autoLines.length > 0) && (
                                                   <TooltipContent>
                                                     <div className="text-xs space-y-1">
-                                                      <div className="font-semibold mb-1">Manual matches:</div>
-                                                      {manualLines.map(ml => (
-                                                        <div key={ml.bankLineId} className="flex items-center gap-2">
-                                                          <span>{ml.description} = <CurrencyDisplay value={ml.amount} /></span>
-                                                          <button onClick={() => handleRemoveManualMatch(dropKey, ml.bankLineId)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
-                                                        </div>
-                                                      ))}
+                                                      {m.autoLines.length > 0 && (
+                                                        <>
+                                                          <div className="font-semibold mb-1">Auto-matched bank lines:</div>
+                                                          {m.autoLines.map(al => (
+                                                            <div key={al.bankLineId} className="flex items-center gap-2">
+                                                              <span>{al.description} = <CurrencyDisplay value={al.amount} /></span>
+                                                              <button
+                                                                onClick={() => handleUnallocateAuto(al)}
+                                                                className="text-destructive hover:text-destructive/80 text-xs font-bold"
+                                                                title="Unallocate this auto-match"
+                                                              >✕</button>
+                                                            </div>
+                                                          ))}
+                                                        </>
+                                                      )}
+                                                      {m.manual && (
+                                                        <>
+                                                          <div className="font-semibold mb-1 mt-2">Manual matches:</div>
+                                                          {manualLines.map(ml => (
+                                                            <div key={ml.bankLineId} className="flex items-center gap-2">
+                                                              <span>{ml.description} = <CurrencyDisplay value={ml.amount} /></span>
+                                                              <button onClick={() => handleRemoveManualMatch(dropKey, ml.bankLineId)} className="text-destructive hover:text-destructive/80 text-xs font-bold">✕</button>
+                                                            </div>
+                                                          ))}
+                                                        </>
+                                                      )}
                                                     </div>
                                                   </TooltipContent>
                                                 )}
