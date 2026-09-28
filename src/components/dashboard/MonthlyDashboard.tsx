@@ -420,6 +420,7 @@ export function MonthlyDashboard({ selectedDate }: Props) {
                     </td>
                     <td className="px-1 py-1 text-center font-medium border-r text-xs whitespace-nowrap">{format(d, "EEE dd")}</td>
                     <td className="px-1 py-1 text-center text-muted-foreground border-r text-xs">{row.enteredBy || "—"}</td>
+                    <td className="px-1 py-1 text-center border-r text-xs">{row.cashierName || "—"}</td>
                     <td className="px-1 py-1 text-center border-r">
                       {row.shopDiff !== null ? (
                         <span className={`inline-flex items-center justify-center font-mono text-xs ${shopOk ? "text-green-700" : "text-red-600 font-semibold"}`}>
