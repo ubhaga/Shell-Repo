@@ -103,7 +103,7 @@ export function Reports({
   // Diff clearances: pairs of differences that offset each other
   type DiffClearance = { id: string; month: string; terminal: string; date_1: string; date_2: string; amount: number };
   const [diffClearances, setDiffClearances] = useState<DiffClearance[]>([]);
-  const [selectedDiffForClearing, setSelectedDiffForClearing] = useState<{ date: string; terminal: string; diff: number } | null>(null);
+  const [selectedDiffsForClearing, setSelectedDiffsForClearing] = useState<{ date: string; terminal: string; diff: number }[]>([]);
   const [prevDiffClearances, setPrevDiffClearances] = useState<DiffClearance[]>([]);
 
   const loadDiffClearances = useCallback(async () => {
@@ -140,52 +140,55 @@ export function Reports({
   }, [diffClearances]);
 
   const handleDiffClick = async (date: string, terminal: string, diff: number) => {
-    // If already cleared, remove clearance
+    // If already cleared, remove the whole offset group
     const existing = getClearanceForCell(date, terminal);
     if (existing) {
-      await supabase.from('speedpoint_diff_clearances').delete().eq('id', existing.id);
-      setDiffClearances(prev => prev.filter(c => c.id !== existing.id));
-      toast({ title: 'Clearance removed', description: `Unlinked ${date} from its paired difference.` });
+      const isGroup = existing.date_2.startsWith('G:');
+      const ids = isGroup
+        ? diffClearances.filter(c => c.terminal === terminal && c.date_2 === existing.date_2).map(c => c.id)
+        : [existing.id];
+      await supabase.from('speedpoint_diff_clearances').delete().in('id', ids);
+      setDiffClearances(prev => prev.filter(c => !ids.includes(c.id)));
+      toast({ title: 'Clearance removed', description: `Unlinked ${ids.length > 1 ? ids.length + ' differences' : date}.` });
       return;
     }
 
-    if (!selectedDiffForClearing) {
-      // First selection
-      setSelectedDiffForClearing({ date, terminal, diff });
-      toast({ title: 'First difference selected', description: `Now click the offsetting difference to pair with ${date} (${terminal}).` });
-    } else {
-      // Second selection — must be same terminal, different date
-      if (selectedDiffForClearing.terminal !== terminal) {
-        toast({ title: 'Terminal mismatch', description: 'Both differences must be for the same terminal.', variant: 'destructive' });
-        setSelectedDiffForClearing(null);
-        return;
-      }
-      if (selectedDiffForClearing.date === date) {
-        setSelectedDiffForClearing(null);
-        return;
-      }
-      // Save clearance
-      const { data } = await supabase.from('speedpoint_diff_clearances').insert({
-        month: filterMonth,
-        terminal,
-        date_1: selectedDiffForClearing.date,
-        date_2: date,
-        amount: selectedDiffForClearing.diff,
-      } as never).select();
-      if (data && data.length > 0) {
-        const r = data[0] as Record<string, unknown>;
-        setDiffClearances(prev => [...prev, {
-          id: r.id as string,
-          month: (r.month as string) || filterMonth,
-          terminal: r.terminal as string,
-          date_1: r.date_1 as string,
-          date_2: r.date_2 as string,
-          amount: Number(r.amount),
-        }]);
-      }
-      toast({ title: 'Differences cleared', description: `Paired ${selectedDiffForClearing.date} with ${date} for ${terminal}.` });
-      setSelectedDiffForClearing(null);
+    const sel = selectedDiffsForClearing;
+    if (sel.length > 0 && sel[0].terminal !== terminal) {
+      toast({ title: 'Terminal mismatch', description: 'All offsetting differences must be for the same terminal.', variant: 'destructive' });
+      return;
     }
+    // Toggle selection
+    if (sel.some(s => s.date === date)) {
+      setSelectedDiffsForClearing(sel.filter(s => s.date !== date));
+      return;
+    }
+    const next = [...sel, { date, terminal, diff }];
+    const sum = Math.round(next.reduce((s, x) => s + x.diff, 0) * 100) / 100;
+    if (next.length < 2 || Math.abs(sum) >= 0.005) {
+      setSelectedDiffsForClearing(next);
+      if (next.length >= 2) toast({ title: 'Not yet offsetting', description: `Cumulative difference is ${sum.toFixed(2)}. Keep selecting until it reaches 0.00.` });
+      return;
+    }
+    // Cumulative difference is zero — save as a group
+    const groupKey = `G:${crypto.randomUUID()}`;
+    const { data, error } = await supabase.from('speedpoint_diff_clearances').insert(
+      next.map(x => ({ month: filterMonth, terminal, date_1: x.date, date_2: groupKey, amount: x.diff })) as never,
+    ).select();
+    if (error) {
+      toast({ title: 'Failed to save clearance', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setDiffClearances(prev => [...prev, ...((data ?? []) as Record<string, unknown>[]).map(r => ({
+      id: r.id as string,
+      month: (r.month as string) || filterMonth,
+      terminal: r.terminal as string,
+      date_1: r.date_1 as string,
+      date_2: r.date_2 as string,
+      amount: Number(r.amount),
+    }))]);
+    toast({ title: 'Differences cleared', description: `${next.length} differences for ${terminal} offset to 0.00.` });
+    setSelectedDiffsForClearing([]);
   };
 
   // Build cashier payout lookup: vendor -> date -> remaining count
@@ -848,12 +851,12 @@ export function Reports({
               <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
                 <div className="flex items-center gap-3">
                   <h3 className="font-semibold text-sm">Speedpoint Report — {monthLabel}</h3>
-                  {selectedDiffForClearing && (
+                  {selectedDiffsForClearing.length > 0 && (
                     <div className="flex items-center gap-2 bg-primary/10 rounded px-2 py-1 text-xs">
                       <span className="text-primary font-medium">
-                        Selecting pair for {selectedDiffForClearing.date} ({selectedDiffForClearing.terminal})
+                        Offsetting {selectedDiffsForClearing.length} ({selectedDiffsForClearing[0].terminal}) — cumulative diff: {selectedDiffsForClearing.reduce((s, x) => s + x.diff, 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
-                      <button onClick={() => setSelectedDiffForClearing(null)} className="text-destructive font-bold hover:text-destructive/80">✕</button>
+                      <button onClick={() => setSelectedDiffsForClearing([])} className="text-destructive font-bold hover:text-destructive/80">✕</button>
                     </div>
                   )}
                 </div>
@@ -981,7 +984,7 @@ export function Reports({
                                                 ) : (() => {
                                                   const obClearKey = `OB-${ob.date}`;
                                                   const cleared = isDiffCleared(obClearKey, ob.terminal);
-                                                  const isSelected = selectedDiffForClearing?.date === obClearKey && selectedDiffForClearing?.terminal === ob.terminal;
+                                                  const isSelected = selectedDiffsForClearing.some(x => x.date === obClearKey && x.terminal === ob.terminal);
                                                   return (
                                                     <button
                                                       onClick={() => handleDiffClick(obClearKey, ob.terminal, ob.diff)}
@@ -990,7 +993,7 @@ export function Reports({
                                                         isSelected ? 'bg-primary/20 ring-2 ring-primary font-bold' :
                                                         'text-destructive font-semibold hover:bg-destructive/10'
                                                       }`}
-                                                      title={cleared ? 'Click to remove clearance' : 'Click to pair with another difference'}
+                                                      title={cleared ? 'Click to remove clearance' : 'Click to select; differences clear once the selected total offsets to 0.00'}
                                                     >
                                                       <CurrencyDisplay value={ob.diff} />
                                                       {cleared && ' ✓'}
@@ -1112,7 +1115,7 @@ export function Reports({
                                           <TableCell className="text-right text-sm">
                                             {td && td.total > 0 && !m.matched ? (() => {
                                               const cleared = isDiffCleared(r.date, t);
-                                              const isSelected = selectedDiffForClearing?.date === r.date && selectedDiffForClearing?.terminal === t;
+                                              const isSelected = selectedDiffsForClearing.some(x => x.date === r.date && x.terminal === t);
                                               return (
                                                 <button
                                                   onClick={() => handleDiffClick(r.date, t, m.diff)}
@@ -1121,7 +1124,7 @@ export function Reports({
                                                     isSelected ? 'bg-primary/20 ring-2 ring-primary font-bold' :
                                                     'text-destructive font-semibold hover:bg-destructive/10'
                                                   }`}
-                                                  title={cleared ? 'Click to remove clearance' : 'Click to pair with another difference'}
+                                                  title={cleared ? 'Click to remove clearance' : 'Click to select; differences clear once the selected total offsets to 0.00'}
                                                 >
                                                   <CurrencyDisplay value={m.diff} />
                                                   {cleared && ' ✓'}
