@@ -387,6 +387,7 @@ export type Database = {
           sales_gas: number
           sales_oil: number
           sales_wsl_dsl: number
+          section_explanations: Json
           updated_at: string
           vat_tax_amount: number
         }
@@ -433,6 +434,7 @@ export type Database = {
           sales_gas?: number
           sales_oil?: number
           sales_wsl_dsl?: number
+          section_explanations?: Json
           updated_at?: string
           vat_tax_amount?: number
         }
@@ -479,6 +481,7 @@ export type Database = {
           sales_gas?: number
           sales_oil?: number
           sales_wsl_dsl?: number
+          section_explanations?: Json
           updated_at?: string
           vat_tax_amount?: number
         }
