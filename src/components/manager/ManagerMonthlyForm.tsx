@@ -111,6 +111,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     airtimeBldXero: 0,
     airtimeEasypayXero: 0,
     airtimeLottoXero: 0,
+    sectionExplanations: {},
   });
 
   const [bankChargesExpanded, setBankChargesExpanded] = useState(false);
@@ -380,6 +381,21 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   const eftReconClosing = eftPerTerminal.reduce((s, r) => s + r.diff, 0);
   const eftTotalCol1 = eftReconClosing + form.eftUnbankedDeposit;
 
+  const setSectionExplanation = (key: string, value: string) =>
+    setForm((f) => ({ ...f, sectionExplanations: { ...f.sectionExplanations, [key]: value } }));
+
+  const SectionExplanation = ({ sectionKey, placeholder }: { sectionKey: string; placeholder?: string }) => (
+    <div className="px-3 py-2 border-t">
+      <label className="text-xs font-medium text-muted-foreground">Explanation</label>
+      <textarea
+        value={form.sectionExplanations[sectionKey] ?? ""}
+        onChange={(e) => setSectionExplanation(sectionKey, e.target.value)}
+        className="input-cell w-full text-left text-xs mt-1 min-h-[50px]"
+        placeholder={placeholder ?? "Explain variances or notes for this section..."}
+      />
+    </div>
+  );
+
   const handleSave = async () => {
     try {
       if (existing) await updateMonthlyFigures(existing.id, form);
@@ -468,6 +484,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           explanation={form.explanationReceipts}
           onExplanationChange={(v) => setForm((f) => ({ ...f, explanationReceipts: v }))}
         />
+        <SectionExplanation sectionKey="1.1" />
         <div className="px-3 py-2 border-t flex justify-end">
           <Button onClick={handleSave} size="sm" variant="outline">
             <Save className="h-3.5 w-3.5 mr-1" /> Save
@@ -502,6 +519,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           explanation={form.explanationVat}
           onExplanationChange={(v) => setForm((f) => ({ ...f, explanationVat: v }))}
         />
+        <SectionExplanation sectionKey="1.2" />
         <div className="px-3 py-2 border-t flex justify-end">
           <Button onClick={handleSave} size="sm" variant="outline">
             <Save className="h-3.5 w-3.5 mr-1" /> Save
@@ -601,6 +619,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
             className="text-right"
           />
         </div>
+        <SectionExplanation sectionKey="1.3" />
         <div className="px-3 py-2 border-t flex justify-end">
           <Button onClick={handleSave} size="sm" variant="outline">
             <Save className="h-3.5 w-3.5 mr-1" /> Save
@@ -666,6 +685,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           <CurrencyDisplay value={eftTotalCol1} className="text-right" highlight />
           <CurrencyDisplay value={form.eftXero} className="text-right" highlight />
         </div>
+        <SectionExplanation sectionKey="3" />
         <div className="px-3 py-2 border-t flex justify-end">
           <Button onClick={handleSave} size="sm" variant="outline">
             <Save className="h-3.5 w-3.5 mr-1" /> Save
@@ -857,6 +877,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
             <CurrencyDisplay value={form.pettyCashXero} className="text-right" highlight />
           </div>
         </div>
+        <SectionExplanation sectionKey="4" />
         <div className="px-3 py-2 border-t flex justify-end">
           <Button onClick={handleSave} size="sm" variant="outline">
             <Save className="h-3.5 w-3.5 mr-1" /> Save

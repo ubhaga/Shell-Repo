@@ -201,6 +201,8 @@ export interface MonthlyBranchFigures {
   airtimeLottoXero: number;
   // Misc
   notes: string;
+  // Per-section explanation notes (keyed by section id)
+  sectionExplanations: Record<string, string>;
 }
 
 export type DashboardStatus = "green" | "red" | "pending";
