@@ -104,11 +104,13 @@ export function DebtorsBranchComparison({ month }: Props) {
     setTotalsExplanation((savedData.totals_explanation as string) ?? '');
 
     if (priorMonths.length > 0) {
-      const [histBankRes, histObRes] = await Promise.all([
-        supabase.from('bank_statement_lines').select('id, amount, description, transaction_date, month').in('month', priorMonths),
-        supabase.from('creditor_opening_balances').select('*').in('month', priorMonths),
+      const [bankPerMonth, histObRes] = await Promise.all([
+        Promise.all(priorMonths.map(m =>
+          supabase.from('bank_statement_lines').select('id, amount, description, transaction_date, month').eq('month', m).limit(5000),
+        )),
+        supabase.from('creditor_opening_balances').select('*').in('month', priorMonths).limit(5000),
       ]);
-      setHistoryBankLines((histBankRes.data ?? []) as (BankLine & { month: string })[]);
+      setHistoryBankLines(bankPerMonth.flatMap(r => (r.data ?? []) as BankLine[]));
       const histOb: Record<string, Record<string, number>> = {};
       ((histObRes.data ?? []) as { month: string; supplier: string; amount: number }[]).forEach(r => {
         if (!r.supplier.startsWith('debtor:')) return;
