@@ -111,6 +111,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     airtimeBldXero: 0,
     airtimeEasypayXero: 0,
     airtimeLottoXero: 0,
+    sectionExplanations: {},
   });
 
   const [bankChargesExpanded, setBankChargesExpanded] = useState(false);
@@ -379,6 +380,21 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   });
   const eftReconClosing = eftPerTerminal.reduce((s, r) => s + r.diff, 0);
   const eftTotalCol1 = eftReconClosing + form.eftUnbankedDeposit;
+
+  const setSectionExplanation = (key: string, value: string) =>
+    setForm((f) => ({ ...f, sectionExplanations: { ...f.sectionExplanations, [key]: value } }));
+
+  const SectionExplanation = ({ sectionKey, placeholder }: { sectionKey: string; placeholder?: string }) => (
+    <div className="px-3 py-2 border-t">
+      <label className="text-xs font-medium text-muted-foreground">Explanation</label>
+      <textarea
+        value={form.sectionExplanations[sectionKey] ?? ""}
+        onChange={(e) => setSectionExplanation(sectionKey, e.target.value)}
+        className="input-cell w-full text-left text-xs mt-1 min-h-[50px]"
+        placeholder={placeholder ?? "Explain variances or notes for this section..."}
+      />
+    </div>
+  );
 
   const handleSave = async () => {
     try {
