@@ -127,6 +127,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   const [eftDiffClearances, setEftDiffClearances] = useState<
     { month: string; terminal: string; date_1: string; date_2: string }[]
   >([]);
+  const [eftAutoUnmatchedIds, setEftAutoUnmatchedIds] = useState<Set<string>>(new Set());
   const [creditorsExplanation, setCreditorsExplanation] = useState('');
 
   useEffect(() => {
@@ -149,12 +150,14 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
 
   useEffect(() => {
     (async () => {
-      const [bankRes, prevBankRes, matchRes, clearanceRes] = await Promise.all([
+      const [bankRes, prevBankRes, matchRes, clearanceRes, unmatchRes] = await Promise.all([
         supabase.from("bank_statement_lines").select("id, amount, matched_terminal, description, transaction_date").eq("month", month),
         supabase.from("bank_statement_lines").select("id, amount, matched_terminal, description, transaction_date").eq("month", prevMonth),
         supabase.from("speedpoint_manual_matches").select("month, cashup_date, terminal, bank_amount, bank_line_id").in("month", [month, prevMonth]),
         supabase.from("speedpoint_diff_clearances").select("month, terminal, date_1, date_2").in("month", [month, prevMonth]),
+        supabase.from("speedpoint_auto_unmatches").select("bank_line_id").in("month", [month, prevMonth]),
       ]);
+      setEftAutoUnmatchedIds(new Set(((unmatchRes.data ?? []) as { bank_line_id: string }[]).map((r) => r.bank_line_id)));
       setEftBankLines((bankRes.data ?? []) as { id: string; amount: number; matched_terminal: string | null; description: string; transaction_date: string }[]);
       setEftPrevBankLines((prevBankRes.data ?? []) as { id: string; amount: number; matched_terminal: string | null; description: string; transaction_date: string }[]);
       setEftManualMatches((matchRes.data ?? []) as { month: string; cashup_date: string; terminal: string; bank_amount: number; bank_line_id: string | null }[]);
@@ -288,6 +291,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
 
   const bankLookup: Record<string, number> = {};
   eftBankLines.forEach((l) => {
+    if (eftAutoUnmatchedIds.has(l.id)) return;
     if (!l.matched_terminal || !SP_TERMINALS.includes(l.matched_terminal)) return;
     const termNum = TERMINAL_NUM[l.matched_terminal] || "";
     const bm = l.description?.match(new RegExp(`${termNum}\\s+(\\d+)`));
@@ -328,6 +332,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
 
   const prevBankLookup: Record<string, number> = {};
   eftPrevBankLines.forEach((l) => {
+    if (eftAutoUnmatchedIds.has(l.id)) return;
     if (!l.matched_terminal || !SP_TERMINALS.includes(l.matched_terminal)) return;
     const termNum = TERMINAL_NUM[l.matched_terminal] || "";
     const bm = l.description?.match(new RegExp(`${termNum}\\s+(\\d+)`));
