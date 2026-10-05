@@ -484,6 +484,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           explanation={form.explanationReceipts}
           onExplanationChange={(v) => setForm((f) => ({ ...f, explanationReceipts: v }))}
         />
+        <SectionExplanation sectionKey="1.1" />
         <div className="px-3 py-2 border-t flex justify-end">
           <Button onClick={handleSave} size="sm" variant="outline">
             <Save className="h-3.5 w-3.5 mr-1" /> Save
@@ -518,6 +519,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           explanation={form.explanationVat}
           onExplanationChange={(v) => setForm((f) => ({ ...f, explanationVat: v }))}
         />
+        <SectionExplanation sectionKey="1.2" />
         <div className="px-3 py-2 border-t flex justify-end">
           <Button onClick={handleSave} size="sm" variant="outline">
             <Save className="h-3.5 w-3.5 mr-1" /> Save
