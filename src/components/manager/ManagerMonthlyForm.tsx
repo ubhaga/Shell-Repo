@@ -619,6 +619,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
             className="text-right"
           />
         </div>
+        <SectionExplanation sectionKey="1.3" />
         <div className="px-3 py-2 border-t flex justify-end">
           <Button onClick={handleSave} size="sm" variant="outline">
             <Save className="h-3.5 w-3.5 mr-1" /> Save
@@ -684,6 +685,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
           <CurrencyDisplay value={eftTotalCol1} className="text-right" highlight />
           <CurrencyDisplay value={form.eftXero} className="text-right" highlight />
         </div>
+        <SectionExplanation sectionKey="3" />
         <div className="px-3 py-2 border-t flex justify-end">
           <Button onClick={handleSave} size="sm" variant="outline">
             <Save className="h-3.5 w-3.5 mr-1" /> Save
@@ -875,6 +877,7 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
             <CurrencyDisplay value={form.pettyCashXero} className="text-right" highlight />
           </div>
         </div>
+        <SectionExplanation sectionKey="4" />
         <div className="px-3 py-2 border-t flex justify-end">
           <Button onClick={handleSave} size="sm" variant="outline">
             <Save className="h-3.5 w-3.5 mr-1" /> Save
