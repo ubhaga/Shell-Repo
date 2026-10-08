@@ -3,7 +3,7 @@ import type { DailyCashup } from '@/types/cashup';
 
 export type OutstandingSp = { date: string; terminal: string; batchNo: string; diff: number };
 
-const START_MONTH = '2026-01';
+const START_MONTH = '2026-02'; // Feb leftovers form March's opening (March 2026 is the seed month)
 
 function nextMonth(m: string) {
   const [y, mo] = m.split('-').map(Number);
@@ -42,11 +42,11 @@ export async function computeSpeedpointOutstanding(
     const [bank, manual, clear] = await Promise.all([
       loadAll<{ id: string; matched_terminal: string; amount: number; description: string }>('bank_statement_lines', 'id, matched_terminal, amount, description', m),
       loadAll<{ cashup_date: string; terminal: string; bank_amount: number }>('speedpoint_manual_matches', 'cashup_date, terminal, bank_amount', m),
-      loadAll<{ terminal: string; date_1: string }>('speedpoint_diff_clearances', 'terminal, date_1', m),
+      loadAll<{ terminal: string; date_1: string; date_2: string }>('speedpoint_diff_clearances', 'terminal, date_1, date_2', m),
     ]);
     const manualSum: Record<string, number> = {};
     manual.forEach(r => { const k = `${r.cashup_date}|${r.terminal}`; manualSum[k] = (manualSum[k] || 0) + Number(r.bank_amount); });
-    const cleared = (date: string, t: string) => clear.some(c => c.terminal === t && c.date_1 === date);
+    const cleared = (date: string, t: string) => clear.some(c => c.terminal === t && (c.date_1 === date || c.date_2 === date));
 
     // Roll prior outstanding through this month's OB matches/clearances
     const next: OutstandingSp[] = [];
