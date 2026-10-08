@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { DebtorsBranchComparison } from "./DebtorsBranchComparison";
 import { supabase } from "@/integrations/supabase/client";
+import { computeSpeedpointOutstanding, type OutstandingSp } from "@/lib/speedpointCarryForward";
 
 const SP_TERMINALS = ["Term 247608", "Forecourt 929661", "Retail 200660", "Scan to pay"];
 
@@ -128,6 +129,13 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     { month: string; terminal: string; date_1: string; date_2: string }[]
   >([]);
   const [eftAutoUnmatchedIds, setEftAutoUnmatchedIds] = useState<Set<string>>(new Set());
+  const [eftOutstanding, setEftOutstanding] = useState<OutstandingSp[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    setEftOutstanding(null);
+    computeSpeedpointOutstanding(month, cashups, SP_TERMINALS).then((r) => { if (!cancelled) setEftOutstanding(r); });
+    return () => { cancelled = true; };
+  }, [month, cashups]);
   const [creditorsExplanation, setCreditorsExplanation] = useState('');
 
   useEffect(() => {
@@ -377,10 +385,12 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
     });
   });
 
+  // Closing = all differences still outstanding at month end (rolled forward from earlier months)
   const eftPerTerminal = SP_TERMINALS.map((term) => {
-    const cashupTotal = (spColumnTotals[term] ?? 0) + obByTerminal[term].cashup;
-    const bankTotal = speedpointMatches.reduce((s, rm) => s + (rm[term]?.bankAmount ?? 0), 0) + obByTerminal[term].bank;
-    const diff = cashupTotal - bankTotal;
+    const diff = eftOutstanding
+      ? eftOutstanding.filter((o) => o.terminal === term).reduce((s, o) => s + o.diff, 0)
+      : (spColumnTotals[term] ?? 0) + obByTerminal[term].cashup -
+        (speedpointMatches.reduce((s, rm) => s + (rm[term]?.bankAmount ?? 0), 0) + obByTerminal[term].bank);
     return { terminal: term, diff };
   });
   const eftReconClosing = eftPerTerminal.reduce((s, r) => s + r.diff, 0);
