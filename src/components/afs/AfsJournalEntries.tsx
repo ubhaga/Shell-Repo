@@ -8,6 +8,7 @@ import { useMasterDataStore } from "@/store/masterDataStore";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cashupShortOver, shopPayoutsTotal } from "@/lib/cashupTotals";
+import { buildOtherAdjustmentLines } from "@/lib/otherAdjustmentLines";
 
 interface AfsJournalEntriesProps {
   selectedDate: string;
@@ -329,6 +330,28 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
     const ccBankCharges = mf?.cashConnectInvoiceInclVat ?? 0;
     return { amount: totalTransferFromCoins, ccBankCharges };
   }, [month, managerEntries, monthlyFigures]);
+
+  // ── JE 6 — Other Adjustments category summary ──
+  const [otherAdjCats, setOtherAdjCats] = useState<Record<string, string>>({});
+  useEffect(() => {
+    supabase.from('other_adjustment_categories').select('*').eq('month', month).then(({ data }) => {
+      const map: Record<string, string> = {};
+      (data as { cashup_date: string; adjustment_id: string; category: string }[] | null)?.forEach(r => {
+        map[`${r.cashup_date}|${r.adjustment_id}`] = r.category;
+      });
+      setOtherAdjCats(map);
+    });
+  }, [month]);
+  const je6 = useMemo(() => {
+    const lines = buildOtherAdjustmentLines(cashups.filter((c) => c.month === month), otherAdjCats).filter(l => !l.isNetted);
+    const map: Record<string, number> = {};
+    lines.forEach(l => { const k = l.category || 'Uncategorised'; map[k] = (map[k] || 0) + l.amount; });
+    const rows = Object.entries(map).filter(([, v]) => Math.abs(v) >= 0.005).sort((a, b) => a[0].localeCompare(b[0]));
+    const debits = rows.filter(([, v]) => v > 0).reduce((s, [, v]) => s + v, 0);
+    const credits = rows.filter(([, v]) => v < 0).reduce((s, [, v]) => s - v, 0);
+    const net = debits - credits; // >0 → credit Other Adjustments
+    return { rows, debits, credits, net };
+  }, [cashups, month, otherAdjCats]);
 
   // ── JE 5 — Airtime / Lotto Commissions ──
   const je5 = useMemo(() => {
@@ -812,6 +835,52 @@ export function AfsJournalEntries({ selectedDate, onNavigateToDate }: AfsJournal
               className="mt-1 min-h-[60px] text-sm"
             />
           </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">JE 6 — Other Adjustments ({month})</CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            From the Other Adjustments Recon category summary (excl. netted items). Positive balances are debited,
+            negative balances credited, and the net total is journalised to Other Adjustments.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Description</TableHead>
+                <TableHead className="text-xs text-right">Debit</TableHead>
+                <TableHead className="text-xs text-right">Credit</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {je6.rows.length === 0 && (
+                <TableRow><TableCell colSpan={3} className="text-center text-sm text-muted-foreground py-4">No other adjustments this month</TableCell></TableRow>
+              )}
+              {je6.rows.map(([cat, amt]) => (
+                <TableRow key={cat}>
+                  <TableCell className="text-sm py-1.5">{cat}</TableCell>
+                  <TableCell className="text-right py-1.5">{amt > 0 ? <CurrencyDisplay value={amt} /> : null}</TableCell>
+                  <TableCell className="text-right py-1.5">{amt < 0 ? <CurrencyDisplay value={-amt} /> : null}</TableCell>
+                </TableRow>
+              ))}
+              {je6.rows.length > 0 && (
+                <TableRow>
+                  <TableCell className="text-sm py-1.5 font-medium">Other Adjustments</TableCell>
+                  <TableCell className="text-right py-1.5">{je6.net < 0 ? <CurrencyDisplay value={-je6.net} /> : null}</TableCell>
+                  <TableCell className="text-right py-1.5">{je6.net > 0 ? <CurrencyDisplay value={je6.net} /> : null}</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell className="font-semibold text-sm">Totals</TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je6.debits + (je6.net < 0 ? -je6.net : 0)} highlight /></TableCell>
+                <TableCell className="text-right"><CurrencyDisplay value={je6.credits + (je6.net > 0 ? je6.net : 0)} highlight /></TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
         </CardContent>
       </Card>
     </div>

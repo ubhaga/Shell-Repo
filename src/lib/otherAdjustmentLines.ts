@@ -41,7 +41,6 @@ export function buildOtherAdjustmentLines(monthCashups: DailyCashup[], savedCate
         if ((sameExplanation && diffDays <= 1) || crossMatch) {
           allLines[i].isNetted = true;
           allLines[j].isNetted = true;
-          break;
         }
       }
     }
