@@ -229,16 +229,20 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   // 6.2 CC Recon closing on last day of the month
   const monthManagersSorted = [...monthManagers].sort((a, b) => a.date.localeCompare(b.date));
   const lastMgr = monthManagersSorted[monthManagersSorted.length - 1];
+  // Walk from seed date to month end — same as CC Recon
   const ccReconClosing = (() => {
-    if (!lastMgr) return 0;
-    const cu = cashups.find((c) => c.date === lastMgr.date);
-    const dailyCC = cu?.shop.cashDepositedBanking ?? 0;
-    return (
-      (lastMgr.cashConnectOpeningBalance ?? 0) +
-      dailyCC -
-      Math.abs(lastMgr.ccBagClosureCashConnect ?? 0) +
-      Math.abs(lastMgr.transferFromCoins ?? 0)
-    );
+    const SEED_DATE = "2026-01-01";
+    let cc = 2000;
+    const end = new Date(fmtDate(lastDayCurr) + "T00:00:00");
+    const d = new Date(SEED_DATE + "T00:00:00");
+    while (d <= end) {
+      const ds = fmtDate(d);
+      const cu = cashups.find((c) => c.date === ds);
+      const en = managerEntries.find((e) => e.date === ds);
+      cc = cc + (cu?.shop.cashDepositedBanking ?? 0) - Math.abs(en?.ccBagClosureCashConnect ?? 0) + Math.abs(en?.transferFromCoins ?? 0);
+      d.setDate(d.getDate() + 1);
+    }
+    return cc;
   })();
   const ccTotalCol1 = ccReconClosing + form.ccUnbankedDeposit;
 
