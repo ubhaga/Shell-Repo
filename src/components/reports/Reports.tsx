@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { downloadXlsxFromObjects } from '@/lib/csvExport';
+import { computeSpeedpointOutstanding, type OutstandingSp } from '@/lib/speedpointCarryForward';
 
 import { DailySummaryReport } from './DailySummaryReport';
 import { CreditorsRecon } from '@/components/recons/CreditorsRecon';
