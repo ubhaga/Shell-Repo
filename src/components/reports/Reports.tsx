@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { downloadXlsxFromObjects } from '@/lib/csvExport';
+import { computeSpeedpointOutstanding, type OutstandingSp } from '@/lib/speedpointCarryForward';
 
 import { DailySummaryReport } from './DailySummaryReport';
 import { CreditorsRecon } from '@/components/recons/CreditorsRecon';
@@ -64,6 +65,14 @@ export function Reports({
     setPrevBankLines((prev.data ?? []) as typeof prevBankLines);
   }, [filterMonth, prevMonth]);
   useEffect(() => { loadBankLines(); }, [loadBankLines]);
+
+  // Outstanding speedpoint differences carried forward into this month (all earlier months)
+  const [spOutstanding, setSpOutstanding] = useState<OutstandingSp[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    computeSpeedpointOutstanding(prevMonth, cashups, SP_TERMINALS).then(r => { if (!cancelled) setSpOutstanding(r); });
+    return () => { cancelled = true; };
+  }, [prevMonth, cashups]);
 
   // Manual match state: key = "cashupDate|terminal", value = array of manually matched bank lines
   type BankParsedLine = { terminal: string; batch: string; amount: number; date: string; description: string; idx: number; bankLineId: string };
@@ -417,46 +426,16 @@ export function Reports({
     return { date: c.date, terminals: termMap };
   });
 
-  // Find unmatched batches from previous month
+  // Opening balance = everything still outstanding at end of previous month (rolled forward from all earlier months)
   type OBRow = { date: string; terminal: string; batchNo: string; cashupAmount: number; bankAmount: number; diff: number; manualBankAmount: number };
   const openingBalanceRows: OBRow[] = [];
-  const prevConsumedBatchKeys = new Set<string>();
-  prevSpeedpointByDate.forEach(r => {
-    SP_TERMINALS.forEach(t => {
-      const td = r.terminals[t];
-      if (!td || td.total === 0) return;
-      if (isPrevDiffCleared(r.date, t)) return;
-      // For auto-match dedup, use terminal+batch — but only skip if batch is non-empty and already consumed
-      const batchKey = `${t}|${td.batchNo}`;
-      const hasMeaningfulBatch = td.batchNo && td.batchNo !== 'X' && td.batchNo !== '';
-      if (hasMeaningfulBatch && prevConsumedBatchKeys.has(batchKey)) return;
-      if (hasMeaningfulBatch) prevConsumedBatchKeys.add(batchKey);
-      
-      const autoBankAmt = prevBankLookup[batchKey] ?? 0;
-      
-      // Check manual matches from previous month
-      const prevManualKey = `${r.date}|${t}`;
-      const prevManualLines = prevManualMatches[prevManualKey] || [];
-      const prevManualAmt = prevManualLines.reduce((s, ml) => s + ml.amount, 0);
-      const totalBank = autoBankAmt + prevManualAmt;
-      const diff = td.total - totalBank;
-      if (Math.abs(diff) > 0.01) {
-        // Check if this OB row has manual matches in the current month
-        const obKey = `OB-${r.date}|${t}`;
-        const obManualLines = manualMatches[obKey] || [];
-        const obManualAmt = obManualLines.reduce((s, ml) => s + ml.amount, 0);
-        const finalDiff = diff - obManualAmt;
-        // Show in OB whether still outstanding or fully matched (so user sees it as cleared)
-        openingBalanceRows.push({
-          date: r.date,
-          terminal: t,
-          batchNo: td.batchNo,
-          cashupAmount: diff, // The outstanding amount carried forward
-          bankAmount: obManualAmt,
-          diff: finalDiff,
-          manualBankAmount: obManualAmt,
-        });
-      }
+  void prevSpeedpointByDate; void isPrevDiffCleared; void prevBankLookup; void prevManuallyMatchedIds;
+  spOutstanding.forEach(o => {
+    const obManualLines = manualMatches[`OB-${o.date}|${o.terminal}`] || [];
+    const obManualAmt = obManualLines.reduce((s, ml) => s + ml.amount, 0);
+    openingBalanceRows.push({
+      date: o.date, terminal: o.terminal, batchNo: o.batchNo,
+      cashupAmount: o.diff, bankAmount: obManualAmt, diff: o.diff - obManualAmt, manualBankAmount: obManualAmt,
     });
   });
 
