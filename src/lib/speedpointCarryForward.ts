@@ -3,7 +3,7 @@ import type { DailyCashup } from '@/types/cashup';
 
 export type OutstandingSp = { date: string; terminal: string; batchNo: string; diff: number };
 
-const START_MONTH = '2026-01';
+const START_MONTH = '2026-02'; // Feb leftovers form March's opening (March 2026 is the seed month)
 
 function nextMonth(m: string) {
   const [y, mo] = m.split('-').map(Number);
