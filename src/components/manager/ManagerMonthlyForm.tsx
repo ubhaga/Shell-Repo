@@ -208,7 +208,8 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   const invoicesMatch = Math.abs(spreadsheetInvoicesTotal - form.branchTotalInvoicesCapital) < 1;
   const vatMatch = Math.abs(spreadsheetInvoicesVat - form.branchTotalInvoicesVat) < 1;
 
-  // Bank charges range: last day of previous month through second-to-last day of current month
+  // Bank charges range: from Jul 2026 onwards, 1st day of month through last day of month (inclusive).
+  // Earlier months keep the old window: last day of previous month through second-to-last day of current month.
   const [yearStr, monthStr] = month.split("-");
   const yearN = parseInt(yearStr, 10);
   const monthN = parseInt(monthStr, 10);
@@ -216,8 +217,9 @@ export function ManagerMonthlyForm({ selectedDate }: Props) {
   const lastDayCurr = new Date(yearN, monthN, 0); // last day of current month
   const pad = (n: number) => String(n).padStart(2, "0");
   const fmtDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const rangeStart = fmtDate(lastDayPrev);
-  const rangeEndExclusive = fmtDate(lastDayCurr); // exclude this day
+  const useCalendarMonth = month >= "2026-07";
+  const rangeStart = useCalendarMonth ? fmtDate(new Date(yearN, monthN - 1, 1)) : fmtDate(lastDayPrev);
+  const rangeEndExclusive = useCalendarMonth ? fmtDate(new Date(yearN, monthN, 1)) : fmtDate(lastDayCurr); // exclude this day
   const bankChargesEntries = managerEntries
     .filter((e) => e.date >= rangeStart && e.date < rangeEndExclusive)
     .sort((a, b) => a.date.localeCompare(b.date));
